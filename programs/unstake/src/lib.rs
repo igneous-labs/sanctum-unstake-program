@@ -21,7 +21,8 @@ pub mod unstake {
     pub fn create_pool(ctx: Context<CreatePool>, fee: Fee) -> Result<()> {
         ctx.accounts.run(fee)
     }
-}
 
-#[derive(Accounts)]
-pub struct Initialize {}
+    pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
+        Unstake::run(ctx)
+    }
+}
