@@ -12,7 +12,7 @@ pub struct Fee {
 
 #[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
 pub enum FeeEnum {
-    LiquidityLinear(LiquidityLinear),
+    LiquidityLinear { params: LiquidityLinear },
 }
 
 /// Charges a fee based on how much liquidity
@@ -32,7 +32,7 @@ pub struct LiquidityLinear {
 impl Fee {
     pub fn account_space(&self) -> usize {
         8 + match self.fee {
-            FeeEnum::LiquidityLinear(..) => size_of::<LiquidityLinear>(),
+            FeeEnum::LiquidityLinear { .. } => size_of::<LiquidityLinear>(),
         }
     }
 }
