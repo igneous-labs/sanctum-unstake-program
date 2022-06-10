@@ -1,0 +1,4 @@
+# ts library build artifacts
+src/idl/idl*
+dist
+*.tgz

@@ -1,0 +1,30 @@
+{
+  "name": "@soceanfi/unstake",
+  "version": "0.0.1",
+  "repository": "github:igneous-labs/unstake",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "keywords": [],
+  "author": "",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/igneous-labs/unstake",
+  "dependencies": {
+    "@project-serum/anchor": "0.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^4.3.5"
+  },
+  "license": "MIT",
+  "scripts": {
+    "clean": "rm -rf dist && rm -f *.tgz",
+    "rebuild": "cd ../ && yarn build && cd ts && yarn build",
+    "prebuild": "readlink -f ../target/idl/*.json | xargs -I % ln -sf % src/idl/idl.json && readlink -f ../target/types/*.ts | xargs -I % ln -sf % src/idl/idl.ts",
+    "build": "yarn tsc",
+    "prepack": "yarn clean && yarn build"
+  }
+}
