@@ -8,6 +8,7 @@ declare_id!("6KBz9djJAH3gRHscq9ujMpyZ5bCK9a27o3ybDtJLXowz");
 declare_id!("3zSwHpEF8svwihadvnx7q2EagTyW1tvwn354gzvF5Zh4");
 
 pub mod anchor_len;
+pub mod consts;
 pub mod instructions;
 pub mod rational;
 pub mod state;
