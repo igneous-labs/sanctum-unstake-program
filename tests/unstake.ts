@@ -1,7 +1,9 @@
 import * as anchor from "@project-serum/anchor";
 import { BN, Program } from "@project-serum/anchor";
-import { Keypair, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
+import { findPoolFeeAccount, findPoolSolReserves } from "../ts/src/pda";
 import { Unstake } from "../target/types/unstake";
+import { airdrop } from "./utils";
 
 describe("unstake", () => {
   // Configure the client to use the local cluster.
@@ -12,14 +14,18 @@ describe("unstake", () => {
   it("Is initialized!", async () => {
     const provider = anchor.getProvider();
     const payerKeypair = Keypair.generate();
-    const feeKeypair = Keypair.generate();
+    const poolKeypair = Keypair.generate();
+    const lpMintKeypair = Keypair.generate();
 
-    await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(
-        payerKeypair.publicKey,
-        1 * LAMPORTS_PER_SOL
-      ),
-      "confirmed"
+    await airdrop(provider.connection, payerKeypair.publicKey);
+
+    const [poolSolReserves] = await findPoolSolReserves(
+      program.programId,
+      poolKeypair.publicKey
+    );
+    const [feeAccount] = await findPoolFeeAccount(
+      program.programId,
+      poolKeypair.publicKey
     );
 
     const sig = await program.methods
@@ -41,10 +47,13 @@ describe("unstake", () => {
       })
       .accounts({
         payer: payerKeypair.publicKey,
-        feeAccount: feeKeypair.publicKey,
-        systemProgram: SystemProgram.programId,
+        feeAuthority: payerKeypair.publicKey,
+        poolAccount: poolKeypair.publicKey,
+        lpMint: lpMintKeypair.publicKey,
+        poolSolReserves,
+        feeAccount,
       })
-      .signers([payerKeypair, feeKeypair])
+      .signers([payerKeypair, poolKeypair, lpMintKeypair])
       .rpc();
     console.log("Your transaction signature", sig);
   });

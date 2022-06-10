@@ -13,7 +13,7 @@ pub struct CreatePool<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    /// pools' fee_authority
+    /// pool's fee_authority
     pub fee_authority: Signer<'info>,
 
     /// pool account to be created
@@ -26,11 +26,10 @@ pub struct CreatePool<'info> {
 
     /// pool SOL reserves and authority
     #[account(
-        zero,
         seeds = [&pool_account.key().to_bytes()],
         bump,
     )]
-    pub pool_sol_reserves: AccountInfo<'info>,
+    pub pool_sol_reserves: SystemAccount<'info>,
 
     /// fee account to be created
     #[account(
