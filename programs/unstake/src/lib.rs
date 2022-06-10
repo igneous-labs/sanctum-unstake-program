@@ -19,7 +19,7 @@ use state::*;
 pub mod unstake {
     use super::*;
     pub fn create_pool(ctx: Context<CreatePool>, fee: Fee) -> Result<()> {
-        ctx.accounts.run(fee)
+        CreatePool::run(ctx, fee)
     }
 
     pub fn unstake(ctx: Context<Unstake>) -> Result<()> {

@@ -7,10 +7,8 @@ pub struct Unstake<'info> {
 }
 
 impl<'info> Unstake<'info> {
-    const SIMPLE_FLAT_FEE: u64 = 1_000_000_000;
-
     #[inline(always)]
-    pub fn run(ctx: Context<Self>) -> Result<()> {
+    pub fn run(_ctx: Context<Self>) -> Result<()> {
         Ok(())
     }
 }
