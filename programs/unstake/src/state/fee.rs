@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use std::mem::size_of;
 
 use crate::rational::Rational;
 
@@ -7,10 +6,11 @@ use crate::rational::Rational;
 #[derive(Debug)]
 #[account]
 pub struct Fee {
-    fee: FeeEnum,
+    pub fee: FeeEnum,
 }
 
 #[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
+#[repr(C)]
 pub enum FeeEnum {
     LiquidityLinear { params: LiquidityLinear },
 }
@@ -27,12 +27,4 @@ pub struct LiquidityLinear {
     /// The fee applied to a swap that leaves
     /// no liquidity remaining in the SOL reserves account
     zero_liq_remaining: Rational,
-}
-
-impl Fee {
-    pub fn account_space(&self) -> usize {
-        8 + match self.fee {
-            FeeEnum::LiquidityLinear { .. } => size_of::<LiquidityLinear>(),
-        }
-    }
 }

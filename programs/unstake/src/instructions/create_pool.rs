@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::state::Fee;
+use crate::{anchor_len::AnchorLen, state::Fee};
 
 #[derive(Accounts)]
 #[instruction(fee: Fee)]
@@ -12,7 +12,7 @@ pub struct CreatePool<'info> {
     #[account(
         init,
         payer = payer,
-        space = fee.account_space(),
+        space = Fee::LEN,
     )]
     pub fee_account: Account<'info, Fee>,
 
@@ -22,7 +22,8 @@ pub struct CreatePool<'info> {
 impl<'info> CreatePool<'info> {
     #[inline(always)]
     pub fn run(&mut self, fee: Fee) -> Result<()> {
-        msg!("{:?}", fee);
+        self.fee_account.set_inner(fee);
+        msg!("{:?}", self.fee_account.fee);
         Ok(())
     }
 }
