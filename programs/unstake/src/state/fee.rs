@@ -12,14 +12,14 @@ pub struct Fee {
 #[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
 #[repr(C)]
 pub enum FeeEnum {
-    LiquidityLinear { params: LiquidityLinear },
+    LiquidityLinear { params: LiquidityLinearParams },
 }
 
 /// Charges a fee based on how much liquidity
 /// a swap leaves in the liquidity pool,
 /// increasing linearly as less liquidity is left
 #[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
-pub struct LiquidityLinear {
+pub struct LiquidityLinearParams {
     /// The fee applied to a swap that leaves
     /// 100% of all liquidity in the SOL reserves account
     max_liq_remaining: Rational,
