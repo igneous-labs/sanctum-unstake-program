@@ -14,17 +14,27 @@ TODO
 
 ### Fee
 
-TODO
+Located at PDA `[pool_account_pubkey, "fee"]`
+
+### StakeAccountRecord
+
+Located at PDA `[pool_account_pubkey, stake_account_pubkey]`
 
 ## Other Accounts
 
 ### Pool SOL reserves
 
-TODO
+Regular system account, use SystemProgram.transfer signed with PDA to transfer lamports out.
+
+Located at PDA `[pool_account_pubkey]`
 
 ### LP token mint
 
-TODO
+Token authority set to PDA `[pool_account_pubkey]`
+
+Can be located at any keypair to enable vanity pubkeys.
+
+Initialized on CreatePool.
 
 ## Instructions
 
