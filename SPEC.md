@@ -14,7 +14,7 @@ TODO
 
 ### Fee
 
-TODO
+Located at PDA `[pool_account_pubkey, "fee"]`
 
 ### StakeAccountRecord
 

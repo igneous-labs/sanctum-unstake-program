@@ -3,8 +3,11 @@
     "@project-serum/anchor": "0.24.2"
   },
   "devDependencies": {
+    "@solana/spl-token": "^0.2.0",
+    "@types/bn.js": "^5.1.0",
     "@types/chai": "^4.3.1",
     "@types/mocha": "^9.0.0",
+    "bn.js": "^5.2.1",
     "chai": "^4.3.4",
     "mocha": "^10.0.0",
     "ts-mocha": "^10.0.0",
