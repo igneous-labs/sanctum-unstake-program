@@ -95,6 +95,7 @@ fn calc_lp_tokens_to_mint(pool: &Pool, lp_mint: &Mint, amount_to_add: u64) -> Re
             .and_then(|v| v.checked_sub(lp_mint.supply))
             .ok_or(UnstakeError::LpMintCalculationFailure)?);
     }
+    // mint = amount * supply / owned_lamports
     Ok(u128::from(amount_to_add)
         .checked_mul(u128::from(lp_mint.supply))
         .and_then(|v| v.checked_div(u128::from(pool.owned_lamports)))
