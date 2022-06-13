@@ -13,4 +13,7 @@ pub enum UnstakeError {
 
     #[msg("Could not find PDA bump")]
     PdaBumpNotCached, // 0x1773
+
+    #[msg("The provided fee authority does not have the authority over the provided pool account")]
+    InvalidFeeAuthority, // 0x1774
 }

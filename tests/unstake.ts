@@ -129,4 +129,33 @@ describe("unstake", () => {
       ownedLamportsPre.add(amount).toString()
     );
   });
+
+  it("it sets fee", async () => {
+    await program.methods
+      .setFee({
+        fee: {
+          liquidityLinear: {
+            params: {
+              maxLiqRemaining: {
+                num: new BN(42),
+                denom: new BN(69),
+              },
+              zeroLiqRemaining: {
+                num: new BN(1),
+                denom: new BN(1000),
+              },
+            },
+          },
+        },
+      })
+      .accounts({
+        feeAuthority: payerKeypair.publicKey,
+        poolAccount: poolKeypair.publicKey,
+        feeAccount,
+      })
+      .signers([payerKeypair])
+      .rpc({ skipPreflight: true });
+
+    // TODO: assertions
+  });
 });
