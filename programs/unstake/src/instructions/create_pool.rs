@@ -60,12 +60,16 @@ impl<'info> CreatePool<'info> {
     pub fn run(ctx: Context<Self>, fee: Fee) -> Result<()> {
         let fee_account = &mut ctx.accounts.fee_account;
         let fee_authority = &ctx.accounts.fee_authority;
+        let lp_mint = &ctx.accounts.lp_mint;
         let pool_account = &mut ctx.accounts.pool_account;
+        let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
 
         fee_account.set_inner(fee);
         pool_account.set_inner(Pool {
             fee_authority: fee_authority.key(),
-            owned_lamports: 0,
+            lp_mint: lp_mint.key(),
+            // should be 0 unless someone sent lamports to it
+            owned_lamports: pool_sol_reserves.lamports(),
         });
         Ok(())
     }
