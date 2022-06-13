@@ -97,6 +97,9 @@ describe("unstake", () => {
     const reservesLamportsPre = await provider.connection.getBalance(
       poolSolReserves
     );
+    const ownedLamportsPre = (
+      await program.account.pool.fetch(poolKeypair.publicKey)
+    ).ownedLamports;
     await program.methods
       .addLiquidity(amount)
       .accounts({
@@ -115,8 +118,15 @@ describe("unstake", () => {
     const reservesLamportsPost = await provider.connection.getBalance(
       poolSolReserves
     );
+    const ownedLamportsPost = (
+      await program.account.pool.fetch(poolKeypair.publicKey)
+    ).ownedLamports;
+
     expect(lperAtaPost).to.eq(lperAtaPre + BigInt(amount.toString()));
     expect(lperLamportsPost).to.eq(lperLamportsPre - amount.toNumber());
     expect(reservesLamportsPost).to.eq(reservesLamportsPre + amount.toNumber());
+    expect(ownedLamportsPost.toString()).to.eq(
+      ownedLamportsPre.add(amount).toString()
+    );
   });
 });

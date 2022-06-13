@@ -44,12 +44,15 @@ impl<'info> AddLiquidity<'info> {
     #[inline(always)]
     pub fn run(ctx: Context<Self>, amount: u64) -> Result<()> {
         let from = &ctx.accounts.from;
-        let pool_account = &ctx.accounts.pool_account;
+        let pool_account = &mut ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
         let lp_mint = &ctx.accounts.lp_mint;
         let mint_lp_tokens_to = &ctx.accounts.mint_lp_tokens_to;
         let token_program = &ctx.accounts.token_program;
         let system_program = &ctx.accounts.system_program;
+
+        // order matters, must calculate first before mutation
+        let to_mint = calc_lp_tokens_to_mint(pool_account, lp_mint, amount)?;
 
         // transfer SOL
         let transfer_cpi_accs = system_program::Transfer {
@@ -62,7 +65,6 @@ impl<'info> AddLiquidity<'info> {
         )?;
 
         // mint LP tokens
-        let to_mint = calc_lp_tokens_to_mint(pool_account, lp_mint, amount)?;
         let mint_cpi_accs = MintTo {
             mint: lp_mint.to_account_info(),
             to: mint_lp_tokens_to.to_account_info(),
@@ -80,6 +82,12 @@ impl<'info> AddLiquidity<'info> {
             to_mint,
         )?;
 
+        // update owned_lamports
+        pool_account.owned_lamports = pool_account
+            .owned_lamports
+            .checked_add(amount)
+            .ok_or(UnstakeError::AddLiquiditySolOverflow)?;
+
         Ok(())
     }
 }
@@ -95,7 +103,7 @@ fn calc_lp_tokens_to_mint(pool: &Pool, lp_mint: &Mint, amount_to_add: u64) -> Re
             .and_then(|v| v.checked_sub(lp_mint.supply))
             .ok_or(UnstakeError::LpMintCalculationFailure)?);
     }
-    // mint = amount * supply / owned_lamports
+    // mint = amount * supply BEFORE TRANSFER / owned_lamports BEFORE TRANSFER
     Ok(u128::from(amount_to_add)
         .checked_mul(u128::from(lp_mint.supply))
         .and_then(|v| v.checked_div(u128::from(pool.owned_lamports)))
