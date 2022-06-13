@@ -3,6 +3,7 @@
 - Stake accounts' worth are determined using `stake_lamports` field (does not include rent lamports)
 - Stake accounts' rent lamports are given to crank runners as incentives
 - Stake accounts are just transferred directly to the pool by setting withdraw and stake authority
+- Locked stake accounts are disallowed
 - Discover stake accounts owned by the pool via getProgramAccounts to run the cranks on
 
 ## Program Accounts
