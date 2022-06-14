@@ -11,7 +11,10 @@ import {
 import { findPoolFeeAccount, findPoolSolReserves } from "../ts/src/pda";
 import { Unstake } from "../target/types/unstake";
 import { airdrop } from "./utils";
-import { expect } from "chai";
+import { expect, use as chaiUse } from "chai";
+import chaiAsPromised from "chai-as-promised";
+
+chaiUse(chaiAsPromised);
 
 describe("unstake", () => {
   // Configure the client to use the local cluster.
@@ -157,5 +160,38 @@ describe("unstake", () => {
       .rpc({ skipPreflight: true });
 
     // TODO: assertions
+  });
+
+  it("it reject to set fee when the authority does not match", async () => {
+    const rando = Keypair.generate();
+    return expect(
+      program.methods
+        .setFee({
+          fee: {
+            liquidityLinear: {
+              params: {
+                maxLiqRemaining: {
+                  num: new BN(42),
+                  denom: new BN(100),
+                },
+                zeroLiqRemaining: {
+                  num: new BN(2),
+                  denom: new BN(1000),
+                },
+              },
+            },
+          },
+        })
+        .accounts({
+          feeAuthority: rando.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          feeAccount,
+        })
+        .signers([rando])
+        .rpc({ skipPreflight: true })
+    ).to.be.eventually.rejected.and.have.property(
+      "msg",
+      "The provided fee authority does not have the authority over the provided pool account"
+    );
   });
 });
