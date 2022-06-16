@@ -198,5 +198,18 @@ describe("unstake", () => {
       expect(ownedLamportsPost.toString()).to.eq(new BN(0).toString());
       expect(reservesLamportsPost).to.eq(0);
     });
+
+    it("it deactivates stake account", async () => {
+      // TODO: create a stake account
+      // TODO: wait for the stake account to be activated by waiting one epoch (set to 32 seconds)
+      // TODO: deactivate the stake account
+      // TODO: wait and check if it gets deactivated
+
+      return program.methods
+        .deactivateStakeAccount()
+        .accounts({})
+        .signers([])
+        .rpc({ skipPreflight: true });
+    });
   });
 });

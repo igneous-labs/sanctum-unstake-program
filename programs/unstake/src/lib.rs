@@ -33,6 +33,10 @@ pub mod unstake {
         RemoveLiquidity::run(ctx, amount_lp)
     }
 
+    pub fn deactivate_stake_account(ctx: Context<DeactivateStakeAccount>) -> Result<()> {
+        DeactivateStakeAccount::run(ctx)
+    }
+
     pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
         Unstake::run(ctx)
     }
