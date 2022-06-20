@@ -13,4 +13,13 @@ pub enum UnstakeError {
 
     #[msg("Could not find PDA bump")]
     PdaBumpNotCached, // 0x1773
+
+    #[msg("Failed to calculate amount of SOL liquidity to remove")]
+    RemoveSolCalculationFailure, // 0x1774
+
+    #[msg("Overflow attempting to remove SOL liquidity")]
+    RemoveLiquiditySolOverflow, // 0x1775
+
+    #[msg("The provided fee authority does not have the authority over the provided pool account")]
+    InvalidFeeAuthority, // 0x1776
 }

@@ -10,8 +10,11 @@ import {
 } from "@solana/spl-token";
 import { findPoolFeeAccount, findPoolSolReserves } from "../ts/src/pda";
 import { Unstake } from "../target/types/unstake";
-import { airdrop } from "./utils";
-import { expect } from "chai";
+import { airdrop, fetchLpFacingTestParams } from "./utils";
+import { expect, use as chaiUse } from "chai";
+import chaiAsPromised from "chai-as-promised";
+
+chaiUse(chaiAsPromised);
 
 describe("unstake", () => {
   // Configure the client to use the local cluster.
@@ -79,54 +82,189 @@ describe("unstake", () => {
     expect(mint.supply).to.eq(BigInt(0));
   });
 
-  it("it add liquidity", async () => {
-    const amount = new BN(0.1 * LAMPORTS_PER_SOL);
+  describe("LP facing", () => {
+    const AMOUNT = new BN(0.1 * LAMPORTS_PER_SOL);
 
-    // create lper ata
-    await createAssociatedTokenAccount(
-      provider.connection,
-      lperKeypair,
-      lpMintKeypair.publicKey,
-      lperKeypair.publicKey
-    );
+    before(async () => {
+      // create lper ata
+      await createAssociatedTokenAccount(
+        provider.connection,
+        lperKeypair,
+        lpMintKeypair.publicKey,
+        lperKeypair.publicKey
+      );
+    });
 
-    const lperAtaPre = (await getAccount(provider.connection, lperAta)).amount;
-    const lperLamportsPre = await provider.connection.getBalance(
-      lperKeypair.publicKey
-    );
-    const reservesLamportsPre = await provider.connection.getBalance(
-      poolSolReserves
-    );
-    const ownedLamportsPre = (
-      await program.account.pool.fetch(poolKeypair.publicKey)
-    ).ownedLamports;
-    await program.methods
-      .addLiquidity(amount)
-      .accounts({
-        from: lperKeypair.publicKey,
-        poolAccount: poolKeypair.publicKey,
+    it("it add liquidity from zero", async () => {
+      const {
+        lperAtaAmount: lperAtaPre,
+        poolOwnedLamports: ownedLamportsPre,
+        lperLamports: lperLamportsPre,
+        reserveLamports: reservesLamportsPre,
+      } = await fetchLpFacingTestParams({
+        program,
+        lper: lperKeypair.publicKey,
+        lperAta,
         poolSolReserves,
-        lpMint: lpMintKeypair.publicKey,
-        mintLpTokensTo: lperAta,
-      })
-      .signers([lperKeypair])
-      .rpc({ skipPreflight: true });
-    const lperAtaPost = (await getAccount(provider.connection, lperAta)).amount;
-    const lperLamportsPost = await provider.connection.getBalance(
-      lperKeypair.publicKey
-    );
-    const reservesLamportsPost = await provider.connection.getBalance(
-      poolSolReserves
-    );
-    const ownedLamportsPost = (
-      await program.account.pool.fetch(poolKeypair.publicKey)
-    ).ownedLamports;
+        pool: poolKeypair.publicKey,
+      });
 
-    expect(lperAtaPost).to.eq(lperAtaPre + BigInt(amount.toString()));
-    expect(lperLamportsPost).to.eq(lperLamportsPre - amount.toNumber());
-    expect(reservesLamportsPost).to.eq(reservesLamportsPre + amount.toNumber());
-    expect(ownedLamportsPost.toString()).to.eq(
-      ownedLamportsPre.add(amount).toString()
-    );
+      await program.methods
+        .addLiquidity(AMOUNT)
+        .accounts({
+          from: lperKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          lpMint: lpMintKeypair.publicKey,
+          mintLpTokensTo: lperAta,
+        })
+        .signers([lperKeypair])
+        .rpc({ skipPreflight: true });
+
+      const {
+        lperAtaAmount: lperAtaPost,
+        poolOwnedLamports: ownedLamportsPost,
+        lperLamports: lperLamportsPost,
+        reserveLamports: reservesLamportsPost,
+      } = await fetchLpFacingTestParams({
+        program,
+        lper: lperKeypair.publicKey,
+        lperAta,
+        poolSolReserves,
+        pool: poolKeypair.publicKey,
+      });
+
+      expect(lperAtaPre).to.eq(BigInt(0));
+      expect(ownedLamportsPre.toString()).to.eq(new BN(0).toString());
+      expect(reservesLamportsPre).to.eq(0);
+      expect(lperAtaPost).to.eq(lperAtaPre + BigInt(AMOUNT.toString()));
+      expect(lperLamportsPost).to.eq(lperLamportsPre - AMOUNT.toNumber());
+      expect(reservesLamportsPost).to.eq(
+        reservesLamportsPre + AMOUNT.toNumber()
+      );
+      expect(ownedLamportsPost.toString()).to.eq(
+        ownedLamportsPre.add(AMOUNT).toString()
+      );
+    });
+
+    // TODO: add tests for adding and removing liquidity when liquidity is non-zero here
+
+    it("it remove liquidity to zero", async () => {
+      const {
+        lperAtaAmount: lperAtaPre,
+        poolOwnedLamports: ownedLamportsPre,
+        lperLamports: lperLamportsPre,
+        reserveLamports: reservesLamportsPre,
+      } = await fetchLpFacingTestParams({
+        program,
+        lper: lperKeypair.publicKey,
+        lperAta,
+        poolSolReserves,
+        pool: poolKeypair.publicKey,
+      });
+
+      await program.methods
+        .removeLiquidity(AMOUNT)
+        .accounts({
+          burnLpTokensFromAuthority: lperKeypair.publicKey,
+          to: lperKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          lpMint: lpMintKeypair.publicKey,
+          burnLpTokensFrom: lperAta,
+        })
+        .signers([lperKeypair])
+        .rpc({ skipPreflight: true });
+
+      const {
+        lperAtaAmount: lperAtaPost,
+        poolOwnedLamports: ownedLamportsPost,
+        lperLamports: lperLamportsPost,
+        reserveLamports: reservesLamportsPost,
+      } = await fetchLpFacingTestParams({
+        program,
+        lper: lperKeypair.publicKey,
+        lperAta,
+        poolSolReserves,
+        pool: poolKeypair.publicKey,
+      });
+
+      expect(lperAtaPost).to.eq(lperAtaPre - BigInt(AMOUNT.toString()));
+      expect(lperLamportsPost).to.eq(lperLamportsPre + AMOUNT.toNumber());
+      expect(reservesLamportsPost).to.eq(
+        reservesLamportsPre - AMOUNT.toNumber()
+      );
+      expect(ownedLamportsPost.toString()).to.eq(
+        ownedLamportsPre.sub(AMOUNT).toString()
+      );
+      expect(lperAtaPost).to.eq(BigInt(0));
+      expect(ownedLamportsPost.toString()).to.eq(new BN(0).toString());
+      expect(reservesLamportsPost).to.eq(0);
+    });
+  });
+
+  it("it sets fee", async () => {
+    await program.methods
+      .setFee({
+        fee: {
+          liquidityLinear: {
+            params: {
+              maxLiqRemaining: {
+                num: new BN(42),
+                denom: new BN(69),
+              },
+              zeroLiqRemaining: {
+                num: new BN(1),
+                denom: new BN(1000),
+              },
+            },
+          },
+        },
+      })
+      .accounts({
+        feeAuthority: payerKeypair.publicKey,
+        poolAccount: poolKeypair.publicKey,
+        feeAccount,
+      })
+      .signers([payerKeypair])
+      .rpc({ skipPreflight: true });
+
+    // TODO: assertions
+  });
+
+  it("it reject to set fee when the authority does not match", async () => {
+    const rando = Keypair.generate();
+    return expect(
+      program.methods
+        .setFee({
+          fee: {
+            liquidityLinear: {
+              params: {
+                maxLiqRemaining: {
+                  num: new BN(42),
+                  denom: new BN(100),
+                },
+                zeroLiqRemaining: {
+                  num: new BN(2),
+                  denom: new BN(1000),
+                },
+              },
+            },
+          },
+        })
+        .accounts({
+          feeAuthority: rando.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          feeAccount,
+        })
+        .signers([rando])
+        .rpc({ skipPreflight: true })
+    ).to.be.eventually.rejected.then(function (err) {
+      expect(err).to.have.a.property("code", 6006);
+      expect(err).to.have.a.property(
+        "msg",
+        "The provided fee authority does not have the authority over the provided pool account"
+      );
+    });
   });
 });
