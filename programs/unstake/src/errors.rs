@@ -19,4 +19,7 @@ pub enum UnstakeError {
 
     #[msg("Overflow attempting to remove SOL liquidity")]
     RemoveLiquiditySolOverflow, // 0x1775
+
+    #[msg("The provided fee authority does not have the authority over the provided pool account")]
+    InvalidFeeAuthority, // 0x1776
 }
