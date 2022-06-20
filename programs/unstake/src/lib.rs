@@ -33,6 +33,10 @@ pub mod unstake {
         RemoveLiquidity::run(ctx, amount_lp)
     }
 
+    pub fn set_fee(ctx: Context<SetFee>, fee: Fee) -> Result<()> {
+        SetFee::run(ctx, fee)
+    }
+
     pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
         Unstake::run(ctx)
     }
