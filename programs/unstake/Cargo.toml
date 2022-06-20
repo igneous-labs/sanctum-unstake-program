@@ -19,9 +19,9 @@ default = []
 
 [dependencies.anchor-lang]
 git = "https://github.com/igneous-labs/anchor"
-branch = "spl/stake-prog"
+branch = "spl/stake-prog-add-stake-program-id"
 
 [dependencies.anchor-spl]
 git = "https://github.com/igneous-labs/anchor"
-branch = "spl/stake-prog"
+branch = "spl/stake-prog-add-stake-program-id"
 features = ["stake"]
