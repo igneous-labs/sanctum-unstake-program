@@ -1,18 +1,31 @@
 import BN from "bn.js";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { Keypair, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  sendAndConfirmTransaction,
+  Keypair,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+  StakeProgram,
+  SYSVAR_CLOCK_PUBKEY,
+} from "@solana/web3.js";
 import {
   createAssociatedTokenAccount,
-  getAccount,
   getAssociatedTokenAddress,
   getMint,
 } from "@solana/spl-token";
 import { findPoolFeeAccount, findPoolSolReserves } from "../ts/src/pda";
 import { Unstake } from "../target/types/unstake";
-import { airdrop, fetchLpFacingTestParams } from "./utils";
+import {
+  airdrop,
+  fetchLpFacingTestParams,
+  stakeAccMinLamports,
+  testVoteAccount,
+  waitForEpochToPass,
+} from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { getStakeAccount, stakeAccountState } from "./stake";
 
 chaiUse(chaiAsPromised);
 
@@ -200,6 +213,98 @@ describe("unstake", () => {
       expect(lperAtaPost).to.eq(BigInt(0));
       expect(ownedLamportsPost.toString()).to.eq(new BN(0).toString());
       expect(reservesLamportsPost).to.eq(0);
+    });
+  });
+
+  describe("Crank facing", () => {
+    it("it deactivates stake account", async () => {
+      const stakeAccountKeypair = Keypair.generate();
+      const votePubkey = testVoteAccount();
+      const stakeAccLamports = await stakeAccMinLamports(provider.connection);
+      const createStakeAuthTx = StakeProgram.createAccount({
+        authorized: {
+          staker: payerKeypair.publicKey,
+          withdrawer: payerKeypair.publicKey,
+        },
+        fromPubkey: payerKeypair.publicKey,
+        lamports: stakeAccLamports,
+        stakePubkey: stakeAccountKeypair.publicKey,
+      });
+      createStakeAuthTx.add(
+        StakeProgram.delegate({
+          authorizedPubkey: payerKeypair.publicKey,
+          stakePubkey: stakeAccountKeypair.publicKey,
+          votePubkey,
+        })
+      );
+      // transfer authority to poolSolReserves PDA
+      createStakeAuthTx.add(
+        StakeProgram.authorize({
+          authorizedPubkey: payerKeypair.publicKey,
+          newAuthorizedPubkey: poolSolReserves,
+          stakeAuthorizationType: { index: 0 },
+          stakePubkey: stakeAccountKeypair.publicKey,
+        })
+      );
+      createStakeAuthTx.add(
+        StakeProgram.authorize({
+          authorizedPubkey: payerKeypair.publicKey,
+          newAuthorizedPubkey: poolSolReserves,
+          stakeAuthorizationType: { index: 1 },
+          stakePubkey: stakeAccountKeypair.publicKey,
+        })
+      );
+
+      await sendAndConfirmTransaction(provider.connection, createStakeAuthTx, [
+        payerKeypair,
+        stakeAccountKeypair,
+      ]);
+
+      const stakeAccActivating = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch: activatingEpoch } =
+        await provider.connection.getEpochInfo();
+      expect(
+        stakeAccountState(stakeAccActivating, new BN(activatingEpoch))
+      ).to.eq("activating");
+
+      await waitForEpochToPass(provider.connection);
+
+      const stakeAccActive = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch: activeEpoch } = await provider.connection.getEpochInfo();
+      expect(activeEpoch).to.eq(activatingEpoch + 1);
+      expect(stakeAccountState(stakeAccActive, new BN(activeEpoch))).to.eq(
+        "active"
+      );
+
+      await program.methods
+        .deactivateStakeAccount()
+        .accounts({
+          stakeAccount: stakeAccountKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          // idk why anchor can't infer clock sysvar
+          clock: SYSVAR_CLOCK_PUBKEY,
+          // anchor can't infer stake_prog
+          stakeProgram: StakeProgram.programId,
+        })
+        .rpc({ skipPreflight: true });
+
+      const stakeAccDeactivating = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch: deactivatingEpoch } =
+        await provider.connection.getEpochInfo();
+      expect(deactivatingEpoch).to.eq(activeEpoch);
+      expect(
+        stakeAccountState(stakeAccDeactivating, new BN(deactivatingEpoch))
+      ).to.eq("deactivating");
     });
   });
 

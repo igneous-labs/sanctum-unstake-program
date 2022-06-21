@@ -17,6 +17,11 @@ local-testing = []
 
 default = []
 
-[dependencies]
-anchor-lang = "0.24.2"
-anchor-spl = "0.24.2"
+[dependencies.anchor-lang]
+git = "https://github.com/igneous-labs/anchor"
+branch = "spl/stake-prog"
+
+[dependencies.anchor-spl]
+git = "https://github.com/igneous-labs/anchor"
+branch = "spl/stake-prog"
+features = ["stake"]
