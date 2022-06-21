@@ -50,7 +50,7 @@ pub struct Unstake<'info> {
         seeds = [&pool_account.key().to_bytes(), &stake_account.key().to_bytes()],
         bump,
     )]
-    pub stake_account_record: Account<'info, StakeAccountRecord>,
+    pub stake_account_record_account: Account<'info, StakeAccountRecord>,
 
     pub clock: Sysvar<'info, Clock>,
     pub stake_program: Program<'info, Stake>,
@@ -66,7 +66,7 @@ impl<'info> Unstake<'info> {
         let pool_account = &mut ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
         let _fee_account = &ctx.accounts.fee_account;
-        let stake_account_record = &mut ctx.accounts.stake_account_record;
+        let stake_account_record_account = &mut ctx.accounts.stake_account_record_account;
         let clock = &ctx.accounts.clock;
         let stake_program = &ctx.accounts.stake_program;
         let system_program = &ctx.accounts.system_program;
@@ -132,7 +132,7 @@ impl<'info> Unstake<'info> {
         )?;
 
         // populate the stake_account_record
-        stake_account_record.lamports_at_creation = lamports;
+        stake_account_record_account.lamports_at_creation = lamports;
 
         // update pool_account
         pool_account.owned_lamports += lamports;
@@ -144,6 +144,6 @@ impl<'info> Unstake<'info> {
 // TODO: impl actual fee mechanism
 fn calc_lamports_to_transfer(lamports: u64) -> Option<u64> {
     (lamports as u128)
-        .checked_sub(1_000_000)
+        .checked_sub(1_000)
         .and_then(|v| u64::try_from(v).ok())
 }

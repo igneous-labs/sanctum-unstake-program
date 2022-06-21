@@ -14,7 +14,11 @@ import {
   getAssociatedTokenAddress,
   getMint,
 } from "@solana/spl-token";
-import { findPoolFeeAccount, findPoolSolReserves } from "../ts/src/pda";
+import {
+  findPoolFeeAccount,
+  findPoolSolReserves,
+  findStakeAccountRecordAccount,
+} from "../ts/src/pda";
 import { Unstake } from "../target/types/unstake";
 import {
   airdrop,
@@ -371,5 +375,131 @@ describe("unstake", () => {
         "The provided fee authority does not have the authority over the provided pool account"
       );
     });
+  });
+
+  it("it unstakes", async () => {
+    // prepare a new pool
+    const payerKeypair = Keypair.generate();
+    const lperKeypair = Keypair.generate();
+    const poolKeypair = Keypair.generate();
+    const lpMintKeypair = Keypair.generate();
+
+    await airdrop(provider.connection, payerKeypair.publicKey);
+    await airdrop(provider.connection, lperKeypair.publicKey);
+
+    const lperAta = await createAssociatedTokenAccount(
+      provider.connection,
+      lperKeypair,
+      lpMintKeypair.publicKey,
+      lperKeypair.publicKey
+    );
+
+    const [poolSolReserves, _poolSolReservesBump] = await findPoolSolReserves(
+      program.programId,
+      poolKeypair.publicKey
+    );
+    const [feeAccount, _feeAccountBump] = await findPoolFeeAccount(
+      program.programId,
+      poolKeypair.publicKey
+    );
+
+    await program.methods
+      .createPool({
+        fee: {
+          liquidityLinear: {
+            params: {
+              maxLiqRemaining: {
+                num: new BN(0),
+                denom: new BN(69),
+              },
+              zeroLiqRemaining: {
+                num: new BN(1),
+                denom: new BN(1000),
+              },
+            },
+          },
+        },
+      })
+      .accounts({
+        payer: payerKeypair.publicKey,
+        feeAuthority: payerKeypair.publicKey,
+        poolAccount: poolKeypair.publicKey,
+        lpMint: lpMintKeypair.publicKey,
+        poolSolReserves,
+        feeAccount,
+      })
+      .signers([payerKeypair, poolKeypair, lpMintKeypair])
+      .rpc({ skipPreflight: true });
+
+    // add some liquidity
+    const AMOUNT = new BN(0.1 * LAMPORTS_PER_SOL);
+    await program.methods
+      .addLiquidity(AMOUNT)
+      .accounts({
+        from: lperKeypair.publicKey,
+        poolAccount: poolKeypair.publicKey,
+        poolSolReserves,
+        lpMint: lpMintKeypair.publicKey,
+        mintLpTokensTo: lperAta,
+      })
+      .signers([lperKeypair])
+      .rpc({ skipPreflight: true });
+
+    // prepare stake account
+    const unstaker = Keypair.generate();
+    await airdrop(provider.connection, unstaker.publicKey);
+
+    const stakeAccountKeypair = Keypair.generate();
+    const votePubkey = testVoteAccount();
+    const stakeAccLamports = await stakeAccMinLamports(provider.connection);
+    const createStakeAuthTx = StakeProgram.createAccount({
+      authorized: {
+        staker: unstaker.publicKey,
+        withdrawer: unstaker.publicKey,
+      },
+      fromPubkey: unstaker.publicKey,
+      lamports: stakeAccLamports,
+      stakePubkey: stakeAccountKeypair.publicKey,
+    });
+    createStakeAuthTx.add(
+      StakeProgram.delegate({
+        authorizedPubkey: unstaker.publicKey,
+        stakePubkey: stakeAccountKeypair.publicKey,
+        votePubkey,
+      })
+    );
+    await sendAndConfirmTransaction(provider.connection, createStakeAuthTx, [
+      unstaker,
+      stakeAccountKeypair,
+    ]);
+
+    await waitForEpochToPass(provider.connection);
+
+    // prepare the stake account record account
+    const [stakeAccountRecordAccount, stakeAccountRecrodAccountBump] =
+      await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        stakeAccountKeypair.publicKey
+      );
+
+    // unstake the stake account
+    await program.methods
+      .unstake()
+      .accounts({
+        unstaker: unstaker.publicKey,
+        stakeAccount: stakeAccountKeypair.publicKey,
+        destination: unstaker.publicKey,
+        poolAccount: poolKeypair.publicKey,
+        poolSolReserves,
+        feeAccount,
+        stakeAccountRecordAccount,
+        clock: SYSVAR_CLOCK_PUBKEY,
+        stakeProgram: StakeProgram.programId,
+      })
+      .signers([unstaker])
+      .rpc({ skipPreflight: true });
+
+    // TODO: assertions
   });
 });
