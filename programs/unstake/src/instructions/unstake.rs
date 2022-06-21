@@ -1,8 +1,4 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{stake::state::StakeAuthorize, sysvar::SysvarId},
-    system_program,
-};
+use anchor_lang::{prelude::*, solana_program::stake::state::StakeAuthorize, system_program};
 use anchor_spl::stake::{self, Authorize, Stake, StakeAccount};
 use std::collections::HashSet;
 
@@ -49,12 +45,7 @@ pub struct Unstake<'info> {
     )]
     pub stake_account_record: Account<'info, StakeAccountRecord>,
 
-    #[account(
-        // TODO: Do we need a check here? A new Error?
-        constraint = Clock::check_id(clock.key),
-    )]
-    /// CHECK: need to check this
-    pub clock: UncheckedAccount<'info>,
+    pub clock: Sysvar<'info, Clock>,
     pub stake_program: Program<'info, Stake>,
     pub system_program: Program<'info, System>,
 }
