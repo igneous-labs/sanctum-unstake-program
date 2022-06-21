@@ -42,6 +42,8 @@ pub struct Unstake<'info> {
         init,
         payer = unstaker,
         space = StakeAccountRecord::LEN,
+        seeds = [&pool_account.key().to_bytes(), &stake_account.key().to_bytes()],
+        bump,
     )]
     pub stake_account_record: Account<'info, StakeAccountRecord>,
 
@@ -100,11 +102,8 @@ impl<'info> Unstake<'info> {
         )?;
 
         // populate the stake_account_record
-        // TODO: confirm if this value need to exclude rent exampt reserve
-        //let meta = stake_account.meta();
-        //meta.rent_exampt_reserve;
-        let amount = stake_account.to_account_info().lamports();
-        stake_account_record.lamports_at_creation = amount;
+        let lamports = stake_account.to_account_info().lamports();
+        stake_account_record.lamports_at_creation = lamports;
 
         // pay out from the pool reserves
         // TODO: fee collection
@@ -115,7 +114,7 @@ impl<'info> Unstake<'info> {
         };
         system_program::transfer(
             CpiContext::new(system_program.to_account_info(), transfer_cpi_accs),
-            amount,
+            lamports,
         )?;
 
         // TODO: update pool_account
