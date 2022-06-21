@@ -25,12 +25,7 @@ pub struct DeactivateStakeAccount<'info> {
     )]
     pub pool_sol_reserves: SystemAccount<'info>,
 
-    #[account(
-        // TODO: Do we need a check here? A new Error?
-        constraint = Clock::check_id(clock.key),
-    )]
-    /// CHECK: need to check this
-    pub clock: UncheckedAccount<'info>,
+    pub clock: Sysvar<'info, Clock>,
     pub stake_program: Program<'info, Stake>,
 }
 
