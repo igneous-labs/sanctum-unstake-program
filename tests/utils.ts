@@ -1,6 +1,12 @@
-import { Program, Provider } from "@project-serum/anchor";
+import { Program } from "@project-serum/anchor";
 import { getAccount } from "@solana/spl-token";
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
+import { readFileSync } from "fs";
 import BN from "bn.js";
 import { Unstake } from "../target/types/unstake";
 
@@ -52,4 +58,44 @@ export async function fetchLpFacingTestParams({
     lperLamports,
     reserveLamports,
   };
+}
+
+export function keypairFromFile(path: string): Keypair {
+  return Keypair.fromSecretKey(
+    Buffer.from(JSON.parse(readFileSync(path, { encoding: "utf-8" })))
+  );
+}
+
+export function testValidator(): PublicKey {
+  return keypairFromFile(".anchor/test-ledger/validator-keypair.json")
+    .publicKey;
+}
+
+export function testVoteAccount(): PublicKey {
+  return keypairFromFile(".anchor/test-ledger/vote-account-keypair.json")
+    .publicKey;
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function waitForEpochToPass(
+  connection: Connection
+): Promise<void> {
+  const SLOT_DURATION_MS = 400;
+  // console.log("waiting for epoch to pass...");
+  const { epoch: startingEpoch } = await connection.getEpochInfo();
+  let currentEpoch = startingEpoch;
+  while (currentEpoch === startingEpoch) {
+    await sleep(SLOT_DURATION_MS);
+    const { epoch } = await connection.getEpochInfo();
+    currentEpoch = epoch;
+  }
+}
+
+export async function stakeAccMinLamports(
+  connection: Connection
+): Promise<number> {
+  return (await connection.getMinimumBalanceForRentExemption(200)) + 1;
 }
