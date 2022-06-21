@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::stake::{self, DeactivateStake, Stake, StakeAccount};
 
-//use crate::errors::UnstakeError;
 use crate::{errors::UnstakeError, state::Pool};
 
 #[derive(Accounts)]
