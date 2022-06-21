@@ -6,12 +6,12 @@ use crate::{errors::UnstakeError, state::Pool};
 
 #[derive(Accounts)]
 pub struct DeactivateStakeAccount<'info> {
-    /// The stake account to be deactivated
-    // Rely on stake program CPI call to verify
+    /// The stake account to be deactivated. Should have authority
+    /// set to pool_sol_reserves, rely on stake program CPI call's check to verify
     #[account(mut)]
     pub stake_account: Account<'info, StakeAccount>,
 
-    /// pool that SOL liquidity is being added to
+    /// pool that owns stake_account
     pub pool_account: Account<'info, Pool>,
 
     /// pool's SOL reserves
