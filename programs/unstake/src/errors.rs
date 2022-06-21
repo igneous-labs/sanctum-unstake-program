@@ -28,4 +28,7 @@ pub enum UnstakeError {
 
     #[msg("The provided statke account is not owned by the unstaker")]
     StakeAccountNotOwned, // 0x1778
+
+    #[msg("The pool does not have enough liquidity to service the unstaking")]
+    NotEnoughLiquidity, // 0x1779
 }

@@ -58,7 +58,7 @@ impl<'info> Unstake<'info> {
         let unstaker = &ctx.accounts.unstaker;
         let stake_account = &mut ctx.accounts.stake_account;
         let destination = &ctx.accounts.destination;
-        let _pool_account = &ctx.accounts.pool_account;
+        let pool_account = &ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
         let stake_account_record = &mut ctx.accounts.stake_account_record;
         let clock = &ctx.accounts.clock;
@@ -112,10 +112,22 @@ impl<'info> Unstake<'info> {
             from: pool_sol_reserves.to_account_info(),
             to: destination.to_account_info(),
         };
+        let seeds: &[&[u8]] = &[
+            &pool_account.key().to_bytes(),
+            &[*ctx
+                .bumps
+                .get("pool_sol_reserves")
+                .ok_or(UnstakeError::PdaBumpNotCached)?],
+        ];
         system_program::transfer(
-            CpiContext::new(system_program.to_account_info(), transfer_cpi_accs),
+            CpiContext::new_with_signer(
+                system_program.to_account_info(),
+                transfer_cpi_accs,
+                &[seeds],
+            ),
             lamports,
-        )?;
+        )
+        .map_err(|_| UnstakeError::NotEnoughLiquidity)?;
 
         // TODO: update pool_account
 
