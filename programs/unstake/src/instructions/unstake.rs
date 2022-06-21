@@ -15,11 +15,8 @@ pub struct Unstake<'info> {
     pub unstaker: Signer<'info>,
 
     /// stake account to be unstaked
-    #[account(
-        mut,
-        // TODO: constraint -> must be owned by the unstaker
-        // TODO: constraint -> must not be locked (Deligated or Initialized)
-    )]
+    // Rely on stake program CPI call to verify
+    #[account(mut)]
     pub stake_account: Account<'info, StakeAccount>,
 
     /// Solana native wallet pubkey to receive the unstaked amount
@@ -113,7 +110,6 @@ impl<'info> Unstake<'info> {
         let lamports = stake_account.to_account_info().lamports();
 
         // pay out from the pool reserves
-        // TODO: fee collection
         let transfer_cpi_accs = system_program::Transfer {
             from: pool_sol_reserves.to_account_info(),
             to: destination.to_account_info(),
