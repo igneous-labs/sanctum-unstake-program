@@ -1,16 +1,28 @@
 import BN from "bn.js";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { Keypair, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  sendAndConfirmTransaction,
+  Keypair,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+  StakeProgram,
+  SYSVAR_CLOCK_PUBKEY,
+} from "@solana/web3.js";
 import {
   createAssociatedTokenAccount,
-  getAccount,
   getAssociatedTokenAddress,
   getMint,
 } from "@solana/spl-token";
 import { findPoolFeeAccount, findPoolSolReserves } from "../ts/src/pda";
 import { Unstake } from "../target/types/unstake";
-import { airdrop, fetchLpFacingTestParams } from "./utils";
+import {
+  airdrop,
+  fetchLpFacingTestParams,
+  stakeAccMinLamports,
+  testVoteAccount,
+  waitForEpochToPass,
+} from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
 
@@ -205,15 +217,62 @@ describe("unstake", () => {
 
   describe("Crank facing", () => {
     it("it deactivates stake account", async () => {
-      // TODO: create a stake account
-      // TODO: wait for the stake account to be activated by waiting one epoch (set to 32 seconds)
-      // TODO: deactivate the stake account
-      // TODO: wait and check if it gets deactivated
+      // TODO: wait and check if stake acc gets deactivated
+      const stakeAccountKeypair = Keypair.generate();
+      const votePubkey = testVoteAccount();
+      const stakeAccLamports = await stakeAccMinLamports(provider.connection);
+      const createStakeAuthTx = StakeProgram.createAccount({
+        authorized: {
+          staker: payerKeypair.publicKey,
+          withdrawer: payerKeypair.publicKey,
+        },
+        fromPubkey: payerKeypair.publicKey,
+        lamports: stakeAccLamports,
+        stakePubkey: stakeAccountKeypair.publicKey,
+      });
+      createStakeAuthTx.add(
+        StakeProgram.delegate({
+          authorizedPubkey: payerKeypair.publicKey,
+          stakePubkey: stakeAccountKeypair.publicKey,
+          votePubkey,
+        })
+      );
+      // transfer authority to poolSolReserves PDA
+      createStakeAuthTx.add(
+        StakeProgram.authorize({
+          authorizedPubkey: payerKeypair.publicKey,
+          newAuthorizedPubkey: poolSolReserves,
+          stakeAuthorizationType: { index: 0 },
+          stakePubkey: stakeAccountKeypair.publicKey,
+        })
+      );
+      createStakeAuthTx.add(
+        StakeProgram.authorize({
+          authorizedPubkey: payerKeypair.publicKey,
+          newAuthorizedPubkey: poolSolReserves,
+          stakeAuthorizationType: { index: 1 },
+          stakePubkey: stakeAccountKeypair.publicKey,
+        })
+      );
+
+      await sendAndConfirmTransaction(provider.connection, createStakeAuthTx, [
+        payerKeypair,
+        stakeAccountKeypair,
+      ]);
+
+      await waitForEpochToPass();
 
       await program.methods
         .deactivateStakeAccount()
-        .accounts({})
-        .signers([])
+        .accounts({
+          stakeAccount: stakeAccountKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          // idk why anchor can't infer clock sysvar
+          clock: SYSVAR_CLOCK_PUBKEY,
+          // anchor can't infer stake_prog
+          stakeProgram: StakeProgram.programId,
+        })
         .rpc({ skipPreflight: true });
     });
   });
