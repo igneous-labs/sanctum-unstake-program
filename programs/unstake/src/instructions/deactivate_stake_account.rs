@@ -1,17 +1,14 @@
-use anchor_lang::{prelude::*, solana_program::sysvar::SysvarId};
+use anchor_lang::prelude::*;
 use anchor_spl::stake::{self, DeactivateStake, Stake, StakeAccount};
 
 //use crate::errors::UnstakeError;
-use crate::state::Pool;
+use crate::{errors::UnstakeError, state::Pool};
 
 #[derive(Accounts)]
 pub struct DeactivateStakeAccount<'info> {
     /// The stake account to be deactivated
-    #[account(
-        mut,
-        // TODO: check stake state and authority @ { WrongState, Unauthorized }
-        // TODO: should we add utility function to anchor-spl::stake?
-    )]
+    // Rely on stake program CPI call to verify
+    #[account(mut)]
     pub stake_account: Account<'info, StakeAccount>,
 
     /// pool that SOL liquidity is being added to
@@ -19,7 +16,6 @@ pub struct DeactivateStakeAccount<'info> {
 
     /// pool's SOL reserves
     #[account(
-        mut,
         seeds = [&pool_account.key().to_bytes()],
         bump,
     )]
@@ -35,8 +31,8 @@ impl<'info> DeactivateStakeAccount<'info> {
         let stake_account = &mut ctx.accounts.stake_account;
         let pool_account = &ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
-        let stake_program = &ctx.accounts.stake_program;
         let clock = &ctx.accounts.clock;
+        let stake_program = &ctx.accounts.stake_program;
 
         // cpi to deactivate stake
         let deactivate_cpi_accs = DeactivateStake {
