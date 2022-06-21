@@ -218,7 +218,6 @@ describe("unstake", () => {
 
   describe("Crank facing", () => {
     it("it deactivates stake account", async () => {
-      // TODO: wait and check if stake acc gets deactivated
       const stakeAccountKeypair = Keypair.generate();
       const votePubkey = testVoteAccount();
       const stakeAccLamports = await stakeAccMinLamports(provider.connection);
