@@ -110,6 +110,7 @@ impl<'info> Unstake<'info> {
         let lamports = stake_account.to_account_info().lamports();
 
         // pay out from the pool reserves
+        // NOTE: rely on CPI call as the contraint
         let transfer_cpi_accs = system_program::Transfer {
             from: pool_sol_reserves.to_account_info(),
             to: destination.to_account_info(),
@@ -128,8 +129,7 @@ impl<'info> Unstake<'info> {
                 &[seeds],
             ),
             calc_lamports_to_transfer(lamports).ok_or(UnstakeError::InternalError)?,
-        )
-        .map_err(|_| UnstakeError::NotEnoughLiquidity)?;
+        )?;
 
         // populate the stake_account_record
         stake_account_record.lamports_at_creation = lamports;
