@@ -25,6 +25,7 @@ import {
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { getStakeAccount, stakeAccountState } from "./stake";
 
 chaiUse(chaiAsPromised);
 
@@ -260,7 +261,27 @@ describe("unstake", () => {
         stakeAccountKeypair,
       ]);
 
-      await waitForEpochToPass();
+      const stakeAccActivating = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch: activatingEpoch } =
+        await provider.connection.getEpochInfo();
+      expect(
+        stakeAccountState(stakeAccActivating, new BN(activatingEpoch))
+      ).to.eq("activating");
+
+      await waitForEpochToPass(provider.connection);
+
+      const stakeAccActive = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch: activeEpoch } = await provider.connection.getEpochInfo();
+      expect(activeEpoch).to.eq(activatingEpoch + 1);
+      expect(stakeAccountState(stakeAccActive, new BN(activeEpoch))).to.eq(
+        "active"
+      );
 
       await program.methods
         .deactivateStakeAccount()
@@ -274,6 +295,17 @@ describe("unstake", () => {
           stakeProgram: StakeProgram.programId,
         })
         .rpc({ skipPreflight: true });
+
+      const stakeAccDeactivating = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch: deactivatingEpoch } =
+        await provider.connection.getEpochInfo();
+      expect(deactivatingEpoch).to.eq(activeEpoch);
+      expect(
+        stakeAccountState(stakeAccDeactivating, new BN(deactivatingEpoch))
+      ).to.eq("deactivating");
     });
   });
 

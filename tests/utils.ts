@@ -80,11 +80,18 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function waitForEpochToPass(): Promise<void> {
-  const SLOTS_PER_EPOCH = 32;
+export async function waitForEpochToPass(
+  connection: Connection
+): Promise<void> {
   const SLOT_DURATION_MS = 400;
-  console.log("waiting for epoch to pass...");
-  return sleep(SLOTS_PER_EPOCH * SLOT_DURATION_MS);
+  // console.log("waiting for epoch to pass...");
+  const { epoch: startingEpoch } = await connection.getEpochInfo();
+  let currentEpoch = startingEpoch;
+  while (currentEpoch === startingEpoch) {
+    await sleep(SLOT_DURATION_MS);
+    const { epoch } = await connection.getEpochInfo();
+    currentEpoch = epoch;
+  }
 }
 
 export async function stakeAccMinLamports(
