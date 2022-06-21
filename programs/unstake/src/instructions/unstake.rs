@@ -1,5 +1,8 @@
-use anchor_lang::{prelude::*, solana_program::sysvar::SysvarId};
-use anchor_spl::stake::{self, Authorize, Stake, StakeAccount, StakeAuthorize};
+use anchor_lang::{
+    prelude::*,
+    solana_program::{stake::state::StakeAuthorize, sysvar::SysvarId},
+};
+use anchor_spl::stake::{self, Authorize, Stake, StakeAccount};
 use std::collections::HashSet;
 
 use crate::{
