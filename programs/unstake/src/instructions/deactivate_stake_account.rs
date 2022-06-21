@@ -1,8 +1,8 @@
 use anchor_lang::{prelude::*, solana_program::sysvar::SysvarId};
 use anchor_spl::stake::{self, DeactivateStake, Stake, StakeAccount};
 
-use crate::consts::STAKE_AUTHORITY_SEED;
 //use crate::errors::UnstakeError;
+use crate::state::Pool;
 
 #[derive(Accounts)]
 pub struct DeactivateStakeAccount<'info> {
@@ -14,16 +14,16 @@ pub struct DeactivateStakeAccount<'info> {
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
-    // TODO
-    // - unstake ix sets it
-    // - TBD how many authorities do we need? Just single one for every stake account? Per pool (then we need to accept pool acc)?
-    ///
-    /// CHECK: this will be retyped
+    /// pool that SOL liquidity is being added to
+    pub pool_account: Account<'info, Pool>,
+
+    /// pool's SOL reserves
     #[account(
-        seeds = [STAKE_AUTHORITY_SEED],
+        mut,
+        seeds = [&pool_account.key().to_bytes()],
         bump,
     )]
-    pub stake_authority: UncheckedAccount<'info>,
+    pub pool_sol_reserves: SystemAccount<'info>,
 
     #[account(
         // TODO: Do we need a check here? A new Error?
@@ -38,19 +38,20 @@ impl<'info> DeactivateStakeAccount<'info> {
     #[inline(always)]
     pub fn run(ctx: Context<Self>) -> Result<()> {
         let stake_account = &mut ctx.accounts.stake_account;
-        let stake_authority = &ctx.accounts.stake_authority;
+        let pool_account = &ctx.accounts.pool_account;
+        let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
         let stake_program = &ctx.accounts.stake_program;
         let clock = &ctx.accounts.clock;
 
         // cpi to deactivate stake
         let deactivate_cpi_accs = DeactivateStake {
             stake: stake_account.to_account_info(),
-            staker: stake_authority.to_account_info(),
+            staker: pool_sol_reserves.to_account_info(),
             clock: clock.to_account_info(),
         };
 
         // TODO: the actual seeds TBD
-        let seeds: &[&[u8]] = &[STAKE_AUTHORITY_SEED];
+        let seeds: &[&[u8]] = &[&pool_account.key().to_bytes()];
 
         stake::deactivate_stake(CpiContext::new_with_signer(
             stake_program.to_account_info(),
