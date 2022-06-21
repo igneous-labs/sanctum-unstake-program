@@ -50,8 +50,13 @@ impl<'info> DeactivateStakeAccount<'info> {
             clock: clock.to_account_info(),
         };
 
-        // TODO: the actual seeds TBD
-        let seeds: &[&[u8]] = &[&pool_account.key().to_bytes()];
+        let seeds: &[&[u8]] = &[
+            &pool_account.key().to_bytes(),
+            &[*ctx
+                .bumps
+                .get("pool_sol_reserves")
+                .ok_or(UnstakeError::PdaBumpNotCached)?],
+        ];
 
         stake::deactivate_stake(CpiContext::new_with_signer(
             stake_program.to_account_info(),
