@@ -23,10 +23,11 @@ pub struct Unstake<'info> {
     pub stake_account: Account<'info, StakeAccount>,
 
     /// Solana native wallet pubkey to receive the unstaked amount
-    /// CHECK: payment destination that can accept sol transfer
+    #[account(mut)]
     pub destination: SystemAccount<'info>,
 
     /// pool account that SOL reserves belong to
+    #[account(mut)]
     pub pool_account: Account<'info, Pool>,
 
     /// pool's SOL reserves
@@ -58,7 +59,7 @@ impl<'info> Unstake<'info> {
         let unstaker = &ctx.accounts.unstaker;
         let stake_account = &mut ctx.accounts.stake_account;
         let destination = &ctx.accounts.destination;
-        let pool_account = &ctx.accounts.pool_account;
+        let pool_account = &mut ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
         let stake_account_record = &mut ctx.accounts.stake_account_record;
         let clock = &ctx.accounts.clock;
@@ -101,13 +102,10 @@ impl<'info> Unstake<'info> {
             None, // custodian
         )?;
 
-        // populate the stake_account_record
         let lamports = stake_account.to_account_info().lamports();
-        stake_account_record.lamports_at_creation = lamports;
 
         // pay out from the pool reserves
         // TODO: fee collection
-        // TODO: what should happen if the balance is not enough to serve the transaction?
         let transfer_cpi_accs = system_program::Transfer {
             from: pool_sol_reserves.to_account_info(),
             to: destination.to_account_info(),
@@ -129,7 +127,11 @@ impl<'info> Unstake<'info> {
         )
         .map_err(|_| UnstakeError::NotEnoughLiquidity)?;
 
-        // TODO: update pool_account
+        // populate the stake_account_record
+        stake_account_record.lamports_at_creation = lamports;
+
+        // update pool_account
+        pool_account.owned_lamports += lamports;
 
         Ok(())
     }
