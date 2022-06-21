@@ -31,4 +31,7 @@ pub enum UnstakeError {
 
     #[msg("The pool does not have enough liquidity to service the unstaking")]
     NotEnoughLiquidity, // 0x1779
+
+    #[msg("Internal Error")]
+    InternalError, // 0x1780
 }

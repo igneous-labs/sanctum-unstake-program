@@ -1,11 +1,11 @@
 use anchor_lang::{prelude::*, solana_program::stake::state::StakeAuthorize, system_program};
 use anchor_spl::stake::{self, Authorize, Stake, StakeAccount};
-use std::collections::HashSet;
+use std::{collections::HashSet, convert::TryFrom};
 
 use crate::{
     anchor_len::AnchorLen,
     errors::UnstakeError,
-    state::{Pool, StakeAccountRecord},
+    state::{Fee, Pool, StakeAccountRecord, FEE_SEED_SUFFIX},
 };
 
 #[derive(Accounts)]
@@ -38,6 +38,13 @@ pub struct Unstake<'info> {
     )]
     pub pool_sol_reserves: SystemAccount<'info>,
 
+    /// pool's fee account
+    #[account(
+        seeds = [&pool_account.key().to_bytes(), FEE_SEED_SUFFIX],
+        bump,
+    )]
+    pub fee_account: Account<'info, Fee>,
+
     /// stake account record to be created
     #[account(
         init,
@@ -61,6 +68,7 @@ impl<'info> Unstake<'info> {
         let destination = &ctx.accounts.destination;
         let pool_account = &mut ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
+        let _fee_account = &ctx.accounts.fee_account;
         let stake_account_record = &mut ctx.accounts.stake_account_record;
         let clock = &ctx.accounts.clock;
         let stake_program = &ctx.accounts.stake_program;
@@ -123,7 +131,7 @@ impl<'info> Unstake<'info> {
                 transfer_cpi_accs,
                 &[seeds],
             ),
-            lamports,
+            calc_lamports_to_transfer(lamports).ok_or(UnstakeError::InternalError)?,
         )
         .map_err(|_| UnstakeError::NotEnoughLiquidity)?;
 
@@ -135,4 +143,11 @@ impl<'info> Unstake<'info> {
 
         Ok(())
     }
+}
+
+// TODO: impl actual fee mechanism
+fn calc_lamports_to_transfer(lamports: u64) -> Option<u64> {
+    (lamports as u128)
+        .checked_sub(1_000_000)
+        .and_then(|v| u64::try_from(v).ok())
 }
