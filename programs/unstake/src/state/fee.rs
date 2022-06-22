@@ -24,9 +24,9 @@ pub enum FeeEnum {
 pub struct LiquidityLinearParams {
     /// The fee applied to a swap that leaves
     /// 100% of all liquidity in the SOL reserves account
-    max_liq_remaining: Rational,
+    pub max_liq_remaining: Rational,
 
     /// The fee applied to a swap that leaves
     /// no liquidity remaining in the SOL reserves account
-    zero_liq_remaining: Rational,
+    pub zero_liq_remaining: Rational,
 }

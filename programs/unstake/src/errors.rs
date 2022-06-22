@@ -26,9 +26,15 @@ pub enum UnstakeError {
     #[msg("The Authorized of the given stake account is None (possibly an uninitialized stake account was given)")]
     StakeAccountAuthorizedNotRetrievable, // 0x1777
 
+    #[msg("The Lockup of the given stake account is None (possibly an uninitialized stake account was given)")]
+    StakeAccountLockupNotRetrievable, // 0x1778
+
     #[msg("The provided statke account is not owned by the unstaker")]
-    StakeAccountNotOwned, // 0x1778
+    StakeAccountNotOwned, // 0x1779
+
+    #[msg("The provided statke account is locked up")]
+    StakeAccountLockupInForce, // 0x1780
 
     #[msg("Internal Error")]
-    InternalError, // 0x1779
+    InternalError, // 0x1781
 }

@@ -16,3 +16,14 @@ export function findPoolFeeAccount(
     unstakeProg
   );
 }
+
+export function findStakeAccountRecordAccount(
+  unstakeProg: PublicKey,
+  pool: PublicKey,
+  stakeAccount: PublicKey
+): Promise<[PublicKey, number]> {
+  return PublicKey.findProgramAddress(
+    [pool.toBuffer(), stakeAccount.toBuffer()],
+    unstakeProg
+  );
+}
