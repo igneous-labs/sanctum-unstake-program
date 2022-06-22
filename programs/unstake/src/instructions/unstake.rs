@@ -127,7 +127,7 @@ impl<'info> Unstake<'info> {
             .ok_or(UnstakeError::InternalError)?;
 
         // pay out from the pool reserves
-        // NOTE: rely on CPI call as the contraint
+        // NOTE: rely on CPI call as the constraint
         let transfer_cpi_accs = system_program::Transfer {
             from: pool_sol_reserves.to_account_info(),
             to: destination.to_account_info(),
