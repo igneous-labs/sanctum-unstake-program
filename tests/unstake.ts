@@ -18,9 +18,11 @@ import { findPoolFeeAccount, findPoolSolReserves } from "../ts/src/pda";
 import { Unstake } from "../target/types/unstake";
 import {
   airdrop,
+  createDelegateStakeTx,
   fetchLpFacingTestParams,
   stakeAccMinLamports,
   testVoteAccount,
+  transferStakeAuthTx,
   waitForEpochToPass,
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
@@ -219,38 +221,16 @@ describe("unstake", () => {
   describe("Crank facing", () => {
     it("it deactivates stake account", async () => {
       const stakeAccountKeypair = Keypair.generate();
-      const votePubkey = testVoteAccount();
-      const stakeAccLamports = await stakeAccMinLamports(provider.connection);
-      const createStakeAuthTx = StakeProgram.createAccount({
-        authorized: {
-          staker: payerKeypair.publicKey,
-          withdrawer: payerKeypair.publicKey,
-        },
-        fromPubkey: payerKeypair.publicKey,
-        lamports: stakeAccLamports,
-        stakePubkey: stakeAccountKeypair.publicKey,
+
+      const createStakeAuthTx = await createDelegateStakeTx({
+        connection: provider.connection,
+        stakeAccount: stakeAccountKeypair.publicKey,
+        payer: payerKeypair.publicKey,
       });
       createStakeAuthTx.add(
-        StakeProgram.delegate({
-          authorizedPubkey: payerKeypair.publicKey,
-          stakePubkey: stakeAccountKeypair.publicKey,
-          votePubkey,
-        })
-      );
-      // transfer authority to poolSolReserves PDA
-      createStakeAuthTx.add(
-        StakeProgram.authorize({
+        transferStakeAuthTx({
           authorizedPubkey: payerKeypair.publicKey,
           newAuthorizedPubkey: poolSolReserves,
-          stakeAuthorizationType: { index: 0 },
-          stakePubkey: stakeAccountKeypair.publicKey,
-        })
-      );
-      createStakeAuthTx.add(
-        StakeProgram.authorize({
-          authorizedPubkey: payerKeypair.publicKey,
-          newAuthorizedPubkey: poolSolReserves,
-          stakeAuthorizationType: { index: 1 },
           stakePubkey: stakeAccountKeypair.publicKey,
         })
       );
@@ -305,6 +285,10 @@ describe("unstake", () => {
       expect(
         stakeAccountState(stakeAccDeactivating, new BN(deactivatingEpoch))
       ).to.eq("deactivating");
+    });
+
+    it("it reclaims stake account", async () => {
+      // TODO: call unstake() here to create the stake account record
     });
   });
 

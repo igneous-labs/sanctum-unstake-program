@@ -44,13 +44,14 @@ impl<'info> ReclaimStakeAccount<'info> {
     #[inline(always)]
     pub fn run(ctx: Context<Self>) -> Result<()> {
         let stake_account = &mut ctx.accounts.stake_account;
-        let pool_account = &ctx.accounts.pool_account;
+        let pool_account = &mut ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
+        let stake_account_record = &ctx.accounts.stake_account_record;
         let clock = &ctx.accounts.clock;
         let stake_history = &ctx.accounts.stake_history;
         let stake_program = &ctx.accounts.stake_program;
 
-        //let lamports_before_withdraw = pool_sol_reserves.lamports();
+        let lamports_before_withdraw = pool_sol_reserves.lamports();
 
         // CPI withdraw
         let stake_account_info = stake_account.to_account_info();
@@ -79,7 +80,21 @@ impl<'info> ReclaimStakeAccount<'info> {
             None,
         )?;
 
-        // let lamports_gained = pool_sol_reserves.lamports().checked_sub(lamports_before_withdraw);
+        // Update owned_lamports
+        let lamports_withdrawn = pool_sol_reserves
+            .lamports()
+            .checked_sub(lamports_before_withdraw)
+            .ok_or(UnstakeError::InternalError)?;
+        // assumption: lamports_at_creation <= stake_account.lamports due to staking rewards,
+        // so subtract shouldn't overflow here.
+        // This will change with slashing
+        let new_owned_lamports = pool_account
+            .owned_lamports
+            .checked_add(lamports_withdrawn)
+            .and_then(|v| v.checked_add(stake_account_record.to_account_info().lamports())) // add rent reclaimed from closing stake_account_record
+            .and_then(|v| v.checked_sub(stake_account_record.lamports_at_creation))
+            .ok_or(UnstakeError::InternalError)?;
+        pool_account.owned_lamports = new_owned_lamports;
 
         Ok(())
     }

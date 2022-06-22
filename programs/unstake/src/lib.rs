@@ -41,6 +41,10 @@ pub mod unstake {
         DeactivateStakeAccount::run(ctx)
     }
 
+    pub fn reclaim_stake_account(ctx: Context<ReclaimStakeAccount>) -> Result<()> {
+        ReclaimStakeAccount::run(ctx)
+    }
+
     pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
         Unstake::run(ctx)
     }

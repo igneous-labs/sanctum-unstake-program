@@ -4,6 +4,8 @@ import {
   Connection,
   Keypair,
   PublicKey,
+  StakeProgram,
+  Transaction,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { readFileSync } from "fs";
@@ -98,4 +100,64 @@ export async function stakeAccMinLamports(
   connection: Connection
 ): Promise<number> {
   return (await connection.getMinimumBalanceForRentExemption(200)) + 1;
+}
+
+type CreateDelegateStakeTxArgs = {
+  connection: Connection;
+  stakeAccount: PublicKey;
+  payer: PublicKey;
+};
+
+export async function createDelegateStakeTx({
+  connection,
+  stakeAccount,
+  payer,
+}: CreateDelegateStakeTxArgs): Promise<Transaction> {
+  const votePubkey = testVoteAccount();
+  const stakeAccLamports = await stakeAccMinLamports(connection);
+  const createStakeAuthTx = StakeProgram.createAccount({
+    authorized: {
+      staker: payer,
+      withdrawer: payer,
+    },
+    fromPubkey: payer,
+    lamports: stakeAccLamports,
+    stakePubkey: stakeAccount,
+  });
+  createStakeAuthTx.add(
+    StakeProgram.delegate({
+      authorizedPubkey: payer,
+      stakePubkey: stakeAccount,
+      votePubkey,
+    })
+  );
+  return createStakeAuthTx;
+}
+
+type TransferStakeAuthTxArgs = {
+  authorizedPubkey: PublicKey;
+  newAuthorizedPubkey: PublicKey;
+  stakePubkey: PublicKey;
+};
+
+export function transferStakeAuthTx({
+  authorizedPubkey,
+  newAuthorizedPubkey,
+  stakePubkey,
+}: TransferStakeAuthTxArgs): Transaction {
+  const tx = StakeProgram.authorize({
+    authorizedPubkey,
+    newAuthorizedPubkey,
+    stakeAuthorizationType: { index: 0 },
+    stakePubkey,
+  });
+  tx.add(
+    StakeProgram.authorize({
+      authorizedPubkey,
+      newAuthorizedPubkey,
+      stakeAuthorizationType: { index: 1 },
+      stakePubkey,
+    })
+  );
+  return tx;
 }
