@@ -227,42 +227,18 @@ describe("unstake", () => {
     describe("Crank facing", () => {
       it("it deactivates stake account", async () => {
         const stakeAccountKeypair = Keypair.generate();
-        const votePubkey = testVoteAccount();
-        const stakeAccLamports = await stakeAccMinLamports(provider.connection);
-        const createStakeAuthTx = StakeProgram.createAccount({
-          authorized: {
-            staker: payerKeypair.publicKey,
-            withdrawer: payerKeypair.publicKey,
-          },
-          fromPubkey: payerKeypair.publicKey,
-          lamports: stakeAccLamports,
-          stakePubkey: stakeAccountKeypair.publicKey,
+        const createStakeAuthTx = await createDelegateStakeTx({
+          connection: provider.connection,
+          stakeAccount: stakeAccountKeypair.publicKey,
+          payer: payerKeypair.publicKey,
         });
         createStakeAuthTx.add(
-          StakeProgram.delegate({
+          transferStakeAuthTx({
             authorizedPubkey: payerKeypair.publicKey,
             stakePubkey: stakeAccountKeypair.publicKey,
-            votePubkey,
-          })
-        );
-        // transfer authority to poolSolReserves PDA
-        createStakeAuthTx.add(
-          StakeProgram.authorize({
-            authorizedPubkey: payerKeypair.publicKey,
             newAuthorizedPubkey: poolSolReserves,
-            stakeAuthorizationType: { index: 0 },
-            stakePubkey: stakeAccountKeypair.publicKey,
           })
         );
-        createStakeAuthTx.add(
-          StakeProgram.authorize({
-            authorizedPubkey: payerKeypair.publicKey,
-            newAuthorizedPubkey: poolSolReserves,
-            stakeAuthorizationType: { index: 1 },
-            stakePubkey: stakeAccountKeypair.publicKey,
-          })
-        );
-
         await sendAndConfirmTransaction(
           provider.connection,
           createStakeAuthTx,
@@ -467,25 +443,11 @@ describe("unstake", () => {
         .rpc({ skipPreflight: true });
 
       console.log("preparing a stake account");
-      const votePubkey = testVoteAccount();
-      const stakeAccLamports = await stakeAccMinLamports(provider.connection);
-      const createStakeAuthTx = StakeProgram.createAccount({
-        authorized: {
-          staker: unstaker.publicKey,
-          withdrawer: unstaker.publicKey,
-        },
-        fromPubkey: unstaker.publicKey,
-        lamports: stakeAccLamports,
-        stakePubkey: stakeAccountKeypair.publicKey,
+      const createStakeAuthTx = await createDelegateStakeTx({
+        connection: provider.connection,
+        stakeAccount: stakeAccountKeypair.publicKey,
+        payer: unstaker.publicKey,
       });
-      createStakeAuthTx.add(
-        StakeProgram.delegate({
-          authorizedPubkey: unstaker.publicKey,
-          stakePubkey: stakeAccountKeypair.publicKey,
-          votePubkey,
-        })
-      );
-
       await sendAndConfirmTransaction(provider.connection, createStakeAuthTx, [
         unstaker,
         stakeAccountKeypair,
