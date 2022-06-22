@@ -77,15 +77,15 @@ impl<'info> Unstake<'info> {
         let stake_program = &ctx.accounts.stake_program;
         let system_program = &ctx.accounts.system_program;
 
+        // NOTE: check for withdrawer authority only since withdrawer can change both
         let authorized = stake_account
             .authorized()
             .ok_or(UnstakeError::StakeAccountAuthorizedNotRetrievable)?;
-        // NOTE: check for withdrawer authority only since withdrawer can change both
         authorized
             .check(&HashSet::from([unstaker.key()]), StakeAuthorize::Withdrawer)
             .map_err(|_| UnstakeError::StakeAccountNotOwned)?;
 
-        // cpi to stake::Authorize
+        // authorize pool_sol_reserves as staker and withdrawer of the stake_account
         stake::authorize(
             CpiContext::new(
                 stake_program.to_account_info(),
@@ -126,7 +126,7 @@ impl<'info> Unstake<'info> {
             .checked_sub(fee_lamports)
             .ok_or(UnstakeError::InternalError)?;
 
-        // pay out from the pool reserves
+        // pay the unstaker from the pool reserves
         // NOTE: rely on CPI call as the constraint
         let transfer_cpi_accs = system_program::Transfer {
             from: pool_sol_reserves.to_account_info(),
