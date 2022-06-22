@@ -345,7 +345,7 @@ describe("unstake", () => {
         // TODO: assertions
       });
 
-      it("it reject to set fee when the authority does not match", async () => {
+      it("it rejects to set fee when the authority does not match", async () => {
         const rando = Keypair.generate();
         return expect(
           program.methods
@@ -379,6 +379,11 @@ describe("unstake", () => {
             "The provided fee authority does not have the authority over the provided pool account"
           );
         });
+      });
+    });
+    describe("User facing", () => {
+      it("it rejects to unstake a locked up stake account", async () => {
+        throw new Error("Not yet implemented");
       });
     });
   });

@@ -17,7 +17,13 @@ pub struct Unstake<'info> {
 
     /// stake account to be unstaked
     // Rely on stake program CPI call to verify
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = !stake_account.lockup()
+            .ok_or(UnstakeError::StakeAccountLockupNotRetrievable)?
+            .is_in_force(&clock, None)
+            @ UnstakeError::StakeAccountLockupInForce,
+    )]
     pub stake_account: Account<'info, StakeAccount>,
 
     /// Solana native wallet pubkey to receive the unstaked amount
