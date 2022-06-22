@@ -8,6 +8,7 @@ import {
   LAMPORTS_PER_SOL,
   StakeProgram,
   SYSVAR_CLOCK_PUBKEY,
+  SYSVAR_STAKE_HISTORY_PUBKEY,
 } from "@solana/web3.js";
 import {
   createAssociatedTokenAccount,
@@ -24,9 +25,6 @@ import {
   airdrop,
   createDelegateStakeTx,
   fetchLpFacingTestParams,
-  stakeAccMinLamports,
-  testVoteAccount,
-  transferStakeAuthTx,
   waitForEpochToPass,
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
@@ -224,75 +222,6 @@ describe("unstake", () => {
       });
     });
 
-    describe("Crank facing", () => {
-      it("it deactivates stake account", async () => {
-        const stakeAccountKeypair = Keypair.generate();
-        const createStakeAuthTx = await createDelegateStakeTx({
-          connection: provider.connection,
-          stakeAccount: stakeAccountKeypair.publicKey,
-          payer: payerKeypair.publicKey,
-        });
-        createStakeAuthTx.add(
-          transferStakeAuthTx({
-            authorizedPubkey: payerKeypair.publicKey,
-            stakePubkey: stakeAccountKeypair.publicKey,
-            newAuthorizedPubkey: poolSolReserves,
-          })
-        );
-        await sendAndConfirmTransaction(
-          provider.connection,
-          createStakeAuthTx,
-          [payerKeypair, stakeAccountKeypair]
-        );
-
-        const stakeAccActivating = await getStakeAccount(
-          provider.connection,
-          stakeAccountKeypair.publicKey
-        );
-        const { epoch: activatingEpoch } =
-          await provider.connection.getEpochInfo();
-        expect(
-          stakeAccountState(stakeAccActivating, new BN(activatingEpoch))
-        ).to.eq("activating");
-
-        await waitForEpochToPass(provider.connection);
-
-        const stakeAccActive = await getStakeAccount(
-          provider.connection,
-          stakeAccountKeypair.publicKey
-        );
-        const { epoch: activeEpoch } = await provider.connection.getEpochInfo();
-        expect(activeEpoch).to.eq(activatingEpoch + 1);
-        expect(stakeAccountState(stakeAccActive, new BN(activeEpoch))).to.eq(
-          "active"
-        );
-
-        await program.methods
-          .deactivateStakeAccount()
-          .accounts({
-            stakeAccount: stakeAccountKeypair.publicKey,
-            poolAccount: poolKeypair.publicKey,
-            poolSolReserves,
-            // idk why anchor can't infer clock sysvar
-            clock: SYSVAR_CLOCK_PUBKEY,
-            // anchor can't infer stake_prog
-            stakeProgram: StakeProgram.programId,
-          })
-          .rpc({ skipPreflight: true });
-
-        const stakeAccDeactivating = await getStakeAccount(
-          provider.connection,
-          stakeAccountKeypair.publicKey
-        );
-        const { epoch: deactivatingEpoch } =
-          await provider.connection.getEpochInfo();
-        expect(deactivatingEpoch).to.eq(activeEpoch);
-        expect(
-          stakeAccountState(stakeAccDeactivating, new BN(deactivatingEpoch))
-        ).to.eq("deactivating");
-      });
-    });
-
     describe("Admin facing", () => {
       it("it sets fee", async () => {
         await program.methods
@@ -376,6 +305,10 @@ describe("unstake", () => {
 
     let [poolSolReserves, poolSolReservesBump] = [null as PublicKey, 0];
     let [feeAccount, feeAccountBump] = [null as PublicKey, 0];
+    let [stakeAccountRecordAccount, stakeAccountRecordAccountBump] = [
+      null as PublicKey,
+      0,
+    ];
     let lperAta = null as PublicKey;
 
     before(async () => {
@@ -391,6 +324,12 @@ describe("unstake", () => {
         program.programId,
         poolKeypair.publicKey
       );
+      [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
+        await findStakeAccountRecordAccount(
+          program.programId,
+          poolKeypair.publicKey,
+          stakeAccountKeypair.publicKey
+        );
       console.log("creating a new pool");
       await program.methods
         .createPool({
@@ -458,13 +397,6 @@ describe("unstake", () => {
     });
 
     it("it unstakes", async () => {
-      const [stakeAccountRecordAccount, stakeAccountRecrodAccountBump] =
-        await findStakeAccountRecordAccount(
-          program.programId,
-          poolKeypair.publicKey,
-          stakeAccountKeypair.publicKey
-        );
-
       await program.methods
         .unstake()
         .accounts({
@@ -482,6 +414,106 @@ describe("unstake", () => {
         .rpc({ skipPreflight: true });
 
       // TODO: assertions
+    });
+
+    it("it deactivates", async () => {
+      const stakeAccActive = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch: activeEpoch } = await provider.connection.getEpochInfo();
+      expect(stakeAccountState(stakeAccActive, new BN(activeEpoch))).to.eq(
+        "active"
+      );
+
+      await program.methods
+        .deactivateStakeAccount()
+        .accounts({
+          stakeAccount: stakeAccountKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          // idk why anchor can't infer clock sysvar
+          clock: SYSVAR_CLOCK_PUBKEY,
+          // anchor can't infer stake_prog
+          stakeProgram: StakeProgram.programId,
+        })
+        .rpc({ skipPreflight: true });
+
+      const stakeAccDeactivating = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch: deactivatingEpoch } =
+        await provider.connection.getEpochInfo();
+      expect(deactivatingEpoch).to.eq(activeEpoch);
+      expect(
+        stakeAccountState(stakeAccDeactivating, new BN(deactivatingEpoch))
+      ).to.eq("deactivating");
+    });
+
+    it("it reclaims", async () => {
+      // should follow it deactivates
+      console.log("awaiting epoch to pass");
+      await waitForEpochToPass(provider.connection);
+
+      const stakeAcc = await getStakeAccount(
+        provider.connection,
+        stakeAccountKeypair.publicKey
+      );
+      const { epoch } = await provider.connection.getEpochInfo();
+      expect(stakeAccountState(stakeAcc, new BN(epoch))).to.eq("inactive");
+
+      const stakeAccLamports = await provider.connection.getBalance(
+        stakeAccountKeypair.publicKey
+      );
+      const stakeAccRecordLamports = await provider.connection.getBalance(
+        stakeAccountRecordAccount
+      );
+      const { lamportsAtCreation } =
+        await program.account.stakeAccountRecord.fetch(
+          stakeAccountRecordAccount
+        );
+      const { ownedLamports: ownedLamportsPre } =
+        await program.account.pool.fetch(poolKeypair.publicKey);
+      const solReservesLamportsPre = await provider.connection.getBalance(
+        poolSolReserves
+      );
+
+      await program.methods
+        .reclaimStakeAccount()
+        .accounts({
+          stakeAccount: stakeAccountKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          stakeAccountRecordAccount,
+          // idk why anchor can't infer clock and stake history sysvar
+          clock: SYSVAR_CLOCK_PUBKEY,
+          stakeHistory: SYSVAR_STAKE_HISTORY_PUBKEY,
+          // anchor can't infer stake_prog
+          stakeProgram: StakeProgram.programId,
+        })
+        .rpc({ skipPreflight: true });
+
+      const { ownedLamports: ownedLamportsPost } =
+        await program.account.pool.fetch(poolKeypair.publicKey);
+      const solReservesLamportsPost = await provider.connection.getBalance(
+        poolSolReserves
+      );
+
+      await expect(
+        program.account.stakeAccountRecord.fetch(stakeAccountRecordAccount)
+      ).to.be.rejectedWith("Account does not exist");
+      expect(solReservesLamportsPost).to.eq(
+        solReservesLamportsPre + stakeAccLamports + stakeAccRecordLamports
+      );
+      expect(ownedLamportsPost.toNumber()).to.eq(
+        ownedLamportsPre.toNumber() -
+          lamportsAtCreation.toNumber() +
+          stakeAccLamports +
+          stakeAccRecordLamports
+      );
+      // since there are no other stake accs, the 2 values should be equivalent after reclaim
+      expect(ownedLamportsPost.toNumber()).to.eq(solReservesLamportsPost);
     });
   });
 });

@@ -33,7 +33,7 @@ pub struct ReclaimStakeAccount<'info> {
         seeds = [&pool_account.key().to_bytes(), &stake_account.key().to_bytes()],
         bump,
     )]
-    pub stake_account_record: Account<'info, StakeAccountRecord>,
+    pub stake_account_record_account: Account<'info, StakeAccountRecord>,
 
     pub clock: Sysvar<'info, Clock>,
     pub stake_history: Sysvar<'info, StakeHistory>,
@@ -46,7 +46,7 @@ impl<'info> ReclaimStakeAccount<'info> {
         let stake_account = &mut ctx.accounts.stake_account;
         let pool_account = &mut ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
-        let stake_account_record = &ctx.accounts.stake_account_record;
+        let stake_account_record_account = &ctx.accounts.stake_account_record_account;
         let clock = &ctx.accounts.clock;
         let stake_history = &ctx.accounts.stake_history;
         let stake_program = &ctx.accounts.stake_program;
@@ -91,8 +91,8 @@ impl<'info> ReclaimStakeAccount<'info> {
         let new_owned_lamports = pool_account
             .owned_lamports
             .checked_add(lamports_withdrawn)
-            .and_then(|v| v.checked_add(stake_account_record.to_account_info().lamports())) // add rent reclaimed from closing stake_account_record
-            .and_then(|v| v.checked_sub(stake_account_record.lamports_at_creation))
+            .and_then(|v| v.checked_add(stake_account_record_account.to_account_info().lamports())) // add rent reclaimed from closing stake_account_record
+            .and_then(|v| v.checked_sub(stake_account_record_account.lamports_at_creation))
             .ok_or(UnstakeError::InternalError)?;
         pool_account.owned_lamports = new_owned_lamports;
 
