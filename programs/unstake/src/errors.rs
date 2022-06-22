@@ -22,4 +22,13 @@ pub enum UnstakeError {
 
     #[msg("The provided fee authority does not have the authority over the provided pool account")]
     InvalidFeeAuthority, // 0x1776
+
+    #[msg("The Authorized of the given stake account is None (possibly an uninitialized stake account was given)")]
+    StakeAccountAuthorizedNotRetrievable, // 0x1777
+
+    #[msg("The provided statke account is not owned by the unstaker")]
+    StakeAccountNotOwned, // 0x1778
+
+    #[msg("Internal Error")]
+    InternalError, // 0x1779
 }
