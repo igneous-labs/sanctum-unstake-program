@@ -415,8 +415,8 @@ describe("unstake", () => {
             liquidityLinear: {
               params: {
                 maxLiqRemaining: {
-                  num: new BN(0),
-                  denom: new BN(69),
+                  num: new BN(1),
+                  denom: new BN(100),
                 },
                 zeroLiqRemaining: {
                   num: new BN(1),
