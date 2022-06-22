@@ -107,7 +107,9 @@ impl<'info> Unstake<'info> {
             None, // custodian
         )?;
 
-        let lamports = stake_account.to_account_info().lamports();
+        let stake_account_lamports = stake_account.to_account_info().lamports();
+        let lamports_to_transfer =
+            calc_lamports_to_transfer(stake_account_lamports).ok_or(UnstakeError::InternalError)?;
 
         // pay out from the pool reserves
         // NOTE: rely on CPI call as the contraint
@@ -128,14 +130,16 @@ impl<'info> Unstake<'info> {
                 transfer_cpi_accs,
                 &[seeds],
             ),
-            calc_lamports_to_transfer(lamports).ok_or(UnstakeError::InternalError)?,
+            lamports_to_transfer,
         )?;
 
         // populate the stake_account_record
-        stake_account_record_account.lamports_at_creation = lamports;
+        stake_account_record_account.lamports_at_creation = stake_account_lamports;
 
         // update pool_account
-        pool_account.owned_lamports += lamports;
+        pool_account.owned_lamports += stake_account_lamports
+            .checked_sub(lamports_to_transfer)
+            .ok_or(UnstakeError::InternalError)?;
 
         Ok(())
     }
