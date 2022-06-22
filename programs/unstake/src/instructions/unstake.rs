@@ -1,12 +1,11 @@
 use anchor_lang::{prelude::*, solana_program::stake::state::StakeAuthorize, system_program};
 use anchor_spl::stake::{self, Authorize, Stake, StakeAccount};
-use std::{collections::HashSet, convert::TryFrom};
+use std::collections::HashSet;
 
 use crate::{
     anchor_len::AnchorLen,
     errors::UnstakeError,
-    rational::Rational,
-    state::{Fee, FeeEnum, Pool, StakeAccountRecord, FEE_SEED_SUFFIX},
+    state::{Fee, Pool, StakeAccountRecord, FEE_SEED_SUFFIX},
 };
 
 #[derive(Accounts)]
@@ -114,14 +113,17 @@ impl<'info> Unstake<'info> {
             None, // custodian
         )?;
 
-        let fee_ratio = calc_fee_ratio(fee_account);
         let stake_account_lamports = stake_account.to_account_info().lamports();
-        let lamports_to_transfer = calc_lamports_to_transfer(stake_account_lamports, fee_ratio)
+        let fee_lamports = fee_account
+            .fee
+            .apply(
+                pool_account.owned_lamports,
+                pool_sol_reserves.lamports(),
+                stake_account_lamports,
+            )
             .ok_or(UnstakeError::InternalError)?;
-        let pool_account_new_lamports = pool_account
-            .owned_lamports
-            .checked_sub(lamports_to_transfer)
-            .and_then(|v| v.checked_add(stake_account_lamports))
+        let lamports_to_transfer = stake_account_lamports
+            .checked_sub(fee_lamports)
             .ok_or(UnstakeError::InternalError)?;
 
         // pay out from the pool reserves
@@ -146,27 +148,18 @@ impl<'info> Unstake<'info> {
             lamports_to_transfer,
         )?;
 
-        // populate the stake_account_record and update pool_account
+        // populate the stake_account_record
         stake_account_record_account.lamports_at_creation = stake_account_lamports;
-        pool_account.owned_lamports = pool_account_new_lamports;
+
+        // update pool_account
+        // owned_lamports = owned_lamports - lamports_to_transfer + stake_account_lamports
+        //                = owned_lamports - (stake_account_lamports - fee_lamports) + stake_account_lamports
+        //                = owned_lamports + fee_lamports
+        pool_account.owned_lamports = pool_account
+            .owned_lamports
+            .checked_add(fee_lamports)
+            .ok_or(UnstakeError::InternalError)?;
 
         Ok(())
     }
-}
-
-// TODO: impl fee selection; this needs to look at both pool_account and requested amount
-// just a mock func for now
-fn calc_fee_ratio(fee_account: &Fee) -> Rational {
-    match fee_account.fee {
-        FeeEnum::LiquidityLinear { params } => params.max_liq_remaining,
-    }
-}
-
-fn calc_lamports_to_transfer(lamports: u64, fee_ratio: Rational) -> Option<u64> {
-    let lamports = lamports as u128;
-    lamports
-        .checked_mul(fee_ratio.num as u128)
-        .and_then(|v| v.checked_div(fee_ratio.denom as u128))
-        .and_then(|fee| lamports.checked_sub(fee))
-        .and_then(|v| u64::try_from(v).ok())
 }
