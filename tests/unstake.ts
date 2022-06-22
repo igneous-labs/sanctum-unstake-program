@@ -463,7 +463,7 @@ describe("unstake", () => {
       const { epoch } = await provider.connection.getEpochInfo();
       expect(stakeAccountState(stakeAcc, new BN(epoch))).to.eq("inactive");
 
-      const stakeAccLamports = await provider.connection.getBalance(
+      const stakeAccLamportsPre = await provider.connection.getBalance(
         stakeAccountKeypair.publicKey
       );
       const stakeAccRecordLamports = await provider.connection.getBalance(
@@ -494,6 +494,9 @@ describe("unstake", () => {
         })
         .rpc({ skipPreflight: true });
 
+      const stakeAccLamportsPost = await provider.connection.getBalance(
+        stakeAccountKeypair.publicKey
+      );
       const { ownedLamports: ownedLamportsPost } =
         await program.account.pool.fetch(poolKeypair.publicKey);
       const solReservesLamportsPost = await provider.connection.getBalance(
@@ -503,13 +506,14 @@ describe("unstake", () => {
       await expect(
         program.account.stakeAccountRecord.fetch(stakeAccountRecordAccount)
       ).to.be.rejectedWith("Account does not exist");
+      expect(stakeAccLamportsPost).to.eq(0);
       expect(solReservesLamportsPost).to.eq(
-        solReservesLamportsPre + stakeAccLamports + stakeAccRecordLamports
+        solReservesLamportsPre + stakeAccLamportsPre + stakeAccRecordLamports
       );
       expect(ownedLamportsPost.toNumber()).to.eq(
         ownedLamportsPre.toNumber() -
           lamportsAtCreation.toNumber() +
-          stakeAccLamports +
+          stakeAccLamportsPre +
           stakeAccRecordLamports
       );
       // since there are no other stake accs, the 2 values should be equivalent after reclaim
