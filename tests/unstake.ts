@@ -166,7 +166,104 @@ describe("unstake", () => {
         );
       });
 
-      // TODO: add tests for adding and removing liquidity when liquidity is non-zero here
+      it("it add liquidity from non-zero", async () => {
+        // add AMOUNT liquidity to existing AMOUNT -> LP tokens and liquidity should double
+        const {
+          lperAtaAmount: lperAtaPre,
+          poolOwnedLamports: ownedLamportsPre,
+          lperLamports: lperLamportsPre,
+          reserveLamports: reservesLamportsPre,
+        } = await fetchLpFacingTestParams({
+          program,
+          lper: lperKeypair.publicKey,
+          lperAta,
+          poolSolReserves,
+          pool: poolKeypair.publicKey,
+        });
+
+        await program.methods
+          .addLiquidity(AMOUNT)
+          .accounts({
+            from: lperKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            lpMint: lpMintKeypair.publicKey,
+            mintLpTokensTo: lperAta,
+          })
+          .signers([lperKeypair])
+          .rpc({ skipPreflight: true });
+
+        const {
+          lperAtaAmount: lperAtaPost,
+          poolOwnedLamports: ownedLamportsPost,
+          lperLamports: lperLamportsPost,
+          reserveLamports: reservesLamportsPost,
+        } = await fetchLpFacingTestParams({
+          program,
+          lper: lperKeypair.publicKey,
+          lperAta,
+          poolSolReserves,
+          pool: poolKeypair.publicKey,
+        });
+
+        expect(Number(lperAtaPre)).to.be.gt(0);
+        expect(lperAtaPost).to.eq(BigInt(2) * lperAtaPre);
+        expect(lperLamportsPost).to.eq(lperLamportsPre - AMOUNT.toNumber());
+        expect(reservesLamportsPost).to.eq(2 * reservesLamportsPre);
+        expect(ownedLamportsPost.toNumber()).to.eq(
+          2 * ownedLamportsPre.toNumber()
+        );
+      });
+
+      it("it remove liquidity to non-zero", async () => {
+        // remove AMOUNT liquidity from existing 2*AMOUNT -> LP tokens and liquidity should half
+        const {
+          lperAtaAmount: lperAtaPre,
+          poolOwnedLamports: ownedLamportsPre,
+          lperLamports: lperLamportsPre,
+          reserveLamports: reservesLamportsPre,
+        } = await fetchLpFacingTestParams({
+          program,
+          lper: lperKeypair.publicKey,
+          lperAta,
+          poolSolReserves,
+          pool: poolKeypair.publicKey,
+        });
+
+        await program.methods
+          .removeLiquidity(AMOUNT)
+          .accounts({
+            burnLpTokensFromAuthority: lperKeypair.publicKey,
+            to: lperKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            lpMint: lpMintKeypair.publicKey,
+            burnLpTokensFrom: lperAta,
+          })
+          .signers([lperKeypair])
+          .rpc({ skipPreflight: true });
+
+        const {
+          lperAtaAmount: lperAtaPost,
+          poolOwnedLamports: ownedLamportsPost,
+          lperLamports: lperLamportsPost,
+          reserveLamports: reservesLamportsPost,
+        } = await fetchLpFacingTestParams({
+          program,
+          lper: lperKeypair.publicKey,
+          lperAta,
+          poolSolReserves,
+          pool: poolKeypair.publicKey,
+        });
+
+        expect(Number(lperAtaPre)).to.be.gt(0);
+        expect(lperAtaPost).to.eq(lperAtaPre / BigInt(2));
+        expect(lperLamportsPost).to.eq(lperLamportsPre + AMOUNT.toNumber());
+        expect(reservesLamportsPost).to.eq(reservesLamportsPre / 2);
+        expect(ownedLamportsPost.toNumber()).to.eq(
+          ownedLamportsPre.toNumber() / 2
+        );
+      });
 
       it("it remove liquidity to zero", async () => {
         const {
