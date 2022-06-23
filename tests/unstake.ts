@@ -504,6 +504,7 @@ describe("unstake", () => {
       await program.methods
         .unstake()
         .accounts({
+          payer: unstaker.publicKey,
           unstaker: unstaker.publicKey,
           stakeAccount: stakeAccountKeypair.publicKey,
           destination: unstaker.publicKey,

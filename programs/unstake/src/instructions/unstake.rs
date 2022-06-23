@@ -10,8 +10,11 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct Unstake<'info> {
-    /// stake account owner
+    /// pubkey paying for a new StakeAccountRecord account's rent
     #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// stake account owner
     pub unstaker: Signer<'info>,
 
     /// stake account to be unstaked
@@ -51,7 +54,7 @@ pub struct Unstake<'info> {
     /// stake account record to be created
     #[account(
         init,
-        payer = unstaker,
+        payer = payer,
         space = StakeAccountRecord::LEN,
         seeds = [&pool_account.key().to_bytes(), &stake_account.key().to_bytes()],
         bump,
