@@ -400,6 +400,8 @@ describe("unstake", () => {
     const unstaker = Keypair.generate();
     const stakeAccountKeypair = Keypair.generate();
 
+    const liquidityAmount = new BN(0.1 * LAMPORTS_PER_SOL);
+
     let [poolSolReserves, poolSolReservesBump] = [null as PublicKey, 0];
     let [feeAccount, feeAccountBump] = [null as PublicKey, 0];
     let [stakeAccountRecordAccount, stakeAccountRecordAccountBump] = [
@@ -465,9 +467,8 @@ describe("unstake", () => {
       );
 
       console.log("adding some liquidity");
-      const AMOUNT = new BN(0.1 * LAMPORTS_PER_SOL);
       await program.methods
-        .addLiquidity(AMOUNT)
+        .addLiquidity(liquidityAmount)
         .accounts({
           from: lperKeypair.publicKey,
           poolAccount: poolKeypair.publicKey,
@@ -619,6 +620,56 @@ describe("unstake", () => {
       );
       // since there are no other stake accs, the 2 values should be equivalent after reclaim
       expect(ownedLamportsPost.toNumber()).to.eq(solReservesLamportsPost);
+    });
+
+    it("it removes all liquidity with gains", async () => {
+      const {
+        lperAtaAmount: lperAtaPre,
+        poolOwnedLamports: ownedLamportsPre,
+        lperLamports: lperLamportsPre,
+        reserveLamports: reservesLamportsPre,
+      } = await fetchLpFacingTestParams({
+        program,
+        lper: lperKeypair.publicKey,
+        lperAta,
+        poolSolReserves,
+        pool: poolKeypair.publicKey,
+      });
+
+      await program.methods
+        .removeLiquidity(new BN(lperAtaPre.toString()))
+        .accounts({
+          burnLpTokensFromAuthority: lperKeypair.publicKey,
+          to: lperKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          lpMint: lpMintKeypair.publicKey,
+          burnLpTokensFrom: lperAta,
+        })
+        .signers([lperKeypair])
+        .rpc({ skipPreflight: true });
+
+      const {
+        lperAtaAmount: lperAtaPost,
+        poolOwnedLamports: ownedLamportsPost,
+        lperLamports: lperLamportsPost,
+        reserveLamports: reservesLamportsPost,
+      } = await fetchLpFacingTestParams({
+        program,
+        lper: lperKeypair.publicKey,
+        lperAta,
+        poolSolReserves,
+        pool: poolKeypair.publicKey,
+      });
+
+      const lamportsReceived = lperLamportsPost - lperLamportsPre;
+
+      expect(ownedLamportsPre.toNumber()).to.be.gt(0);
+      expect(reservesLamportsPre).to.be.gt(0);
+      expect(Number(lperAtaPost)).to.eq(0);
+      expect(ownedLamportsPost.toNumber()).to.eq(0);
+      expect(reservesLamportsPost).to.eq(0);
+      expect(lamportsReceived).to.be.gt(liquidityAmount.toNumber());
     });
   });
 });
