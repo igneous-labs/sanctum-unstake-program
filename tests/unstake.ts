@@ -516,6 +516,9 @@ describe("unstake", () => {
           stakeAccLamportsPre +
           stakeAccRecordLamports
       );
+      expect(ownedLamportsPost.toNumber()).to.be.gt(
+        ownedLamportsPre.toNumber()
+      );
       // since there are no other stake accs, the 2 values should be equivalent after reclaim
       expect(ownedLamportsPost.toNumber()).to.eq(solReservesLamportsPost);
     });
