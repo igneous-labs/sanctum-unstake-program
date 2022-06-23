@@ -255,7 +255,7 @@ describe("unstake", () => {
 
       it("it rejects to set fee when the authority does not match", async () => {
         const rando = Keypair.generate();
-        return expect(
+        await expect(
           program.methods
             .setFee({
               fee: {
