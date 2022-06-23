@@ -292,6 +292,12 @@ describe("unstake", () => {
       it("it rejects to unstake a locked up stake account", async () => {
         throw new Error("Not yet implemented");
       });
+      it("it charges Flat fee on unstake", async () => {
+        throw new Error("Not yet implemented");
+      });
+      it("it charges LiquidityLinear fee on unstake", async () => {
+        throw new Error("Not yet implemented");
+      });
     });
   });
 
@@ -414,7 +420,8 @@ describe("unstake", () => {
         .signers([unstaker])
         .rpc({ skipPreflight: true });
 
-      // TODO: assertions
+      // TODO: assert the stake account ownership is transfered
+      // TODO: assert the charged fee amount (idk what is a good test mechanism for this yet)
     });
 
     it("it deactivates", async () => {
