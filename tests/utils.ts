@@ -6,6 +6,7 @@ import {
   PublicKey,
   StakeProgram,
   Transaction,
+  Lockup,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { readFileSync } from "fs";
@@ -106,12 +107,14 @@ type CreateDelegateStakeTxArgs = {
   connection: Connection;
   stakeAccount: PublicKey;
   payer: PublicKey;
+  lockup?: Lockup;
 };
 
 export async function createDelegateStakeTx({
   connection,
   stakeAccount,
   payer,
+  lockup,
 }: CreateDelegateStakeTxArgs): Promise<Transaction> {
   const votePubkey = testVoteAccount();
   const stakeAccLamports = await stakeAccMinLamports(connection);
@@ -123,6 +126,7 @@ export async function createDelegateStakeTx({
     fromPubkey: payer,
     lamports: stakeAccLamports,
     stakePubkey: stakeAccount,
+    lockup,
   });
   createStakeAuthTx.add(
     StakeProgram.delegate({

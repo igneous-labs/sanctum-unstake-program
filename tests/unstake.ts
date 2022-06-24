@@ -5,6 +5,7 @@ import {
   sendAndConfirmTransaction,
   Keypair,
   PublicKey,
+  Lockup,
   LAMPORTS_PER_SOL,
   StakeProgram,
   SYSVAR_CLOCK_PUBKEY,
@@ -254,7 +255,7 @@ describe("unstake", () => {
 
       it("it rejects to set fee when the authority does not match", async () => {
         const rando = Keypair.generate();
-        return expect(
+        await expect(
           program.methods
             .setFee({
               fee: {
@@ -290,6 +291,71 @@ describe("unstake", () => {
     });
     describe("User facing", () => {
       it("it rejects to unstake a locked up stake account", async () => {
+        const unstaker = Keypair.generate();
+        await airdrop(provider.connection, unstaker.publicKey);
+
+        const custodian = Keypair.generate();
+        const { epoch: currentEpoch } =
+          await provider.connection.getEpochInfo();
+        const currentUnixEpoch = Math.floor(new Date().getTime() / 1000);
+
+        const lockup = new Lockup(
+          currentUnixEpoch + 1000,
+          currentEpoch + 10,
+          custodian.publicKey
+        );
+
+        const stakeAccountKeypair = Keypair.generate();
+        const createStakeAuthTx = await createDelegateStakeTx({
+          connection: provider.connection,
+          stakeAccount: stakeAccountKeypair.publicKey,
+          payer: unstaker.publicKey,
+          lockup,
+        });
+        await sendAndConfirmTransaction(
+          provider.connection,
+          createStakeAuthTx,
+          [unstaker, stakeAccountKeypair]
+        );
+
+        await waitForEpochToPass(provider.connection);
+
+        const [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
+          await findStakeAccountRecordAccount(
+            program.programId,
+            poolKeypair.publicKey,
+            stakeAccountKeypair.publicKey
+          );
+
+        await expect(
+          program.methods
+            .unstake()
+            .accounts({
+              payer: unstaker.publicKey,
+              unstaker: unstaker.publicKey,
+              stakeAccount: stakeAccountKeypair.publicKey,
+              destination: unstaker.publicKey,
+              poolAccount: poolKeypair.publicKey,
+              poolSolReserves,
+              feeAccount,
+              stakeAccountRecordAccount,
+              clock: SYSVAR_CLOCK_PUBKEY,
+              stakeProgram: StakeProgram.programId,
+            })
+            .signers([unstaker])
+            .rpc({ skipPreflight: true })
+        ).to.be.eventually.rejected.then(function (err) {
+          expect(err).to.have.a.property("code", 6010);
+          expect(err).to.have.a.property(
+            "msg",
+            "The provided statke account is locked up"
+          );
+        });
+      });
+      it("it charges Flat fee on unstake", async () => {
+        throw new Error("Not yet implemented");
+      });
+      it("it charges LiquidityLinear fee on unstake", async () => {
         throw new Error("Not yet implemented");
       });
     });
@@ -414,7 +480,8 @@ describe("unstake", () => {
         .signers([unstaker])
         .rpc({ skipPreflight: true });
 
-      // TODO: assertions
+      // TODO: assert the stake account ownership is transfered
+      // TODO: assert the charged fee amount (idk what is a good test mechanism for this yet)
     });
 
     it("it deactivates", async () => {

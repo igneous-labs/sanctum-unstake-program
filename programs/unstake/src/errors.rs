@@ -33,8 +33,8 @@ pub enum UnstakeError {
     StakeAccountNotOwned, // 0x1779
 
     #[msg("The provided statke account is locked up")]
-    StakeAccountLockupInForce, // 0x1780
+    StakeAccountLockupInForce, // 0x177a
 
     #[msg("Internal Error")]
-    InternalError, // 0x1781
+    InternalError, // 0x177b
 }
