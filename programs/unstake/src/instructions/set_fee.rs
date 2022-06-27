@@ -18,6 +18,7 @@ pub struct SetFee<'info> {
 
     /// fee account to be modified
     #[account(
+        mut,
         seeds = [&pool_account.key().to_bytes(), FEE_SEED_SUFFIX],
         bump,
     )]
