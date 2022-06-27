@@ -693,7 +693,6 @@ describe("unstake", () => {
           fee: {
             liquidityLinear: {
               params: {
-                // TODO: flip the 2 when fee is fixed
                 maxLiqRemaining: {
                   num: new BN(15),
                   denom: new BN(1000),

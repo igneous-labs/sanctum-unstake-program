@@ -67,14 +67,13 @@ describe("ts bindings", () => {
         fee: {
           liquidityLinear: {
             params: {
-              // TODO: flip the 2 when fee is fixed
               maxLiqRemaining: {
                 num: new BN(1),
-                denom: new BN(100),
+                denom: new BN(1000),
               },
               zeroLiqRemaining: {
                 num: new BN(1),
-                denom: new BN(1000),
+                denom: new BN(100),
               },
             },
           },
