@@ -6,9 +6,16 @@ import {
 import { Commitment, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { Unstake } from "./idl/idl";
-import { findPoolSolReserves } from "./pda";
+import { findPoolSolReserves, findStakeAccountRecordAccount } from "./pda";
 import { LiquidityPoolStakeAccounts } from "./types";
 
+/**
+ * Fetch all stake accounts owned by a liquidity pool
+ * @param program
+ * @param liquidityPool
+ * @param commitment
+ * @returns
+ */
 export async function fetchLiquidityPoolStakeAccounts(
   program: Program<Unstake>,
   liquidityPool: PublicKey,
@@ -31,7 +38,26 @@ export async function fetchLiquidityPoolStakeAccounts(
       .then(({ epoch }) => new BN(epoch)),
   ]);
 
-  return stakeAccs.reduce(
+  // filter out stake accs with no stake acc records
+  const stakeAccRecordKeys = await Promise.all(
+    stakeAccs.map(({ accountId }) =>
+      findStakeAccountRecordAccount(
+        program.programId,
+        liquidityPool,
+        accountId
+      ).then(([pubkey]) => pubkey)
+    )
+  );
+  const stakeAccRecords =
+    await program.account.stakeAccountRecord.fetchMultiple(
+      stakeAccRecordKeys,
+      commitment
+    );
+  const stakeAccsWithRecord = stakeAccs.filter((_ksa, i) =>
+    Boolean(stakeAccRecords[i])
+  );
+
+  return stakeAccsWithRecord.reduce(
     (res, ksa) => {
       const state = stakeAccountState(ksa.accountInfo.data, currentEpoch);
       res[state].push(ksa);

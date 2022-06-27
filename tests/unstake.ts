@@ -51,8 +51,10 @@ describe("unstake", () => {
 
     before(async () => {
       console.log("airdropping to payer and lper");
-      await airdrop(provider.connection, payerKeypair.publicKey);
-      await airdrop(provider.connection, lperKeypair.publicKey);
+      await Promise.all([
+        airdrop(provider.connection, payerKeypair.publicKey),
+        airdrop(provider.connection, lperKeypair.publicKey),
+      ]);
       [poolSolReserves, poolSolReservesBump] = await findPoolSolReserves(
         program.programId,
         poolKeypair.publicKey
@@ -500,6 +502,7 @@ describe("unstake", () => {
           fee: {
             liquidityLinear: {
               params: {
+                // TODO: flip the 2 when fee is fixed
                 maxLiqRemaining: {
                   num: new BN(1),
                   denom: new BN(100),
