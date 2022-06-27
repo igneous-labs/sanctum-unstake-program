@@ -1,6 +1,5 @@
 import BN from "bn.js";
 import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
 import {
   sendAndConfirmTransaction,
   Keypair,
@@ -37,7 +36,7 @@ chaiUse(chaiAsPromised);
 describe("unstake", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.getProvider());
-  const program = anchor.workspace.Unstake as Program<Unstake>;
+  const program = anchor.workspace.Unstake as anchor.Program<Unstake>;
   const provider = anchor.getProvider();
 
   describe("internals", () => {
@@ -52,8 +51,10 @@ describe("unstake", () => {
 
     before(async () => {
       console.log("airdropping to payer and lper");
-      await airdrop(provider.connection, payerKeypair.publicKey);
-      await airdrop(provider.connection, lperKeypair.publicKey);
+      await Promise.all([
+        airdrop(provider.connection, payerKeypair.publicKey),
+        airdrop(provider.connection, lperKeypair.publicKey),
+      ]);
       [poolSolReserves, poolSolReservesBump] = await findPoolSolReserves(
         program.programId,
         poolKeypair.publicKey
