@@ -108,6 +108,7 @@ type CreateDelegateStakeTxArgs = {
   stakeAccount: PublicKey;
   payer: PublicKey;
   lockup?: Lockup;
+  lamports?: number;
 };
 
 export async function createDelegateStakeTx({
@@ -115,9 +116,10 @@ export async function createDelegateStakeTx({
   stakeAccount,
   payer,
   lockup,
+  lamports,
 }: CreateDelegateStakeTxArgs): Promise<Transaction> {
   const votePubkey = testVoteAccount();
-  const stakeAccLamports = await stakeAccMinLamports(connection);
+  const stakeAccLamports = lamports ?? (await stakeAccMinLamports(connection));
   const createStakeAuthTx = StakeProgram.createAccount({
     authorized: {
       staker: payer,
