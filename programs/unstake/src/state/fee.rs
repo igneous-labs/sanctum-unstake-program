@@ -39,6 +39,7 @@ pub enum FeeEnum {
     /// applied to the size of a given swap
     ///
     /// Invariants:
+    ///  - ratio is a valid Rational
     ///  - ratio <= 1
     Flat { ratio: Rational },
 
@@ -47,6 +48,8 @@ pub enum FeeEnum {
     /// increasing linearly as less liquidity is left
     ///
     /// Invariants:
+    ///  - max_liq_remaining is a valid Rational
+    ///  - zero_liq_remaining is a valid Rational
     ///  - max_liq_remaining <= zero_liq_remaining
     LiquidityLinear { params: LiquidityLinearParams },
 }

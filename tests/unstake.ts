@@ -459,7 +459,37 @@ describe("unstake", () => {
           //  "msg",
           //  "The provided description of fee violates the invariants"
           //);
-          console.log(err.code, err.msg);
+          console.log("Flat fee higher than 100%:\n", err.code, err.msg);
+        });
+
+        await expect(
+          program.methods
+            .setFee({
+              fee: {
+                flat: {
+                  ratio: {
+                    num: new BN(69),
+                    denom: new BN(0),
+                  },
+                },
+              },
+            })
+            .accounts({
+              feeAuthority: payerKeypair.publicKey,
+              poolAccount: poolKeypair.publicKey,
+              feeAccount,
+            })
+            .signers([payerKeypair])
+            .rpc({ skipPreflight: true })
+        ).to.be.eventually.rejected.then(function (err) {
+          // NOTE: using simple rejection test, due to the unstable behavior of chai-as-promised
+          // NOTE: make sure to sufficiently check the actual error before commenting out
+          //expect(err).to.have.a.property("code", 6011);
+          //expect(err).to.have.a.property(
+          //  "msg",
+          //  "The provided description of fee violates the invariants"
+          //);
+          console.log("Flat with DNE rational number:\n", err.code, err.msg);
         });
 
         await expect(
@@ -495,7 +525,51 @@ describe("unstake", () => {
           //  "msg",
           //  "The provided description of fee violates the invariants"
           //);
-          console.log(err.code, err.msg);
+          console.log(
+            "LiquidityLinear with negative slope:\n",
+            err.code,
+            err.msg
+          );
+        });
+
+        await expect(
+          program.methods
+            .setFee({
+              fee: {
+                liquidityLinear: {
+                  params: {
+                    maxLiqRemaining: {
+                      num: new BN(69),
+                      denom: new BN(0),
+                    },
+                    zeroLiqRemaining: {
+                      num: new BN(42),
+                      denom: new BN(1000),
+                    },
+                  },
+                },
+              },
+            })
+            .accounts({
+              feeAuthority: payerKeypair.publicKey,
+              poolAccount: poolKeypair.publicKey,
+              feeAccount,
+            })
+            .signers([payerKeypair])
+            .rpc({ skipPreflight: true })
+        ).to.be.eventually.rejected.then(function (err) {
+          // NOTE: using simple rejection test, due to the unstable behavior of chai-as-promised
+          // NOTE: make sure to sufficiently check the actual error before commenting out
+          //expect(err).to.have.a.property("code", 6011);
+          //expect(err).to.have.a.property(
+          //  "msg",
+          //  "The provided description of fee violates the invariants"
+          //);
+          console.log(
+            "LiquidityLinear with DNE rational number:\n",
+            err.code,
+            err.msg
+          );
         });
       });
     });
