@@ -29,6 +29,11 @@ pub struct SetFee<'info> {
 
 impl<'info> SetFee<'info> {
     #[inline(always)]
+    pub fn validate(fee: &Fee) -> Result<()> {
+        fee.validate()
+    }
+
+    #[inline(always)]
     pub fn run(ctx: Context<Self>, fee: Fee) -> Result<()> {
         let fee_account = &mut ctx.accounts.fee_account;
 

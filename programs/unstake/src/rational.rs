@@ -9,6 +9,10 @@ pub struct Rational {
 }
 
 impl Rational {
+    pub fn validate(&self) -> bool {
+        self.denom != 0
+    }
+
     pub fn into_precise_number(self) -> Option<PreciseNumber> {
         PreciseNumber::new(self.num as u128)?.checked_div(&PreciseNumber::new(self.denom as u128)?)
     }

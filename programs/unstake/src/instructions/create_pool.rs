@@ -57,6 +57,11 @@ pub struct CreatePool<'info> {
 
 impl<'info> CreatePool<'info> {
     #[inline(always)]
+    pub fn validate(fee: &Fee) -> Result<()> {
+        fee.validate()
+    }
+
+    #[inline(always)]
     pub fn run(ctx: Context<Self>, fee: Fee) -> Result<()> {
         let fee_account = &mut ctx.accounts.fee_account;
         let fee_authority = &ctx.accounts.fee_authority;
