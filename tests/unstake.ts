@@ -365,7 +365,7 @@ describe("unstake", () => {
 
     describe("Admin facing", () => {
       it("it sets fee", async () => {
-        // NOTE: assuming previous fee account isn't set to Flat 69% fee
+        // NOTE: assuming the fee account isn't previously set to Flat 69% fee
         // set Flat fee
         const FLAT_FEE = {
           flat: {
