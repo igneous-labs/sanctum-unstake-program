@@ -76,11 +76,11 @@ describe("unstake", () => {
             liquidityLinear: {
               params: {
                 maxLiqRemaining: {
-                  num: new BN(0),
-                  denom: new BN(69),
+                  num: new BN(15),
+                  denom: new BN(1000),
                 },
                 zeroLiqRemaining: {
-                  num: new BN(1),
+                  num: new BN(42),
                   denom: new BN(1000),
                 },
               },
@@ -328,11 +328,11 @@ describe("unstake", () => {
               liquidityLinear: {
                 params: {
                   maxLiqRemaining: {
-                    num: new BN(42),
-                    denom: new BN(69),
+                    num: new BN(25),
+                    denom: new BN(1000),
                   },
                   zeroLiqRemaining: {
-                    num: new BN(1),
+                    num: new BN(42),
                     denom: new BN(1000),
                   },
                 },
@@ -359,11 +359,11 @@ describe("unstake", () => {
                 liquidityLinear: {
                   params: {
                     maxLiqRemaining: {
-                      num: new BN(42),
-                      denom: new BN(100),
+                      num: new BN(10),
+                      denom: new BN(1000),
                     },
                     zeroLiqRemaining: {
-                      num: new BN(2),
+                      num: new BN(15),
                       denom: new BN(1000),
                     },
                   },
@@ -502,11 +502,11 @@ describe("unstake", () => {
             liquidityLinear: {
               params: {
                 maxLiqRemaining: {
-                  num: new BN(1),
-                  denom: new BN(100),
+                  num: new BN(15),
+                  denom: new BN(1000),
                 },
                 zeroLiqRemaining: {
-                  num: new BN(1),
+                  num: new BN(42),
                   denom: new BN(1000),
                 },
               },
