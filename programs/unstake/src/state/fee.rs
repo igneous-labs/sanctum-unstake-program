@@ -57,8 +57,8 @@ impl FeeEnum {
 
                 let max_liq = params.max_liq_remaining.into_precise_number()?;
                 let min_liq = params.zero_liq_remaining.into_precise_number()?;
-                let slope = max_liq
-                    .checked_sub(&min_liq)?
+                let slope = min_liq
+                    .checked_sub(&max_liq)?
                     .checked_div(&PreciseNumber::new(owned_lamports as u128)?)?;
 
                 slope.checked_mul(&liq_consumed)?.checked_add(&min_liq)?
