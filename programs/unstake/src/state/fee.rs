@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use spl_math::precise_number::PreciseNumber;
 use std::convert::TryFrom;
 
-use crate::rational::Rational;
+use crate::{errors::UnstakeError, rational::Rational};
 
 pub const FEE_SEED_SUFFIX: &[u8] = b"fee";
 
@@ -38,6 +38,31 @@ pub struct LiquidityLinearParams {
 }
 
 impl FeeEnum {
+    pub fn validate(&self) -> Result<()> {
+        match self {
+            FeeEnum::Flat { ratio } => {
+                if ratio.num > ratio.denom {
+                    return Err(UnstakeError::InvalidFee.into());
+                }
+            }
+            FeeEnum::LiquidityLinear { params } => {
+                let zero_liq_fee = params
+                    .zero_liq_remaining
+                    .into_precise_number()
+                    .ok_or(UnstakeError::InternalError)?;
+                let max_liq_fee = params
+                    .max_liq_remaining
+                    .into_precise_number()
+                    .ok_or(UnstakeError::InternalError)?;
+                if max_liq_fee.greater_than(&zero_liq_fee) {
+                    return Err(UnstakeError::InvalidFee.into());
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     /// Applies swap fee to given swap amount and pool's liquidity
     pub fn apply(
         &self,
