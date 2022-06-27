@@ -66,11 +66,14 @@ impl FeeEnum {
     pub fn validate(&self) -> Result<()> {
         match self {
             FeeEnum::Flat { ratio } => {
-                if ratio.num > ratio.denom {
+                if !ratio.validate() || ratio.num > ratio.denom {
                     return Err(UnstakeError::InvalidFee.into());
                 }
             }
             FeeEnum::LiquidityLinear { params } => {
+                if !params.zero_liq_remaining.validate() || !params.max_liq_remaining.validate() {
+                    return Err(UnstakeError::InvalidFee.into());
+                }
                 let zero_liq_fee = params
                     .zero_liq_remaining
                     .into_precise_number()
