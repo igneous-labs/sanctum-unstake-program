@@ -641,7 +641,69 @@ describe("unstake", () => {
           console.log(err.code, err.msg);
         });
       });
+
       it("it charges Flat fee on unstake", async () => {
+        await program.methods
+          .setFee({
+            fee: {
+              flat: {
+                ratio: {
+                  num: new BN(69),
+                  denom: new BN(1000),
+                },
+              },
+            },
+          })
+          .accounts({
+            feeAuthority: payerKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            feeAccount,
+          })
+          .signers([payerKeypair])
+          .rpc({ skipPreflight: true });
+
+        // TODO: add some liquidity
+
+        const unstaker = Keypair.generate();
+        await airdrop(provider.connection, unstaker.publicKey);
+
+        const stakeAccountKeypair = Keypair.generate();
+        const createStakeAuthTx = await createDelegateStakeTx({
+          connection: provider.connection,
+          stakeAccount: stakeAccountKeypair.publicKey,
+          payer: unstaker.publicKey,
+        });
+        await sendAndConfirmTransaction(
+          provider.connection,
+          createStakeAuthTx,
+          [unstaker, stakeAccountKeypair]
+        );
+
+        await waitForEpochToPass(provider.connection);
+
+        const [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
+          await findStakeAccountRecordAccount(
+            program.programId,
+            poolKeypair.publicKey,
+            stakeAccountKeypair.publicKey
+          );
+
+        //await program.methods
+        //  .unstake()
+        //  .accounts({
+        //    payer: unstaker.publicKey,
+        //    unstaker: unstaker.publicKey,
+        //    stakeAccount: stakeAccountKeypair.publicKey,
+        //    destination: unstaker.publicKey,
+        //    poolAccount: poolKeypair.publicKey,
+        //    poolSolReserves,
+        //    feeAccount,
+        //    stakeAccountRecordAccount,
+        //    clock: SYSVAR_CLOCK_PUBKEY,
+        //    stakeProgram: StakeProgram.programId,
+        //  })
+        //  .signers([unstaker])
+        //  .rpc({ skipPreflight: true });
         throw new Error("Not yet implemented");
       });
       it("it charges LiquidityLinear fee on unstake", async () => {
