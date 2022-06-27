@@ -15,17 +15,20 @@ export async function previewUnstake(
 ): Promise<number> {
   const payer = accounts.payer ?? accounts.unstaker;
   const destination = accounts.destination ?? accounts.unstaker;
-  const startingLamports = await program.provider.connection.getBalance(
-    destination
-  );
   const tx = await unstakeTx(program, accounts);
   tx.feePayer = payer;
-  const {
-    value: {
-      accounts: [destinationPost],
+  const [
+    destinationPreLamports,
+    {
+      value: {
+        accounts: [destinationPost],
+      },
     },
-  } = await program.provider.connection.simulateTransaction(tx, undefined, [
-    destination,
+  ] = await Promise.all([
+    program.provider.connection.getBalance(destination),
+    program.provider.connection.simulateTransaction(tx, undefined, [
+      destination,
+    ]),
   ]);
-  return destinationPost.lamports - startingLamports;
+  return destinationPost.lamports - destinationPreLamports;
 }
