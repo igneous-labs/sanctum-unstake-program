@@ -49,19 +49,25 @@ impl FeeEnum {
             FeeEnum::Flat { ratio } => PreciseNumber::new(stake_account_lamports as u128)?
                 .checked_mul(&ratio.into_precise_number()?)?,
             FeeEnum::LiquidityLinear { params } => {
-                // linear interpolation from zero_liq_remaining to max_liq_remaining where y-intercept at zero_liq_remaining
+                // linear interpolation from max_liq_remaining to zero_liq_remaining where y-intercept at max_liq_remaining
+                // x-axis is ratio of liquidity consumed
+                // y-axis is lamports
                 let liq_consumed = (stake_account_lamports as u128)
                     .checked_add(owned_lamports as u128)?
                     .checked_sub(sol_reserves_lamports as u128)
                     .and_then(PreciseNumber::new)?;
 
-                let max_liq = params.max_liq_remaining.into_precise_number()?;
-                let min_liq = params.zero_liq_remaining.into_precise_number()?;
-                let slope = min_liq
-                    .checked_sub(&max_liq)?
+                let zero_liq_fee = params.zero_liq_remaining.into_precise_number()?;
+                let max_liq_fee = params.max_liq_remaining.into_precise_number()?;
+                // NOTE: assuming zero_liq_fee > max_liq_fee
+                // TODO: invariant and validation
+                let slope = zero_liq_fee
+                    .checked_sub(&max_liq_fee)?
                     .checked_div(&PreciseNumber::new(owned_lamports as u128)?)?;
 
-                slope.checked_mul(&liq_consumed)?.checked_add(&min_liq)?
+                slope
+                    .checked_mul(&liq_consumed)?
+                    .checked_add(&max_liq_fee)?
             }
         };
 
