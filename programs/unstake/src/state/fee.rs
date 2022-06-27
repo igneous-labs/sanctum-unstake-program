@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use spl_math::precise_number::PreciseNumber;
 use std::convert::TryFrom;
 
-use crate::rational::Rational;
+use crate::{errors::UnstakeError, rational::Rational};
 
 pub const FEE_SEED_SUFFIX: &[u8] = b"fee";
 
@@ -13,16 +13,44 @@ pub struct Fee {
     pub fee: FeeEnum,
 }
 
+impl Fee {
+    pub fn validate(&self) -> Result<()> {
+        self.fee.validate()
+    }
+
+    pub fn apply(
+        &self,
+        owned_lamports: u64,
+        sol_reserves_lamports: u64,
+        stake_account_lamports: u64,
+    ) -> Option<u64> {
+        self.fee.apply(
+            owned_lamports,
+            sol_reserves_lamports,
+            stake_account_lamports,
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
 #[repr(C)]
 pub enum FeeEnum {
     /// Charges a flat fee based on a set fee ratio
     /// applied to the size of a given swap
+    ///
+    /// Invariants:
+    ///  - ratio is a valid Rational
+    ///  - ratio <= 1
     Flat { ratio: Rational },
 
     /// Charges a fee based on how much liquidity
     /// a swap leaves in the liquidity pool,
     /// increasing linearly as less liquidity is left
+    ///
+    /// Invariants:
+    ///  - max_liq_remaining is a valid Rational
+    ///  - zero_liq_remaining is a valid Rational
+    ///  - max_liq_remaining <= zero_liq_remaining
     LiquidityLinear { params: LiquidityLinearParams },
 }
 
@@ -38,6 +66,34 @@ pub struct LiquidityLinearParams {
 }
 
 impl FeeEnum {
+    pub fn validate(&self) -> Result<()> {
+        match self {
+            FeeEnum::Flat { ratio } => {
+                if !ratio.validate() || ratio.num > ratio.denom {
+                    return Err(UnstakeError::InvalidFee.into());
+                }
+            }
+            FeeEnum::LiquidityLinear { params } => {
+                if !params.zero_liq_remaining.validate() || !params.max_liq_remaining.validate() {
+                    return Err(UnstakeError::InvalidFee.into());
+                }
+                let zero_liq_fee = params
+                    .zero_liq_remaining
+                    .into_precise_number()
+                    .ok_or(UnstakeError::InternalError)?;
+                let max_liq_fee = params
+                    .max_liq_remaining
+                    .into_precise_number()
+                    .ok_or(UnstakeError::InternalError)?;
+                if max_liq_fee.greater_than(&zero_liq_fee) {
+                    return Err(UnstakeError::InvalidFee.into());
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     /// Applies swap fee to given swap amount and pool's liquidity
     pub fn apply(
         &self,

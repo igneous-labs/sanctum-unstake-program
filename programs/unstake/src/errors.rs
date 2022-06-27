@@ -35,6 +35,9 @@ pub enum UnstakeError {
     #[msg("The provided statke account is locked up")]
     StakeAccountLockupInForce, // 0x177a
 
+    #[msg("The provided description of fee violates the invariants")]
+    InvalidFee, // 0x177b
+
     #[msg("Internal Error")]
-    InternalError, // 0x177b
+    InternalError, // 0x177c
 }
