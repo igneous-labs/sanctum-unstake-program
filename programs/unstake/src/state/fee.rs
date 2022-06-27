@@ -13,16 +13,41 @@ pub struct Fee {
     pub fee: FeeEnum,
 }
 
+impl Fee {
+    pub fn validate(&self) -> Result<()> {
+        self.fee.validate()
+    }
+
+    pub fn apply(
+        &self,
+        owned_lamports: u64,
+        sol_reserves_lamports: u64,
+        stake_account_lamports: u64,
+    ) -> Option<u64> {
+        self.fee.apply(
+            owned_lamports,
+            sol_reserves_lamports,
+            stake_account_lamports,
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
 #[repr(C)]
 pub enum FeeEnum {
     /// Charges a flat fee based on a set fee ratio
     /// applied to the size of a given swap
+    ///
+    /// Invariants:
+    ///  - ratio <= 1
     Flat { ratio: Rational },
 
     /// Charges a fee based on how much liquidity
     /// a swap leaves in the liquidity pool,
     /// increasing linearly as less liquidity is left
+    ///
+    /// Invariants:
+    ///  - max_liq_remaining <= zero_liq_remaining
     LiquidityLinear { params: LiquidityLinearParams },
 }
 

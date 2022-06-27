@@ -118,7 +118,6 @@ impl<'info> Unstake<'info> {
 
         let stake_account_lamports = stake_account.to_account_info().lamports();
         let fee_lamports = fee_account
-            .fee
             .apply(
                 pool_account.owned_lamports,
                 pool_sol_reserves.lamports(),

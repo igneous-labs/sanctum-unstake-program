@@ -22,7 +22,7 @@ pub mod unstake {
     use super::*;
 
     pub fn create_pool(ctx: Context<CreatePool>, fee: Fee) -> Result<()> {
-        fee.fee.validate()?;
+        fee.validate()?;
         CreatePool::run(ctx, fee)
     }
 
@@ -35,7 +35,7 @@ pub mod unstake {
     }
 
     pub fn set_fee(ctx: Context<SetFee>, fee: Fee) -> Result<()> {
-        fee.fee.validate()?;
+        fee.validate()?;
         SetFee::run(ctx, fee)
     }
 
