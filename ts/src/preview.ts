@@ -1,6 +1,6 @@
 import { Program } from "@project-serum/anchor";
 import { Unstake } from "./idl/idl";
-import { UnstakeAccounts, unstakeTx } from "./transactions";
+import { UnstakeAccounts, unstakeIx } from "./instructions";
 
 /**
  * Previews the amount of SOL to be received from unstaking a given stake account
@@ -15,7 +15,7 @@ export async function previewUnstake(
 ): Promise<number> {
   const payer = accounts.payer ?? accounts.unstaker;
   const destination = accounts.destination ?? accounts.unstaker;
-  const tx = await unstakeTx(program, accounts);
+  const tx = new web3.Transaction().add(await unstakeIx(program, accounts));
   tx.feePayer = payer;
   const [
     destinationPreLamports,

@@ -4,6 +4,7 @@ import {
   Keypair,
   PublicKey,
   sendAndConfirmTransaction,
+  Transaction,
   StakeProgram,
   LAMPORTS_PER_SOL,
   SYSVAR_CLOCK_PUBKEY,
@@ -17,7 +18,7 @@ import {
   findPoolSolReserves,
   findStakeAccountRecordAccount,
   previewUnstake,
-  unstakeTx,
+  unstakeIx,
   Unstake,
 } from "../ts/src";
 import {
@@ -236,7 +237,7 @@ describe("ts bindings", () => {
     });
   });
 
-  describe("previewUnstake and unstakeTx", () => {
+  describe("previewUnstake and unstakeIx", () => {
     const testCases = 4;
     const stakeAccKeypairs = [...Array(testCases).keys()].map(() =>
       Keypair.generate()
@@ -292,7 +293,7 @@ describe("ts bindings", () => {
       const unstakerPre = await program.provider.connection.getBalance(
         unstakerKeypair.publicKey
       );
-      const tx = await unstakeTx(program, accounts);
+      const tx = new Transaction().add(await unstakeIx(program, accounts));
       await sendAndConfirmTransaction(program.provider.connection, tx, [
         unstakerKeypair,
       ]);
@@ -315,7 +316,7 @@ describe("ts bindings", () => {
       const unstakerPre = await program.provider.connection.getBalance(
         unstakerKeypair.publicKey
       );
-      const tx = await unstakeTx(program, accounts);
+      const tx = new Transaction().add(await unstakeIx(program, accounts));
       tx.feePayer = payerKeypair.publicKey;
       await sendAndConfirmTransaction(program.provider.connection, tx, [
         payerKeypair,
@@ -341,7 +342,7 @@ describe("ts bindings", () => {
       const destinationPre = await program.provider.connection.getBalance(
         destinationKeypair.publicKey
       );
-      const tx = await unstakeTx(program, accounts);
+      const tx = new Transaction().add(await unstakeIx(program, accounts));
       await sendAndConfirmTransaction(program.provider.connection, tx, [
         unstakerKeypair,
       ]);
@@ -368,7 +369,7 @@ describe("ts bindings", () => {
       const destinationPre = await program.provider.connection.getBalance(
         destinationKeypair.publicKey
       );
-      const tx = await unstakeTx(program, accounts);
+      const tx = new Transaction().add(await unstakeIx(program, accounts));
       tx.feePayer = payerKeypair.publicKey;
       await sendAndConfirmTransaction(program.provider.connection, tx, [
         payerKeypair,

@@ -1,10 +1,9 @@
-import BN from "bn.js";
 import { Program } from "@project-serum/anchor";
 import {
   PublicKey,
   StakeProgram,
   SYSVAR_CLOCK_PUBKEY,
-  Transaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import { Unstake } from "../idl/idl";
 import {
@@ -48,7 +47,7 @@ export type UnstakeAccounts = {
  * @param accounts
  * @returns the created unstake transaction
  */
-export async function unstakeTx(
+export async function unstakeIx(
   program: Program<Unstake>,
   {
     poolAccount,
@@ -57,7 +56,7 @@ export async function unstakeTx(
     payer: payerOption,
     destination: destinationOption,
   }: UnstakeAccounts
-): Promise<Transaction> {
+): Promise<TransactionInstruction> {
   const payer = payerOption ?? unstaker;
   const destination = destinationOption ?? unstaker;
 
@@ -86,5 +85,5 @@ export async function unstakeTx(
       clock: SYSVAR_CLOCK_PUBKEY,
       stakeProgram: StakeProgram.programId,
     })
-    .transaction();
+    .instruction();
 }

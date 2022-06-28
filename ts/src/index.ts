@@ -7,5 +7,5 @@ export * from "./idl/idl";
 export * from "./fetch";
 export * from "./pda";
 export * from "./preview";
-export * from "./transactions";
+export * from "./instructions";
 export * from "./types";
