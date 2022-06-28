@@ -1,8 +1,5 @@
 import * as anchor from "@project-serum/anchor";
-import {
-  getAssociatedTokenAddress,
-  getOrCreateAssociatedTokenAccount,
-} from "@solana/spl-token";
+import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import {
   Keypair,
   PublicKey,
@@ -19,6 +16,8 @@ import {
   findPoolFeeAccount,
   findPoolSolReserves,
   findStakeAccountRecordAccount,
+  previewUnstake,
+  unstakeTx,
   Unstake,
 } from "../ts/src";
 import {
@@ -234,6 +233,157 @@ describe("ts bindings", () => {
       expect(fetched.inactive.length).to.eq(1);
       expect(fetched.activating).to.be.empty;
       expect(fetched.deactivating).to.be.empty;
+    });
+  });
+
+  describe("previewUnstake and unstakeTx", () => {
+    const testCases = 4;
+    const stakeAccKeypairs = [...Array(testCases).keys()].map(() =>
+      Keypair.generate()
+    );
+    const unstakerKeypair = Keypair.generate();
+    const destinationKeypair = Keypair.generate();
+    let stakeAccountRecordAccounts = [...Array(testCases).keys()].map(
+      () => null as PublicKey
+    );
+
+    let unstakerPayerDestination: number = 0;
+    let unstakerNotPayerDestination: number = 0;
+    let unstakerPayerNotDestination: number = 0;
+    let unstakerNotPayerNotDestination: number = 0;
+
+    before(async () => {
+      await airdrop(program.provider.connection, unstakerKeypair.publicKey);
+      stakeAccountRecordAccounts = await Promise.all(
+        stakeAccKeypairs.map((stakeAcc) =>
+          findStakeAccountRecordAccount(
+            program.programId,
+            poolKeypair.publicKey,
+            stakeAcc.publicKey
+          ).then(([pubkey]) => pubkey)
+        )
+      );
+      await Promise.all(
+        stakeAccKeypairs.map((stakeAccKeypair) =>
+          createDelegateStakeTx({
+            connection: provider.connection,
+            stakeAccount: stakeAccKeypair.publicKey,
+            payer: unstakerKeypair.publicKey,
+          }).then((tx) =>
+            sendAndConfirmTransaction(provider.connection, tx, [
+              unstakerKeypair,
+              stakeAccKeypair,
+            ])
+          )
+        )
+      );
+      console.log("awaiting epoch to pass");
+      await waitForEpochToPass(program.provider.connection);
+    });
+
+    it("unstaker == payer == destination", async () => {
+      const stakeAccKeypair = stakeAccKeypairs[0];
+      const accounts = {
+        poolAccount: poolKeypair.publicKey,
+        stakeAccount: stakeAccKeypair.publicKey,
+        unstaker: unstakerKeypair.publicKey,
+      };
+      unstakerPayerDestination = await previewUnstake(program, accounts);
+      const unstakerPre = await program.provider.connection.getBalance(
+        unstakerKeypair.publicKey
+      );
+      const tx = await unstakeTx(program, accounts);
+      await sendAndConfirmTransaction(program.provider.connection, tx, [
+        unstakerKeypair,
+      ]);
+      const unstakerPost = await program.provider.connection.getBalance(
+        unstakerKeypair.publicKey
+      );
+      expect(unstakerPayerDestination).to.be.eq(unstakerPost - unstakerPre);
+      expect(unstakerPayerDestination).to.be.gt(0);
+    });
+
+    it("unstaker == destination != payer", async () => {
+      const stakeAccKeypair = stakeAccKeypairs[1];
+      const accounts = {
+        poolAccount: poolKeypair.publicKey,
+        stakeAccount: stakeAccKeypair.publicKey,
+        unstaker: unstakerKeypair.publicKey,
+        payer: payerKeypair.publicKey,
+      };
+      unstakerNotPayerDestination = await previewUnstake(program, accounts);
+      const unstakerPre = await program.provider.connection.getBalance(
+        unstakerKeypair.publicKey
+      );
+      const tx = await unstakeTx(program, accounts);
+      tx.feePayer = payerKeypair.publicKey;
+      await sendAndConfirmTransaction(program.provider.connection, tx, [
+        payerKeypair,
+        unstakerKeypair,
+      ]);
+      const unstakerPost = await program.provider.connection.getBalance(
+        unstakerKeypair.publicKey
+      );
+      expect(unstakerNotPayerDestination).to.be.eq(unstakerPost - unstakerPre);
+      // unstaker doesnt pay for fees, so should be gt
+      expect(unstakerNotPayerDestination).to.be.gt(unstakerPayerDestination);
+    });
+
+    it("unstaker != destination == payer", async () => {
+      const stakeAccKeypair = stakeAccKeypairs[2];
+      const accounts = {
+        poolAccount: poolKeypair.publicKey,
+        stakeAccount: stakeAccKeypair.publicKey,
+        unstaker: unstakerKeypair.publicKey,
+        destination: destinationKeypair.publicKey,
+      };
+      unstakerPayerNotDestination = await previewUnstake(program, accounts);
+      const destinationPre = await program.provider.connection.getBalance(
+        destinationKeypair.publicKey
+      );
+      const tx = await unstakeTx(program, accounts);
+      await sendAndConfirmTransaction(program.provider.connection, tx, [
+        unstakerKeypair,
+      ]);
+      const destinationPost = await program.provider.connection.getBalance(
+        destinationKeypair.publicKey
+      );
+      expect(unstakerPayerNotDestination).to.be.eq(
+        destinationPost - destinationPre
+      );
+      // destination doesnt pay for fees, so should be same as unstakerNotPayerDestination
+      expect(unstakerPayerNotDestination).to.be.eq(unstakerNotPayerDestination);
+    });
+
+    it("unstaker != destination != payer", async () => {
+      const stakeAccKeypair = stakeAccKeypairs[3];
+      const accounts = {
+        poolAccount: poolKeypair.publicKey,
+        stakeAccount: stakeAccKeypair.publicKey,
+        unstaker: unstakerKeypair.publicKey,
+        payer: payerKeypair.publicKey,
+        destination: destinationKeypair.publicKey,
+      };
+      unstakerNotPayerNotDestination = await previewUnstake(program, accounts);
+      const destinationPre = await program.provider.connection.getBalance(
+        destinationKeypair.publicKey
+      );
+      const tx = await unstakeTx(program, accounts);
+      tx.feePayer = payerKeypair.publicKey;
+      await sendAndConfirmTransaction(program.provider.connection, tx, [
+        payerKeypair,
+        unstakerKeypair,
+      ]);
+      const destinationPost = await program.provider.connection.getBalance(
+        destinationKeypair.publicKey
+      );
+      expect(unstakerNotPayerNotDestination).to.be.eq(
+        destinationPost - destinationPre
+      );
+      // destination doesnt pay for fees, so should be same as unstakerNotPayerDestination
+      expect(unstakerNotPayerNotDestination).to.be.eq(
+        unstakerNotPayerDestination
+      );
     });
   });
 });
