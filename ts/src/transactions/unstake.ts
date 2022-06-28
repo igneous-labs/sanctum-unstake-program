@@ -1,4 +1,3 @@
-import BN from "bn.js";
 import { Program } from "@project-serum/anchor";
 import {
   PublicKey,
