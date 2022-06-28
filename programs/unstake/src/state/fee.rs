@@ -128,6 +128,7 @@ impl FeeEnum {
 
         PreciseNumber::new(stake_account_lamports as u128)?
             .checked_mul(&fee_ratio)?
+            .ceiling()?
             .to_imprecise()
             .and_then(|v| u64::try_from(v).ok())
     }
