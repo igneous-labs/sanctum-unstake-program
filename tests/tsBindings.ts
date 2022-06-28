@@ -64,16 +64,10 @@ describe("ts bindings", () => {
     await program.methods
       .createPool({
         fee: {
-          liquidityLinear: {
-            params: {
-              maxLiqRemaining: {
-                num: new BN(1),
-                denom: new BN(1000),
-              },
-              zeroLiqRemaining: {
-                num: new BN(1),
-                denom: new BN(100),
-              },
+          flat: {
+            ratio: {
+              num: new BN(0),
+              denom: new BN(1000),
             },
           },
         },
