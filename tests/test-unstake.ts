@@ -39,6 +39,9 @@ describe("unstake", () => {
   const program = anchor.workspace.Unstake as anchor.Program<Unstake>;
   const provider = anchor.getProvider();
 
+  // Upper bound for tolerable rounding error
+  const EPSILON_UPPER_BOUND = 9; // TODO: confirm that the value is reasonable
+
   describe("internals", () => {
     const payerKeypair = Keypair.generate();
     const poolKeypair = Keypair.generate();
@@ -856,7 +859,8 @@ describe("unstake", () => {
         const feeLamportsCharged =
           stakeAccountLamports - (unstakerBalancePost - unstakerBalancePre);
 
-        expect(feeLamportsCharged).to.eql(feeLamportsExpected);
+        const epsilon = Math.abs(feeLamportsExpected - feeLamportsCharged);
+        expect(epsilon).to.be.below(EPSILON_UPPER_BOUND);
       });
     });
   });
