@@ -5,8 +5,8 @@ import { IDL, Unstake, createPoolTx } from "@soceanfi/unstake";
 import { Keypair, sendAndConfirmTransaction } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
 import yargs from "yargs";
-import { keypairFromFile } from "./utils";
-import { BN } from "bn.js";
+import { keypairFromFile, readJsonFile } from "./utils";
+import { FeeArg, toFeeChecked } from "./feeArgs";
 
 function initProgram(
   cluster: string,
@@ -38,10 +38,17 @@ yargs(hideBin(process.argv))
     type: "string",
   })
   .command(
-    "create_pool",
+    "create_pool <fee>",
     "create a new unstake liquidity pool",
     (y) =>
       y
+        .positional("fee_path", {
+          type: "string",
+          description:
+            "Path to JSON file defining liquidity pool's fee settings. Example contents:\n" +
+            "{ liquidityLinear: { maxLiqRemaining: 0.003, zeroLiqRemaining: 0.03 }}\n" +
+            "{ flat: 0.01 }",
+        })
         .option("payer", {
           type: "string",
           description: "Path to keypair paying for the pool's rent and tx fees",
@@ -67,30 +74,16 @@ yargs(hideBin(process.argv))
       cluster,
       wallet,
       program_id,
+      fee_path,
       payer: payerOption,
       fee_authority: feeAuthorityOption,
       pool_account: poolAccountOption,
       lp_mint: lpMintOption,
     }) => {
-      // TODO: replace with positional arg
-      const fee = {
-        fee: {
-          liquidityLinear: {
-            params: {
-              maxLiqRemaining: {
-                num: new BN(15),
-                denom: new BN(1000),
-              },
-              zeroLiqRemaining: {
-                num: new BN(42),
-                denom: new BN(1000),
-              },
-            },
-          },
-        },
-      };
       const program = initProgram(cluster, wallet, program_id);
       const provider = program.provider as AnchorProvider;
+      const fee = toFeeChecked(readJsonFile(fee_path!) as FeeArg);
+      console.log("Fee:", fee);
       const poolAccountDefault = Keypair.generate();
       const lpMintDefault = Keypair.generate();
       const accounts = {
@@ -113,8 +106,8 @@ yargs(hideBin(process.argv))
         ([accountKey, option]) => {
           if (option) {
             const keypair = keypairFromFile(option);
-            accounts[accountKey] = keypair.publicKey;
-            signers[accountKey] = keypair;
+            accounts[accountKey as keyof typeof accounts] = keypair.publicKey;
+            signers[accountKey as keyof typeof signers] = keypair;
           }
         }
       );

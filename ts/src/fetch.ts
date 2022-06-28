@@ -68,6 +68,6 @@ export async function fetchLiquidityPoolStakeAccounts(
       inactive: [],
       activating: [],
       deactivating: [],
-    }
+    } as LiquidityPoolStakeAccounts
   );
 }

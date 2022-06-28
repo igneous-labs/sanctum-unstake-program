@@ -22,9 +22,7 @@ export async function previewUnstake(
   const [
     destinationPreLamports,
     {
-      value: {
-        accounts: [destinationPost],
-      },
+      value: { accounts: accountsPost },
     },
   ] = await Promise.all([
     program.provider.connection.getBalance(destinationPk),
@@ -32,5 +30,9 @@ export async function previewUnstake(
       destinationPk,
     ]),
   ]);
+  if (!accountsPost || !accountsPost[0]) {
+    throw new Error("Could not retrieve post-simulation accounts result");
+  }
+  const destinationPost = accountsPost[0];
   return destinationPost.lamports - destinationPreLamports;
 }
