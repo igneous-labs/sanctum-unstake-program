@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Address, AnchorProvider, Program } from "@project-serum/anchor";
-import { IDL, Unstake, createPoolTx } from "@soceanfi/unstake";
-import { Keypair, sendAndConfirmTransaction } from "@solana/web3.js";
+import { IDL_JSON, Unstake, createPoolTx } from "@soceanfi/unstake";
+import { Keypair } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
 import yargs from "yargs";
 import { keypairFromFile, readJsonFile } from "./utils";
@@ -15,7 +15,7 @@ function initProgram(
 ): Program<Unstake> {
   process.env.ANCHOR_PROVIDER_URL = cluster;
   process.env.ANCHOR_WALLET = wallet;
-  return new Program(IDL, program, AnchorProvider.env());
+  return new Program(IDL_JSON as Unstake, program, AnchorProvider.env());
 }
 
 yargs(hideBin(process.argv))
@@ -24,7 +24,7 @@ yargs(hideBin(process.argv))
   .alias("h", "help")
   .option("cluster", {
     describe: "solana cluster",
-    default: "http://localhost:8899",
+    default: "http://127.0.0.1:8899",
     type: "string",
   })
   .option("wallet", {
@@ -38,7 +38,7 @@ yargs(hideBin(process.argv))
     type: "string",
   })
   .command(
-    "create_pool <fee>",
+    "create_pool <fee_path>",
     "create a new unstake liquidity pool",
     (y) =>
       y
@@ -83,7 +83,7 @@ yargs(hideBin(process.argv))
       const program = initProgram(cluster, wallet, program_id);
       const provider = program.provider as AnchorProvider;
       const fee = toFeeChecked(readJsonFile(fee_path!) as FeeArg);
-      console.log("Fee:", fee);
+      console.log("Fee:", JSON.stringify(fee));
       const poolAccountDefault = Keypair.generate();
       const lpMintDefault = Keypair.generate();
       const accounts = {
@@ -112,11 +112,7 @@ yargs(hideBin(process.argv))
         }
       );
       const tx = await createPoolTx(program, fee, accounts);
-      const sig = await sendAndConfirmTransaction(
-        provider.connection,
-        tx,
-        Object.values(signers)
-      );
+      const sig = await provider.sendAndConfirm(tx, Object.values(signers));
       console.log(
         "Liquidity pool initialized at",
         accounts.poolAccount.toString(),
