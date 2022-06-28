@@ -1,4 +1,4 @@
-import { Program } from "@project-serum/anchor";
+import { Address, Program } from "@project-serum/anchor";
 import {
   PublicKey,
   StakeProgram,
@@ -16,29 +16,29 @@ export type UnstakeAccounts = {
   /**
    * The liquidity pool to unstake from
    */
-  poolAccount: PublicKey;
+  poolAccount: Address;
 
   /**
    * The stake account to unstake
    */
-  stakeAccount: PublicKey;
+  stakeAccount: Address;
 
   /**
    * `stakeAcc`'s withdraw authority
    */
-  unstaker: PublicKey;
+  unstaker: Address;
 
   /**
-   * The SOL account paying for the transaction.
+   * The SOL account paying for the transaction and rent.
    * Defaults to `unstaker` if unspecified
    */
-  payer?: PublicKey;
+  payer?: Address;
 
   /**
    * The SOL account to receive the unstaked SOL.
    * Defaults to `unstaker` if unspecified
    */
-  destination?: PublicKey;
+  destination?: Address;
 };
 
 /**
@@ -60,15 +60,20 @@ export async function unstakeTx(
   const payer = payerOption ?? unstaker;
   const destination = destinationOption ?? unstaker;
 
+  const poolAccountPk = new PublicKey(poolAccount);
+  const stakeAccountPk = new PublicKey(stakeAccount);
   const [poolSolReserves] = await findPoolSolReserves(
     program.programId,
-    poolAccount
+    poolAccountPk
   );
-  const [feeAccount] = await findPoolFeeAccount(program.programId, poolAccount);
+  const [feeAccount] = await findPoolFeeAccount(
+    program.programId,
+    poolAccountPk
+  );
   const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
     program.programId,
-    poolAccount,
-    stakeAccount
+    poolAccountPk,
+    stakeAccountPk
   );
 
   return program.methods

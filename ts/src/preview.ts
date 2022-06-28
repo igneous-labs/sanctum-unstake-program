@@ -1,4 +1,5 @@
 import { Program } from "@project-serum/anchor";
+import { PublicKey } from "@solana/web3.js";
 import { Unstake } from "./idl/idl";
 import { UnstakeAccounts, unstakeTx } from "./transactions";
 
@@ -15,8 +16,9 @@ export async function previewUnstake(
 ): Promise<number> {
   const payer = accounts.payer ?? accounts.unstaker;
   const destination = accounts.destination ?? accounts.unstaker;
+  const destinationPk = new PublicKey(destination);
   const tx = await unstakeTx(program, accounts);
-  tx.feePayer = payer;
+  tx.feePayer = new PublicKey(payer);
   const [
     destinationPreLamports,
     {
@@ -25,9 +27,9 @@ export async function previewUnstake(
       },
     },
   ] = await Promise.all([
-    program.provider.connection.getBalance(destination),
+    program.provider.connection.getBalance(destinationPk),
     program.provider.connection.simulateTransaction(tx, undefined, [
-      destination,
+      destinationPk,
     ]),
   ]);
   return destinationPost.lamports - destinationPreLamports;
