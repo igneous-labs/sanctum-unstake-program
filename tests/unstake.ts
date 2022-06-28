@@ -365,23 +365,19 @@ describe("unstake", () => {
 
     describe("Admin facing", () => {
       it("it sets fee", async () => {
-        await program.methods
-          .setFee({
-            fee: {
-              liquidityLinear: {
-                params: {
-                  maxLiqRemaining: {
-                    num: new BN(25),
-                    denom: new BN(1000),
-                  },
-                  zeroLiqRemaining: {
-                    num: new BN(42),
-                    denom: new BN(1000),
-                  },
-                },
-              },
+        // NOTE: assuming the fee account isn't previously set to Flat 69% fee
+        // set Flat fee
+        const FLAT_FEE = {
+          flat: {
+            ratio: {
+              num: new BN(69),
+              denom: new BN(100),
             },
-          })
+          },
+        };
+
+        await program.methods
+          .setFee({ fee: FLAT_FEE })
           .accounts({
             feeAuthority: payerKeypair.publicKey,
             poolAccount: poolKeypair.publicKey,
@@ -390,7 +386,43 @@ describe("unstake", () => {
           .signers([payerKeypair])
           .rpc({ skipPreflight: true });
 
-        // TODO: assertions
+        await program.account.fee.fetch(feeAccount).then(({ fee }) => {
+          // NOTE: work around for BN's internal state differences
+          expect(JSON.stringify(fee)).to.eql(JSON.stringify(FLAT_FEE));
+        });
+
+        // set LiquidityLinear fee
+        const LIQUIDITY_LINEAR_FEE = {
+          liquidityLinear: {
+            params: {
+              maxLiqRemaining: {
+                num: new BN(25),
+                denom: new BN(1000),
+              },
+              zeroLiqRemaining: {
+                num: new BN(42),
+                denom: new BN(1000),
+              },
+            },
+          },
+        };
+
+        await program.methods
+          .setFee({ fee: LIQUIDITY_LINEAR_FEE })
+          .accounts({
+            feeAuthority: payerKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            feeAccount,
+          })
+          .signers([payerKeypair])
+          .rpc({ skipPreflight: true });
+
+        await program.account.fee.fetch(feeAccount).then(({ fee }) => {
+          // NOTE: work around for BN's internal state differences
+          expect(JSON.stringify(fee)).to.eql(
+            JSON.stringify(LIQUIDITY_LINEAR_FEE)
+          );
+        });
       });
 
       it("it rejects to set fee when the authority does not match", async () => {
