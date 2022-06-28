@@ -101,9 +101,8 @@ impl FeeEnum {
         sol_reserves_lamports: u64,
         stake_account_lamports: u64,
     ) -> Option<u64> {
-        let fee_lamports = match self {
-            FeeEnum::Flat { ratio } => PreciseNumber::new(stake_account_lamports as u128)?
-                .checked_mul(&ratio.into_precise_number()?)?,
+        let fee_ratio = match self {
+            FeeEnum::Flat { ratio } => ratio.into_precise_number()?,
             FeeEnum::LiquidityLinear { params } => {
                 // linear interpolation from max_liq_remaining to zero_liq_remaining where y-intercept at max_liq_remaining
                 // x-axis is ratio of liquidity consumed
@@ -127,7 +126,8 @@ impl FeeEnum {
             }
         };
 
-        fee_lamports
+        PreciseNumber::new(stake_account_lamports as u128)?
+            .checked_mul(&fee_ratio)?
             .to_imprecise()
             .and_then(|v| u64::try_from(v).ok())
     }
