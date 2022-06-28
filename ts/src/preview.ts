@@ -1,4 +1,4 @@
-import { Program } from "@project-serum/anchor";
+import { Program, web3 } from "@project-serum/anchor";
 import { Unstake } from "./idl/idl";
 import { UnstakeAccounts, unstakeIx } from "./instructions";
 
@@ -15,6 +15,9 @@ export async function previewUnstake(
 ): Promise<number> {
   const payer = accounts.payer ?? accounts.unstaker;
   const destination = accounts.destination ?? accounts.unstaker;
+  // FIXME: simulateTransaction fails with `TypeError: Cannot read properties of undefined (reading 'numRequiredSignatures')`
+  // because `instanceof Transaction` check in solana/web3.js: https://github.com/solana-labs/solana-web3.js/blob/ca780d88a8d2bcdd7466b6f760ffca0e8eeff2f6/src/connection.ts#L4061
+  // fails because the Transaction class used here is different from the Transaction class in anchor's node_modules.
   const tx = new web3.Transaction().add(await unstakeIx(program, accounts));
   tx.feePayer = payer;
   const [
