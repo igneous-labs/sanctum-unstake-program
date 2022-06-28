@@ -100,14 +100,10 @@ describe("unstake", () => {
           .signers([payerKeypair, poolKeypair, lpMintKeypair])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.then(function (err) {
-        // NOTE: using simple rejection test, due to the unstable behavior of chai-as-promised
-        // NOTE: make sure to sufficiently check the actual error before commenting out
-        //expect(err).to.have.a.property("code", 6011);
-        //expect(err).to.have.a.property(
-        //  "msg",
-        //  "The provided description of fee violates the invariants"
-        //);
-        console.log(err.code, err.msg);
+        expect(err.code).to.eql(6011);
+        expect(err.msg).to.eql(
+          "The provided description of fee violates the invariants"
+        );
       });
     });
 
@@ -453,14 +449,10 @@ describe("unstake", () => {
             .signers([rando])
             .rpc({ skipPreflight: true })
         ).to.be.eventually.rejected.then(function (err) {
-          // NOTE: using simple rejection test, due to the unstable behavior of chai-as-promised
-          // NOTE: make sure to sufficiently check the actual error before commenting out
-          //expect(err).to.have.a.property("code", 6006);
-          //expect(err).to.have.a.property(
-          //  "msg",
-          //  "The provided fee authority does not have the authority over the provided pool account"
-          //);
-          console.log(err.code, err.msg);
+          expect(err.code).to.eql(6006);
+          expect(err.msg).to.eql(
+            "The provided fee authority does not have the authority over the provided pool account"
+          );
         });
       });
 
@@ -485,14 +477,10 @@ describe("unstake", () => {
             .signers([payerKeypair])
             .rpc({ skipPreflight: true })
         ).to.be.eventually.rejected.then(function (err) {
-          // NOTE: using simple rejection test, due to the unstable behavior of chai-as-promised
-          // NOTE: make sure to sufficiently check the actual error before commenting out
-          //expect(err).to.have.a.property("code", 6011);
-          //expect(err).to.have.a.property(
-          //  "msg",
-          //  "The provided description of fee violates the invariants"
-          //);
-          console.log("Flat fee higher than 100%:\n", err.code, err.msg);
+          expect(err.code).to.eql(6011);
+          expect(err.msg).to.eql(
+            "The provided description of fee violates the invariants"
+          );
         });
 
         await expect(
@@ -515,14 +503,10 @@ describe("unstake", () => {
             .signers([payerKeypair])
             .rpc({ skipPreflight: true })
         ).to.be.eventually.rejected.then(function (err) {
-          // NOTE: using simple rejection test, due to the unstable behavior of chai-as-promised
-          // NOTE: make sure to sufficiently check the actual error before commenting out
-          //expect(err).to.have.a.property("code", 6011);
-          //expect(err).to.have.a.property(
-          //  "msg",
-          //  "The provided description of fee violates the invariants"
-          //);
-          console.log("Flat with DNE rational number:\n", err.code, err.msg);
+          expect(err.code).to.eql(6011);
+          expect(err.msg).to.eql(
+            "The provided description of fee violates the invariants"
+          );
         });
 
         await expect(
@@ -551,17 +535,9 @@ describe("unstake", () => {
             .signers([payerKeypair])
             .rpc({ skipPreflight: true })
         ).to.be.eventually.rejected.then(function (err) {
-          // NOTE: using simple rejection test, due to the unstable behavior of chai-as-promised
-          // NOTE: make sure to sufficiently check the actual error before commenting out
-          //expect(err).to.have.a.property("code", 6011);
-          //expect(err).to.have.a.property(
-          //  "msg",
-          //  "The provided description of fee violates the invariants"
-          //);
-          console.log(
-            "LiquidityLinear with negative slope:\n",
-            err.code,
-            err.msg
+          expect(err.code).to.eql(6011);
+          expect(err.msg).to.eql(
+            "The provided description of fee violates the invariants"
           );
         });
 
@@ -591,17 +567,9 @@ describe("unstake", () => {
             .signers([payerKeypair])
             .rpc({ skipPreflight: true })
         ).to.be.eventually.rejected.then(function (err) {
-          // NOTE: using simple rejection test, due to the unstable behavior of chai-as-promised
-          // NOTE: make sure to sufficiently check the actual error before commenting out
-          //expect(err).to.have.a.property("code", 6011);
-          //expect(err).to.have.a.property(
-          //  "msg",
-          //  "The provided description of fee violates the invariants"
-          //);
-          console.log(
-            "LiquidityLinear with DNE rational number:\n",
-            err.code,
-            err.msg
+          expect(err.code).to.eql(6011);
+          expect(err.msg).to.eql(
+            "The provided description of fee violates the invariants"
           );
         });
       });
@@ -663,14 +631,8 @@ describe("unstake", () => {
             .signers([unstaker])
             .rpc({ skipPreflight: true })
         ).to.be.eventually.rejected.then(function (err) {
-          // NOTE: commented out due to the unstable behavior of chai-as-promised
-          // NOTE: make sure to sufficiently check the actual error before commenting out
-          //expect(err).to.have.a.property("code", 6010);
-          //expect(err).to.have.a.property(
-          //  "msg",
-          //  "The provided statke account is locked up"
-          //);
-          console.log(err.code, err.msg);
+          expect(err.code).to.eql(6010);
+          expect(err.msg).to.eql("The provided statke account is locked up");
         });
       });
 
