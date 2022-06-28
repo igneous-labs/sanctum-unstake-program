@@ -733,15 +733,15 @@ describe("unstake", () => {
             },
           }) => ratio.num.toNumber() / ratio.denom.toNumber()
         );
-        const feeLamportExpected = await program.account.stakeAccountRecord
+        const feeLamportsExpected = await program.account.stakeAccountRecord
           .fetch(stakeAccountRecordAccount)
           .then(({ lamportsAtCreation }) =>
             Math.ceil(lamportsAtCreation * flatFeeRatio)
           );
-        const feeLamportCharged =
+        const feeLamportsCharged =
           stakeAccLamports - (unstakerBalancePost - unstakerBalancePre);
 
-        expect(feeLamportCharged).to.eql(feeLamportExpected);
+        expect(feeLamportsCharged).to.eql(feeLamportsExpected);
       });
 
       it("it charges LiquidityLinear fee on unstake", async () => {
@@ -787,6 +787,20 @@ describe("unstake", () => {
 
         await waitForEpochToPass(provider.connection);
 
+        const stakeAccLamports = await provider.connection.getBalance(
+          stakeAccountKeypair.publicKey
+        );
+        const unstakerBalancePre = await provider.connection.getBalance(
+          unstakerKeypair.publicKey
+        );
+        const { ownedLamports: ownedLamportsPre } =
+          await program.account.pool.fetch(poolKeypair.publicKey);
+        const solReservesLamportsPre = await provider.connection.getBalance(
+          poolSolReserves
+        );
+        const liquidityConsumed =
+          stakeAccLamports + ownedLamportsPre - solReservesLamportsPre;
+
         const [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
           await findStakeAccountRecordAccount(
             program.programId,
@@ -811,8 +825,37 @@ describe("unstake", () => {
           .signers([payerKeypair, unstakerKeypair])
           .rpc({ skipPreflight: true });
 
-        // TODO: assert the amount of fee charged
-        throw new Error("Not yet implemented");
+        const unstakerBalancePost = await provider.connection.getBalance(
+          unstakerKeypair.publicKey
+        );
+
+        const feeLamportsExpected = await program.account.fee
+          .fetch(feeAccount)
+          .then(
+            ({
+              fee: {
+                liquidityLinear: { params },
+              },
+            }) => {
+              const zeroLiquidityRemaining =
+                params.zeroLiqRemaining.num.toNumber() /
+                params.zeroLiqRemaining.denom.toNumber();
+              const maxLiquidityRemaining =
+                params.maxLiqRemaining.num.toNumber() /
+                params.maxLiqRemaining.denom.toNumber();
+              const slope =
+                (zeroLiquidityRemaining - maxLiquidityRemaining) /
+                ownedLamportsPre;
+              return Math.ceil(
+                slope * liquidityConsumed + maxLiquidityRemaining
+              );
+            }
+          );
+
+        const feeLamportsCharged =
+          stakeAccLamports - (unstakerBalancePost - unstakerBalancePre);
+
+        expect(feeLamportsCharged).to.eql(feeLamportsExpected);
       });
     });
   });
