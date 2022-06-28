@@ -1,4 +1,4 @@
-import { Address, IdlAccounts, Program } from "@project-serum/anchor";
+import { Address, Program } from "@project-serum/anchor";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { Unstake } from "../idl/idl";
 import { findPoolFeeAccount, findPoolSolReserves } from "../pda";
