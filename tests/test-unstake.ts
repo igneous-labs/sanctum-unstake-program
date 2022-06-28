@@ -595,8 +595,8 @@ describe("unstake", () => {
       });
 
       it("it rejects to unstake a locked up stake account", async () => {
-        const unstaker = Keypair.generate();
-        await airdrop(provider.connection, unstaker.publicKey);
+        const unstakerKeypair = Keypair.generate();
+        await airdrop(provider.connection, unstakerKeypair.publicKey);
 
         const custodian = Keypair.generate();
         const { epoch: currentEpoch } =
@@ -613,13 +613,13 @@ describe("unstake", () => {
         const createStakeAuthTx = await createDelegateStakeTx({
           connection: provider.connection,
           stakeAccount: stakeAccountKeypair.publicKey,
-          payer: unstaker.publicKey,
+          payer: unstakerKeypair.publicKey,
           lockup,
         });
         await sendAndConfirmTransaction(
           provider.connection,
           createStakeAuthTx,
-          [unstaker, stakeAccountKeypair]
+          [unstakerKeypair, stakeAccountKeypair]
         );
 
         await waitForEpochToPass(provider.connection);
@@ -635,10 +635,10 @@ describe("unstake", () => {
           program.methods
             .unstake()
             .accounts({
-              payer: unstaker.publicKey,
-              unstaker: unstaker.publicKey,
+              payer: unstakerKeypair.publicKey,
+              unstaker: unstakerKeypair.publicKey,
               stakeAccount: stakeAccountKeypair.publicKey,
-              destination: unstaker.publicKey,
+              destination: unstakerKeypair.publicKey,
               poolAccount: poolKeypair.publicKey,
               poolSolReserves,
               feeAccount,
@@ -646,7 +646,7 @@ describe("unstake", () => {
               clock: SYSVAR_CLOCK_PUBKEY,
               stakeProgram: StakeProgram.programId,
             })
-            .signers([unstaker])
+            .signers([unstakerKeypair])
             .rpc({ skipPreflight: true })
         ).to.be.eventually.rejected.then(function (err) {
           expect(err.code).to.eql(6010);
@@ -674,22 +674,29 @@ describe("unstake", () => {
           .signers([payerKeypair])
           .rpc({ skipPreflight: true });
 
-        const unstaker = Keypair.generate();
-        await airdrop(provider.connection, unstaker.publicKey);
+        const unstakerKeypair = Keypair.generate();
+        await airdrop(provider.connection, unstakerKeypair.publicKey);
 
         const stakeAccountKeypair = Keypair.generate();
         const createStakeAuthTx = await createDelegateStakeTx({
           connection: provider.connection,
           stakeAccount: stakeAccountKeypair.publicKey,
-          payer: unstaker.publicKey,
+          payer: unstakerKeypair.publicKey,
         });
         await sendAndConfirmTransaction(
           provider.connection,
           createStakeAuthTx,
-          [unstaker, stakeAccountKeypair]
+          [unstakerKeypair, stakeAccountKeypair]
         );
 
         await waitForEpochToPass(provider.connection);
+
+        const stakeAccLamports = await provider.connection.getBalance(
+          stakeAccountKeypair.publicKey
+        );
+        const unstakerBalancePre = await provider.connection.getBalance(
+          unstakerKeypair.publicKey
+        );
 
         const [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
           await findStakeAccountRecordAccount(
@@ -701,10 +708,10 @@ describe("unstake", () => {
         await program.methods
           .unstake()
           .accounts({
-            payer: unstaker.publicKey,
-            unstaker: unstaker.publicKey,
+            payer: payerKeypair.publicKey,
+            unstaker: unstakerKeypair.publicKey,
             stakeAccount: stakeAccountKeypair.publicKey,
-            destination: unstaker.publicKey,
+            destination: unstakerKeypair.publicKey,
             poolAccount: poolKeypair.publicKey,
             poolSolReserves,
             feeAccount,
@@ -712,11 +719,31 @@ describe("unstake", () => {
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
           })
-          .signers([unstaker])
+          .signers([payerKeypair, unstakerKeypair])
           .rpc({ skipPreflight: true });
 
-        // TODO: assert the amount of fee charged
+        const unstakerBalancePost = await provider.connection.getBalance(
+          unstakerKeypair.publicKey
+        );
+
+        const flatFeeRatio = await program.account.fee.fetch(feeAccount).then(
+          ({
+            fee: {
+              flat: { ratio },
+            },
+          }) => ratio.num.toNumber() / ratio.denom.toNumber()
+        );
+        const feeLamportExpected = await program.account.stakeAccountRecord
+          .fetch(stakeAccountRecordAccount)
+          .then(({ lamportsAtCreation }) =>
+            Math.ceil(lamportsAtCreation * flatFeeRatio)
+          );
+        const feeLamportCharged =
+          stakeAccLamports - (unstakerBalancePost - unstakerBalancePre);
+
+        expect(feeLamportCharged).to.eql(feeLamportExpected);
       });
+
       it("it charges LiquidityLinear fee on unstake", async () => {
         await program.methods
           .setFee({
@@ -743,19 +770,19 @@ describe("unstake", () => {
           .signers([payerKeypair])
           .rpc({ skipPreflight: true });
 
-        const unstaker = Keypair.generate();
-        await airdrop(provider.connection, unstaker.publicKey);
+        const unstakerKeypair = Keypair.generate();
+        await airdrop(provider.connection, unstakerKeypair.publicKey);
 
         const stakeAccountKeypair = Keypair.generate();
         const createStakeAuthTx = await createDelegateStakeTx({
           connection: provider.connection,
           stakeAccount: stakeAccountKeypair.publicKey,
-          payer: unstaker.publicKey,
+          payer: unstakerKeypair.publicKey,
         });
         await sendAndConfirmTransaction(
           provider.connection,
           createStakeAuthTx,
-          [unstaker, stakeAccountKeypair]
+          [unstakerKeypair, stakeAccountKeypair]
         );
 
         await waitForEpochToPass(provider.connection);
@@ -770,10 +797,10 @@ describe("unstake", () => {
         await program.methods
           .unstake()
           .accounts({
-            payer: unstaker.publicKey,
-            unstaker: unstaker.publicKey,
+            payer: payerKeypair.publicKey,
+            unstaker: unstakerKeypair.publicKey,
             stakeAccount: stakeAccountKeypair.publicKey,
-            destination: unstaker.publicKey,
+            destination: unstakerKeypair.publicKey,
             poolAccount: poolKeypair.publicKey,
             poolSolReserves,
             feeAccount,
@@ -781,10 +808,11 @@ describe("unstake", () => {
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
           })
-          .signers([unstaker])
+          .signers([payerKeypair, unstakerKeypair])
           .rpc({ skipPreflight: true });
 
         // TODO: assert the amount of fee charged
+        throw new Error("Not yet implemented");
       });
     });
   });
@@ -794,7 +822,7 @@ describe("unstake", () => {
     const lperKeypair = Keypair.generate();
     const poolKeypair = Keypair.generate();
     const lpMintKeypair = Keypair.generate();
-    const unstaker = Keypair.generate();
+    const unstakerKeypair = Keypair.generate();
     const stakeAccountKeypair = Keypair.generate();
 
     const liquidityAmount = new BN(0.1 * LAMPORTS_PER_SOL);
@@ -811,7 +839,7 @@ describe("unstake", () => {
       console.log("airdropping to payer, lper, and unstaker");
       await airdrop(provider.connection, payerKeypair.publicKey);
       await airdrop(provider.connection, lperKeypair.publicKey);
-      await airdrop(provider.connection, unstaker.publicKey);
+      await airdrop(provider.connection, unstakerKeypair.publicKey);
       [poolSolReserves, poolSolReservesBump] = await findPoolSolReserves(
         program.programId,
         poolKeypair.publicKey
@@ -880,10 +908,10 @@ describe("unstake", () => {
       const createStakeAuthTx = await createDelegateStakeTx({
         connection: provider.connection,
         stakeAccount: stakeAccountKeypair.publicKey,
-        payer: unstaker.publicKey,
+        payer: unstakerKeypair.publicKey,
       });
       await sendAndConfirmTransaction(provider.connection, createStakeAuthTx, [
-        unstaker,
+        unstakerKeypair,
         stakeAccountKeypair,
       ]);
 
@@ -895,10 +923,10 @@ describe("unstake", () => {
       await program.methods
         .unstake()
         .accounts({
-          payer: unstaker.publicKey,
-          unstaker: unstaker.publicKey,
+          payer: unstakerKeypair.publicKey,
+          unstaker: unstakerKeypair.publicKey,
           stakeAccount: stakeAccountKeypair.publicKey,
-          destination: unstaker.publicKey,
+          destination: unstakerKeypair.publicKey,
           poolAccount: poolKeypair.publicKey,
           poolSolReserves,
           feeAccount,
@@ -906,7 +934,7 @@ describe("unstake", () => {
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
         })
-        .signers([unstaker])
+        .signers([unstakerKeypair])
         .rpc({ skipPreflight: true });
 
       // TODO: assert the stake account ownership is transfered
