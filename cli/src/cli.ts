@@ -46,8 +46,8 @@ yargs(hideBin(process.argv))
           type: "string",
           description:
             "Path to JSON file defining liquidity pool's fee settings. Example contents:\n" +
-            "{ liquidityLinear: { maxLiqRemaining: 0.003, zeroLiqRemaining: 0.03 }}\n" +
-            "{ flat: 0.01 }",
+            '{ "liquidityLinear": { "maxLiqRemaining": 0.003, "zeroLiqRemaining": 0.03 }}\n' +
+            '{ "flat": 0.01 }',
         })
         .option("payer", {
           type: "string",
