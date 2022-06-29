@@ -17,6 +17,8 @@ impl Fee {
         self.fee.validate()
     }
 
+    /// Invariants:
+    /// - sol_reserves_lamports >= stake_account_lamports
     pub fn apply(
         &self,
         owned_lamports: u64,

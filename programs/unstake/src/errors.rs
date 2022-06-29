@@ -40,4 +40,7 @@ pub enum UnstakeError {
 
     #[msg("Internal Error")]
     InternalError, // 0x177c
+
+    #[msg("Not enough liquidity to service this unstake")]
+    NotEnoughLiquidity, // 0x177d
 }
