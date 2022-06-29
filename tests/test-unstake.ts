@@ -736,11 +736,9 @@ describe("unstake", () => {
             },
           }) => ratio.num.toNumber() / ratio.denom.toNumber()
         );
-        const feeLamportsExpected = await program.account.stakeAccountRecord
-          .fetch(stakeAccountRecordAccount)
-          .then(({ lamportsAtCreation }) =>
-            Math.ceil(lamportsAtCreation * flatFeeRatio)
-          );
+        const feeLamportsExpected = Math.ceil(
+          stakeAccountLamports * flatFeeRatio
+        );
         const feeLamportsCharged =
           stakeAccountLamports - (unstakerBalancePost - unstakerBalancePre);
 
