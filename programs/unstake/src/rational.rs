@@ -5,7 +5,7 @@ use spl_math::precise_number::PreciseNumber;
 #[derive(Debug, PartialEq, Clone, Copy, AnchorSerialize, AnchorDeserialize)]
 pub struct Rational {
     pub num: u64,
-    pub denom: u64,
+    pub denom: u64, // maybe enforce non-zero with NonZeroU64? https://doc.rust-lang.org/stable/std/num/struct.NonZeroU64.html
 }
 
 impl Rational {

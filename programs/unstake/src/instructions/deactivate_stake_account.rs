@@ -3,6 +3,7 @@ use anchor_spl::stake::{self, DeactivateStake, Stake, StakeAccount};
 
 use crate::{errors::UnstakeError, state::Pool};
 
+// just want to confirm that this is a permissionless crank that anyone is expected to be allowed to call if they want.
 #[derive(Accounts)]
 pub struct DeactivateStakeAccount<'info> {
     /// The stake account to be deactivated. Should have authority

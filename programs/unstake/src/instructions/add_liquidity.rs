@@ -30,7 +30,7 @@ pub struct AddLiquidity<'info> {
     pub lp_mint: Account<'info, Mint>,
 
     /// lp token account to mint lp tokens to
-    #[account(
+    #[account( // should this use init_if_needed to ease calls? I can't remember if there was some security issues w/ that or if people just used it in dumb ways.
         mut,
         constraint = mint_lp_tokens_to.mint == lp_mint.key() @ UnstakeError::InvalidLpTokenAccount
     )]
@@ -74,7 +74,7 @@ impl<'info> AddLiquidity<'info> {
             &pool_account.key().to_bytes(),
             &[*ctx
                 .bumps
-                .get("pool_sol_reserves")
+                .get("pool_sol_reserves") //not really actionable but I hate that anchor doesn't generate constants for these
                 .ok_or(UnstakeError::PdaBumpNotCached)?],
         ];
         token::mint_to(
@@ -92,6 +92,9 @@ impl<'info> AddLiquidity<'info> {
     }
 }
 
+// might want to add some unit tests to prove the edge cases and the like, mostly to prevent breaking on accident later.
+// would be eaiser to unit test if it took owned_lamports and supply as u64's instead of the structs
+//could make this return std::result::Result<u64,UnstakeError> to avoid the `?` unwrap and re-wrap w/ Ok at return time
 fn calc_lp_tokens_to_mint(pool: &Pool, lp_mint: &Mint, amount_to_add: u64) -> Result<u64> {
     // 0-edge cases: should all result in pool.owned_lamports 1:1 lp_mint.supply
     // 0 liquidity, 0 supply. mint = amount_to_add

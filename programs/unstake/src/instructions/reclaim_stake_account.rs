@@ -6,6 +6,7 @@ use crate::{
     state::{Pool, StakeAccountRecord},
 };
 
+// just want to confirm that this is a permissionless crank that anyone is expected to be allowed to call if they want.
 #[derive(Accounts)]
 pub struct ReclaimStakeAccount<'info> {
     /// The stake account to be reclaimed.

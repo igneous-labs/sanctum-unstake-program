@@ -93,7 +93,7 @@ impl<'info> RemoveLiquidity<'info> {
         // update owned_lamports
         pool_account.owned_lamports = pool_account
             .owned_lamports
-            .checked_sub(to_return)
+            .checked_sub(to_return) //can possibly use saturating_sub instead of checked to avoid ok_or.
             .ok_or(UnstakeError::RemoveLiquiditySolOverflow)?;
 
         Ok(())
