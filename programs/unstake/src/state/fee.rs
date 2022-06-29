@@ -17,7 +17,7 @@ impl Fee {
         self.fee.validate()
     }
 
-    /// Invariants:
+    /// Preconditions:
     /// - sol_reserves_lamports >= stake_account_lamports
     pub fn apply(
         &self,
