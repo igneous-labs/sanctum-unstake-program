@@ -1,6 +1,6 @@
 import { Rational } from "@soceanfi/unstake";
 import { Keypair } from "@solana/web3.js";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { readFileSync } from "fs";
 
 export function readJsonFile(path: string): Object {
@@ -30,4 +30,34 @@ export function numberToPositiveRationalChecked(n: number): Rational {
   const num = new BN(s.substring(0, dpi) + s.substring(dpi + 1));
   const denom = new BN(10 ** dps);
   return { num, denom };
+}
+
+function parsePosDecimalsToAtomics(
+  decimalsString: string,
+  tokenDecimals: number
+): BN {
+  const match = decimalsString.match(/^([0-9]+)(\.[0-9]+)?$/);
+  if (match === null) {
+    throw new Error(`Invalid positive decimals string ${decimalsString}`);
+  }
+  const wholeString = match[1];
+  let fractionalString = match[2] ? match[2].substring(1) : "";
+  if (fractionalString.length > tokenDecimals) {
+    throw new Error(
+      `${fractionalString.length} decimal places give, but token's decimals is ${tokenDecimals}`
+    );
+  }
+  fractionalString = fractionalString.padEnd(tokenDecimals, "0");
+  return new BN(`${wholeString}${fractionalString}`, 10);
+}
+
+const SOL_DECIMALS = 9;
+
+/**
+ * Use this for handling LP token amounts too since they're 9 d.p. too
+ * @param sol
+ * @returns
+ */
+export function parsePosSolToLamports(sol: number): BN {
+  return parsePosDecimalsToAtomics(sol.toString(), SOL_DECIMALS);
 }

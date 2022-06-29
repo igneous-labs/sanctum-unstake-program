@@ -1,12 +1,23 @@
 #!/usr/bin/env node
 
 import { Address, AnchorProvider, Program } from "@project-serum/anchor";
-import { IDL_JSON, Unstake, createPoolTx } from "@soceanfi/unstake";
-import { Keypair } from "@solana/web3.js";
+import {
+  IDL_JSON,
+  Unstake,
+  addLiquidityTx,
+  createPoolTx,
+} from "@soceanfi/unstake";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
 import yargs from "yargs";
-import { keypairFromFile, readJsonFile } from "./utils";
+import { keypairFromFile, parsePosSolToLamports, readJsonFile } from "./utils";
 import { FeeArg, toFeeChecked } from "./feeArgs";
+import {
+  createAssociatedTokenAccount,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+  getAssociatedTokenAddress,
+} from "@solana/spl-token";
 
 function initProgram(
   cluster: string,
@@ -120,6 +131,93 @@ yargs(hideBin(process.argv))
         accounts.lpMint.toString(),
         ", fee authority:",
         accounts.feeAuthority.toString()
+      );
+      console.log("TX:", sig);
+    }
+  )
+  .command(
+    "add_liquidity <pool_account> <amount_sol>",
+    "adds SOL liquidity to a liquidity pool",
+    (y) =>
+      y
+        .positional("pool_account", {
+          type: "string",
+          description: "pubkey of the liquidity pool to add liquidity to",
+        })
+        .positional("amount_sol", {
+          type: "number",
+          description: "amount in SOL to add as liquidity",
+        })
+        .option("from", {
+          type: "string",
+          description: "Path to the SOL keypair to add liquidity from",
+          defaultDescription: "wallet",
+        })
+        .option("mint_lp_tokens_to", {
+          type: "string",
+          description: "LP token account to mint LP tokens to",
+          defaultDescription: "ATA of from",
+        }),
+    async ({
+      cluster,
+      wallet,
+      program_id,
+      pool_account,
+      amount_sol,
+      from: fromOption,
+      mint_lp_tokens_to: mintLpTokensToOption,
+    }) => {
+      const program = initProgram(cluster, wallet, program_id);
+      const provider = program.provider as AnchorProvider;
+      const poolKey = new PublicKey(pool_account!);
+      const pool = await program.account.pool.fetch(poolKey);
+      const poolAccount = {
+        publicKey: poolKey,
+        account: pool,
+      };
+      const amountSol = amount_sol!;
+      const amountLamports = parsePosSolToLamports(amountSol);
+      let from = provider.wallet.publicKey;
+      const signers = [];
+      if (fromOption) {
+        const fromKeypair = keypairFromFile(fromOption);
+        signers.push(fromKeypair);
+        from = fromKeypair.publicKey;
+      }
+      const fromAta = await getAssociatedTokenAddress(pool.lpMint, from);
+      const mintLpTokensTo = mintLpTokensToOption ?? fromAta;
+      const tx = await addLiquidityTx(program, amountLamports, {
+        from,
+        poolAccount,
+        mintLpTokensTo,
+      });
+      try {
+        await getAccount(provider.connection, new PublicKey(mintLpTokensTo));
+      } catch (e) {
+        if (mintLpTokensTo.toString() !== fromAta.toString()) {
+          throw new Error(
+            `LP token account ${mintLpTokensTo.toString()} does not exist`
+          );
+        }
+        console.log(
+          "LP token account",
+          mintLpTokensTo.toString(),
+          "does not exist, creating..."
+        );
+        tx.instructions.unshift(
+          createAssociatedTokenAccountInstruction(
+            provider.wallet.publicKey,
+            new PublicKey(mintLpTokensTo),
+            from,
+            pool.lpMint
+          )
+        );
+      }
+      const sig = await provider.sendAndConfirm(tx, signers);
+      console.log(
+        amountSol,
+        "SOL liquidity added to pool at",
+        poolKey.toString()
       );
       console.log("TX:", sig);
     }

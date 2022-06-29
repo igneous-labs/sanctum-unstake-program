@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@soceanfi/unstake": "link:../ts/dist",
+    "@solana/spl-token": "^0.2.0",
     "yargs": "^17.5.1"
   },
   "bin": {
