@@ -237,9 +237,6 @@ describe("ts bindings", () => {
     );
     const unstakerKeypair = Keypair.generate();
     const destinationKeypair = Keypair.generate();
-    let stakeAccountRecordAccounts = [...Array(testCases).keys()].map(
-      () => null as PublicKey
-    );
 
     let unstakerPayerDestination: number = 0;
     let unstakerNotPayerDestination: number = 0;
@@ -248,15 +245,6 @@ describe("ts bindings", () => {
 
     before(async () => {
       await airdrop(program.provider.connection, unstakerKeypair.publicKey);
-      stakeAccountRecordAccounts = await Promise.all(
-        stakeAccKeypairs.map((stakeAcc) =>
-          findStakeAccountRecordAccount(
-            program.programId,
-            poolKeypair.publicKey,
-            stakeAcc.publicKey
-          ).then(([pubkey]) => pubkey)
-        )
-      );
       await Promise.all(
         stakeAccKeypairs.map((stakeAccKeypair) =>
           createDelegateStakeTx({
