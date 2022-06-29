@@ -139,10 +139,27 @@ describe("integration", () => {
   });
 
   it("it unstakes", async () => {
+    const stakeAccountLamports = await provider.connection.getBalance(
+      stakeAccountKeypair.publicKey
+    );
+    const unstakerBalancePre = await provider.connection.getBalance(
+      stakeAccountKeypair.publicKey
+    );
+
+    const { ownedLamports: ownedLamportsPre } =
+      await program.account.pool.fetch(poolKeypair.publicKey);
+    const solReservesLamportsPre = await provider.connection.getBalance(
+      poolSolReserves
+    );
+    const liquidityConsumed =
+      stakeAccountLamports +
+      ownedLamportsPre.toNumber() -
+      solReservesLamportsPre;
+
     await program.methods
       .unstake()
       .accounts({
-        payer: unstakerKeypair.publicKey,
+        payer: payerKeypair.publicKey,
         unstaker: unstakerKeypair.publicKey,
         stakeAccount: stakeAccountKeypair.publicKey,
         destination: unstakerKeypair.publicKey,
@@ -153,7 +170,7 @@ describe("integration", () => {
         clock: SYSVAR_CLOCK_PUBKEY,
         stakeProgram: StakeProgram.programId,
       })
-      .signers([unstakerKeypair])
+      .signers([payerKeypair, unstakerKeypair])
       .rpc({ skipPreflight: true });
 
     const [stakerPost, withdrawerPost] = await getStakeAccount(
@@ -170,10 +187,35 @@ describe("integration", () => {
         },
       }) => [staker, withdrawer]
     );
+    const unstakerBalancePost = await provider.connection.getBalance(
+      unstakerKeypair.publicKey
+    );
+    const feeRatio = await program.account.fee.fetch(feeAccount).then(
+      ({
+        fee: {
+          liquidityLinear: { params },
+        },
+      }) => {
+        const zeroLiquidityRemaining =
+          params.zeroLiqRemaining.num.toNumber() /
+          params.zeroLiqRemaining.denom.toNumber();
+        const maxLiquidityRemaining =
+          params.maxLiqRemaining.num.toNumber() /
+          params.maxLiqRemaining.denom.toNumber();
+        const slope =
+          (zeroLiquidityRemaining - maxLiquidityRemaining) /
+          ownedLamportsPre.toNumber();
+        return slope * liquidityConsumed + maxLiquidityRemaining;
+      }
+    );
+    const feeLamportsExpected = Math.ceil(stakeAccountLamports * feeRatio);
+    const feeLamportsCharged =
+      stakeAccountLamports - (unstakerBalancePost - unstakerBalancePre);
+    const epsilon = Math.abs(feeLamportsExpected - feeLamportsCharged);
+
     expect(stakerPost.equals(poolSolReserves)).to.be.true;
     expect(withdrawerPost.equals(poolSolReserves)).to.be.true;
-
-    // TODO: assert the charged fee amount (idk what is a good test mechanism for this yet)
+    expect(epsilon).to.be.below(EPSILON_UPPER_BOUND);
   });
 
   it("it deactivates", async () => {
