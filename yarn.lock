@@ -87,6 +87,11 @@
   resolved "https://registry.yarnpkg.com/@sideway/pinpoint/-/pinpoint-2.0.0.tgz#cff8ffadc372ad29fd3f78277aeb29e632cc70df"
   integrity sha512-RNiOoTPkptFtSVzQevY/yWtZwf/RxyVnPy/OcA9HBM3MlGDnBEYL5B41H0MTn0Uec8Hi+2qUtTfG2WWZBmMejQ==
 
+"@soceanfi/solana-stake-sdk@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@soceanfi/solana-stake-sdk/-/solana-stake-sdk-0.1.0.tgz#212bffd67868098960b32eb8e3fa911437edb4e3"
+  integrity sha512-/P+A9L7NTVJ6FuE7RCXE164mbqLQ2LEj3H+zEr0QBpdR0qz4Ivl8fyHHDrXhkYEJiEMAA5DAIFa6Rx/xkUVVVw==
+
 "@solana/buffer-layout-utils@^0.2.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@solana/buffer-layout-utils/-/buffer-layout-utils-0.2.0.tgz#b45a6cab3293a2eb7597cceb474f229889d875ca"

@@ -29,7 +29,7 @@ import {
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { getStakeAccount, stakeAccountState } from "./stake";
+import { getStakeAccount, stakeAccountState } from "@soceanfi/solana-stake-sdk";
 
 chaiUse(chaiAsPromised);
 
@@ -812,7 +812,7 @@ describe("unstake", () => {
         stakeAccountKeypair.publicKey
       );
       const { epoch: activeEpoch } = await provider.connection.getEpochInfo();
-      expect(stakeAccountState(stakeAccActive, new BN(activeEpoch))).to.eq(
+      expect(stakeAccountState(stakeAccActive.data, new BN(activeEpoch))).to.eq(
         "active"
       );
 
@@ -837,7 +837,7 @@ describe("unstake", () => {
         await provider.connection.getEpochInfo();
       expect(deactivatingEpoch).to.eq(activeEpoch);
       expect(
-        stakeAccountState(stakeAccDeactivating, new BN(deactivatingEpoch))
+        stakeAccountState(stakeAccDeactivating.data, new BN(deactivatingEpoch))
       ).to.eq("deactivating");
     });
 
@@ -851,7 +851,7 @@ describe("unstake", () => {
         stakeAccountKeypair.publicKey
       );
       const { epoch } = await provider.connection.getEpochInfo();
-      expect(stakeAccountState(stakeAcc, new BN(epoch))).to.eq("inactive");
+      expect(stakeAccountState(stakeAcc.data, new BN(epoch))).to.eq("inactive");
 
       const stakeAccLamportsPre = await provider.connection.getBalance(
         stakeAccountKeypair.publicKey
