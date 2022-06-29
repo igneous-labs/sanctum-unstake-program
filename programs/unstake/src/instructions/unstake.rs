@@ -17,7 +17,7 @@ pub struct Unstake<'info> {
     pub unstaker: Signer<'info>,
 
     /// stake account to be unstaked
-    /// rely on CPI check to ensure owned by unstaker
+    /// rely on stake program CPI call to ensure owned by unstaker
     #[account(
         mut,
         // this also checks that a stake account is either
