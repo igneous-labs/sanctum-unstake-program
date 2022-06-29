@@ -667,12 +667,11 @@ describe("internals", () => {
     });
 
     it("it rejects to unstake a locked up stake account", async () => {
-      const [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
-        await findStakeAccountRecordAccount(
-          program.programId,
-          poolKeypair.publicKey,
-          lockedUpStakeAcc.publicKey
-        );
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        lockedUpStakeAcc.publicKey
+      );
 
       await expect(
         program.methods
@@ -698,7 +697,33 @@ describe("internals", () => {
     });
 
     it("it fails to unstake not enough liquidity", async () => {
-      // TODO
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        notEnoughLiquidityStakeAcc.publicKey
+      );
+
+      await expect(
+        program.methods
+          .unstake()
+          .accounts({
+            payer: notEnoughLiquidityUnstaker.publicKey,
+            unstaker: notEnoughLiquidityUnstaker.publicKey,
+            stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
+            destination: notEnoughLiquidityUnstaker.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            feeAccount,
+            stakeAccountRecordAccount,
+            clock: SYSVAR_CLOCK_PUBKEY,
+            stakeProgram: StakeProgram.programId,
+          })
+          .signers([notEnoughLiquidityUnstaker])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.then(function (err) {
+        expect(err.code).to.eql(6013);
+        expect(err.msg).to.eql("Not enough liquidity to service this unstake");
+      });
     });
 
     it("it charges Flat fee on unstake", async () => {
@@ -728,12 +753,11 @@ describe("internals", () => {
         flatFeeUnstaker.publicKey
       );
 
-      const [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
-        await findStakeAccountRecordAccount(
-          program.programId,
-          poolKeypair.publicKey,
-          flatFeeStakeAcc.publicKey
-        );
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        flatFeeStakeAcc.publicKey
+      );
 
       await program.methods
         .unstake()
@@ -814,12 +838,11 @@ describe("internals", () => {
         ownedLamportsPre.toNumber() -
         solReservesLamportsPre;
 
-      const [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
-        await findStakeAccountRecordAccount(
-          program.programId,
-          poolKeypair.publicKey,
-          liquidityLinearFeeStakeAcc.publicKey
-        );
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        liquidityLinearFeeStakeAcc.publicKey
+      );
 
       await program.methods
         .unstake()
