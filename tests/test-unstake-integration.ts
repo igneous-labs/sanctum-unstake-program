@@ -146,10 +146,13 @@ describe("integration", () => {
       unstakerKeypair.publicKey
     );
 
-    const { ownedLamports: ownedLamportsPre } =
+    const { incomingStake: incomingStakePre } =
       await program.account.pool.fetch(poolKeypair.publicKey);
     const solReservesLamportsPre = await provider.connection.getBalance(
       poolSolReserves
+    );
+    const ownedLamportsPre = incomingStakePre.add(
+      new BN(solReservesLamportsPre)
     );
     const liquidityConsumed =
       stakeAccountLamports +
@@ -193,6 +196,7 @@ describe("integration", () => {
     const feeRatio = await program.account.fee.fetch(feeAccount).then(
       ({
         fee: {
+          // @ts-ignore
           liquidityLinear: { params },
         },
       }) => {
