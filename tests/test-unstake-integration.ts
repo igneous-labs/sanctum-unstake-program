@@ -143,7 +143,7 @@ describe("integration", () => {
       stakeAccountKeypair.publicKey
     );
     const unstakerBalancePre = await provider.connection.getBalance(
-      stakeAccountKeypair.publicKey
+      unstakerKeypair.publicKey
     );
 
     const { ownedLamports: ownedLamportsPre } =
