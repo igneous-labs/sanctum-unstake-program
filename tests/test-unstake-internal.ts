@@ -100,7 +100,7 @@ describe("internals", () => {
         .signers([payerKeypair, poolKeypair, lpMintKeypair])
         .rpc({ skipPreflight: true })
     ).to.be.eventually.rejected.then(function (err) {
-      expect(err.code).to.eql(6011);
+      expect(err.code).to.eql(6006);
       expect(err.msg).to.eql(
         "The provided description of fee violates the invariants"
       );
@@ -501,7 +501,7 @@ describe("internals", () => {
           .signers([payerKeypair])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6011);
+        expect(err.code).to.eql(6006);
         expect(err.msg).to.eql(
           "The provided description of fee violates the invariants"
         );
@@ -527,7 +527,7 @@ describe("internals", () => {
           .signers([payerKeypair])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6011);
+        expect(err.code).to.eql(6006);
         expect(err.msg).to.eql(
           "The provided description of fee violates the invariants"
         );
@@ -559,7 +559,7 @@ describe("internals", () => {
           .signers([payerKeypair])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6011);
+        expect(err.code).to.eql(6006);
         expect(err.msg).to.eql(
           "The provided description of fee violates the invariants"
         );
@@ -591,7 +591,7 @@ describe("internals", () => {
           .signers([payerKeypair])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6011);
+        expect(err.code).to.eql(6006);
         expect(err.msg).to.eql(
           "The provided description of fee violates the invariants"
         );
@@ -715,8 +715,8 @@ describe("internals", () => {
           .signers([lockedUpUnstaker])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6010);
-        expect(err.msg).to.eql("The provided statke account is locked up");
+        expect(err.code).to.eql(6005);
+        expect(err.msg).to.eql("The provided stake account is locked up");
       });
     });
 
@@ -745,7 +745,7 @@ describe("internals", () => {
           .signers([notEnoughLiquidityUnstaker])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6013);
+        expect(err.code).to.eql(6008);
         expect(err.msg).to.eql("Not enough liquidity to service this unstake");
       });
     });
