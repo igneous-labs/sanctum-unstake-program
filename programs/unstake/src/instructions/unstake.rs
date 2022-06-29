@@ -80,6 +80,13 @@ impl<'info> Unstake<'info> {
         let stake_program = &ctx.accounts.stake_program;
         let system_program = &ctx.accounts.system_program;
 
+        // Check enough liquidity
+        let stake_account_lamports = stake_account.to_account_info().lamports();
+        let pool_sol_reserves_lamports = pool_sol_reserves.lamports();
+        if pool_sol_reserves_lamports < stake_account_lamports {
+            return Err(UnstakeError::NotEnoughLiquidity.into());
+        }
+
         // NOTE: check for withdrawer authority only since withdrawer can change both
         let authorized = stake_account
             .authorized()
@@ -116,11 +123,10 @@ impl<'info> Unstake<'info> {
             None, // custodian
         )?;
 
-        let stake_account_lamports = stake_account.to_account_info().lamports();
         let fee_lamports = fee_account
             .apply(
                 pool_account.owned_lamports,
-                pool_sol_reserves.lamports(),
+                pool_sol_reserves_lamports,
                 stake_account_lamports,
             )
             .ok_or(UnstakeError::InternalError)?;
