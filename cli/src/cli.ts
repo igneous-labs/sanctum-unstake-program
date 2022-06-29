@@ -6,6 +6,7 @@ import {
   Unstake,
   addLiquidityTx,
   createPoolTx,
+  removeLiquidityTx,
 } from "@soceanfi/unstake";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
@@ -13,7 +14,6 @@ import yargs from "yargs";
 import { keypairFromFile, parsePosSolToLamports, readJsonFile } from "./utils";
 import { FeeArg, toFeeChecked } from "./feeArgs";
 import {
-  createAssociatedTokenAccount,
   createAssociatedTokenAccountInstruction,
   getAccount,
   getAssociatedTokenAddress,
@@ -217,6 +217,77 @@ yargs(hideBin(process.argv))
       console.log(
         amountSol,
         "SOL liquidity added to pool at",
+        poolKey.toString()
+      );
+      console.log("TX:", sig);
+    }
+  )
+  .command(
+    "remove_liquidity <pool_account> <amount_lp>",
+    "remove SOL liquidity from a liquidity pool",
+    (y) =>
+      y
+        .positional("pool_account", {
+          type: "string",
+          description: "pubkey of the liquidity pool to remove liquidity from",
+        })
+        .positional("amount_lp", {
+          type: "number",
+          description: "amount in LP tokens to remove as liquidity",
+        })
+        .option("authority", {
+          type: "string",
+          description:
+            "Path to the keypair authority over the LP token account",
+          defaultDescription: "wallet",
+        })
+        .option("burn_from", {
+          type: "string",
+          description: "LP token account to burn LP tokens from",
+          defaultDescription: "ATA of authority",
+        })
+        .option("to", {
+          type: "string",
+          description: "SOL account to return removed SOL liquidity to",
+          defaultDescription: "authority",
+        }),
+    async ({
+      cluster,
+      wallet,
+      program_id,
+      pool_account,
+      amount_lp,
+      authority: authorityOption,
+      burn_from: burnFromOption,
+      to: toOption,
+    }) => {
+      const program = initProgram(cluster, wallet, program_id);
+      const provider = program.provider as AnchorProvider;
+      const poolKey = new PublicKey(pool_account!);
+      const pool = await program.account.pool.fetch(poolKey);
+      const poolAccount = {
+        publicKey: poolKey,
+        account: pool,
+      };
+      const amountLp = amount_lp!;
+      const amountLpAtomics = parsePosSolToLamports(amountLp);
+      let authority = provider.wallet.publicKey;
+      const signers = [];
+      if (authorityOption) {
+        const authorityKeypair = keypairFromFile(authorityOption);
+        signers.push(authorityKeypair);
+        authority = authorityKeypair.publicKey;
+      }
+      const tx = await removeLiquidityTx(program, amountLpAtomics, {
+        authority,
+        poolAccount,
+        from: burnFromOption,
+        sendLamportsTo: toOption,
+      });
+      const sig = await provider.sendAndConfirm(tx, signers);
+      console.log(
+        amountLp,
+        "LP tokens liquidity removed from pool at",
         poolKey.toString()
       );
       console.log("TX:", sig);

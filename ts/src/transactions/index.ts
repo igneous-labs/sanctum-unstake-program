@@ -4,4 +4,5 @@
 
 export * from "./addLiquidity";
 export * from "./createPool";
+export * from "./removeLiquidity";
 export * from "./unstake";
