@@ -26,6 +26,7 @@ pub struct Unstake<'info> {
             .ok_or(UnstakeError::StakeAccountLockupNotRetrievable)?
             .is_in_force(&clock, None)
             @ UnstakeError::StakeAccountLockupInForce,
+        constraint = stake_account.to_account_info().lamports() <= pool_sol_reserves.lamports() @ UnstakeError::NotEnoughLiquidity
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
@@ -81,12 +82,8 @@ impl<'info> Unstake<'info> {
         let stake_program = &ctx.accounts.stake_program;
         let system_program = &ctx.accounts.system_program;
 
-        // Check enough liquidity
         let stake_account_lamports = stake_account.to_account_info().lamports();
         let pool_sol_reserves_lamports = pool_sol_reserves.lamports();
-        if pool_sol_reserves_lamports < stake_account_lamports {
-            return Err(UnstakeError::NotEnoughLiquidity.into());
-        }
 
         // authorize pool_sol_reserves as staker and withdrawer of the stake_account
         stake::authorize(
