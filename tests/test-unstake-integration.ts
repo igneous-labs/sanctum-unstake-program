@@ -156,7 +156,23 @@ describe("integration", () => {
       .signers([unstakerKeypair])
       .rpc({ skipPreflight: true });
 
-    // TODO: assert the stake account ownership is transfered
+    const [stakerPost, withdrawerPost] = await getStakeAccount(
+      provider.connection,
+      stakeAccountKeypair.publicKey
+    ).then(
+      ({
+        data: {
+          info: {
+            meta: {
+              authorized: { staker, withdrawer },
+            },
+          },
+        },
+      }) => [staker, withdrawer]
+    );
+    expect(stakerPost.equals(poolSolReserves)).to.be.true;
+    expect(withdrawerPost.equals(poolSolReserves)).to.be.true;
+
     // TODO: assert the charged fee amount (idk what is a good test mechanism for this yet)
   });
 
