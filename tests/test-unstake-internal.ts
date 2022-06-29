@@ -157,7 +157,7 @@ describe("internals", () => {
     it("it add liquidity from zero", async () => {
       const {
         lperAtaAmount: lperAtaPre,
-        poolOwnedLamports: ownedLamportsPre,
+        incomingStake: incomingStakePre,
         lperLamports: lperLamportsPre,
         reserveLamports: reservesLamportsPre,
       } = await fetchLpFacingTestParams({
@@ -167,6 +167,9 @@ describe("internals", () => {
         poolSolReserves,
         pool: poolKeypair.publicKey,
       });
+      const ownedLamportsPre = incomingStakePre.add(
+        new BN(reservesLamportsPre)
+      );
 
       await program.methods
         .addLiquidity(AMOUNT)
@@ -182,7 +185,7 @@ describe("internals", () => {
 
       const {
         lperAtaAmount: lperAtaPost,
-        poolOwnedLamports: ownedLamportsPost,
+        incomingStake: incomingStakePost,
         lperLamports: lperLamportsPost,
         reserveLamports: reservesLamportsPost,
       } = await fetchLpFacingTestParams({
@@ -192,6 +195,9 @@ describe("internals", () => {
         poolSolReserves,
         pool: poolKeypair.publicKey,
       });
+      const ownedLamportsPost = incomingStakePost.add(
+        new BN(reservesLamportsPost)
+      );
 
       expect(lperAtaPre).to.eq(BigInt(0));
       expect(ownedLamportsPre.toString()).to.eq(new BN(0).toString());
@@ -210,7 +216,7 @@ describe("internals", () => {
       // add AMOUNT liquidity to existing AMOUNT -> LP tokens and liquidity should double
       const {
         lperAtaAmount: lperAtaPre,
-        poolOwnedLamports: ownedLamportsPre,
+        incomingStake: incomingStakePre,
         lperLamports: lperLamportsPre,
         reserveLamports: reservesLamportsPre,
       } = await fetchLpFacingTestParams({
@@ -220,6 +226,9 @@ describe("internals", () => {
         poolSolReserves,
         pool: poolKeypair.publicKey,
       });
+      const ownedLamportsPre = incomingStakePre.add(
+        new BN(reservesLamportsPre)
+      );
 
       await program.methods
         .addLiquidity(AMOUNT)
@@ -235,7 +244,7 @@ describe("internals", () => {
 
       const {
         lperAtaAmount: lperAtaPost,
-        poolOwnedLamports: ownedLamportsPost,
+        incomingStake: incomingStakePost,
         lperLamports: lperLamportsPost,
         reserveLamports: reservesLamportsPost,
       } = await fetchLpFacingTestParams({
@@ -245,6 +254,9 @@ describe("internals", () => {
         poolSolReserves,
         pool: poolKeypair.publicKey,
       });
+      const ownedLamportsPost = incomingStakePost.add(
+        new BN(reservesLamportsPost)
+      );
 
       expect(Number(lperAtaPre)).to.be.gt(0);
       expect(lperAtaPost).to.eq(BigInt(2) * lperAtaPre);
@@ -259,7 +271,7 @@ describe("internals", () => {
       // remove AMOUNT liquidity from existing 2*AMOUNT -> LP tokens and liquidity should half
       const {
         lperAtaAmount: lperAtaPre,
-        poolOwnedLamports: ownedLamportsPre,
+        incomingStake: incomingStakePre,
         lperLamports: lperLamportsPre,
         reserveLamports: reservesLamportsPre,
       } = await fetchLpFacingTestParams({
@@ -269,6 +281,9 @@ describe("internals", () => {
         poolSolReserves,
         pool: poolKeypair.publicKey,
       });
+      const ownedLamportsPre = incomingStakePre.add(
+        new BN(reservesLamportsPre)
+      );
 
       await program.methods
         .removeLiquidity(AMOUNT)
@@ -285,7 +300,7 @@ describe("internals", () => {
 
       const {
         lperAtaAmount: lperAtaPost,
-        poolOwnedLamports: ownedLamportsPost,
+        incomingStake: incomingStakePost,
         lperLamports: lperLamportsPost,
         reserveLamports: reservesLamportsPost,
       } = await fetchLpFacingTestParams({
@@ -295,6 +310,9 @@ describe("internals", () => {
         poolSolReserves,
         pool: poolKeypair.publicKey,
       });
+      const ownedLamportsPost = incomingStakePost.add(
+        new BN(reservesLamportsPost)
+      );
 
       expect(Number(lperAtaPre)).to.be.gt(0);
       expect(lperAtaPost).to.eq(lperAtaPre / BigInt(2));
@@ -308,7 +326,7 @@ describe("internals", () => {
     it("it remove liquidity to zero", async () => {
       const {
         lperAtaAmount: lperAtaPre,
-        poolOwnedLamports: ownedLamportsPre,
+        incomingStake: incomingStakePre,
         lperLamports: lperLamportsPre,
         reserveLamports: reservesLamportsPre,
       } = await fetchLpFacingTestParams({
@@ -318,6 +336,9 @@ describe("internals", () => {
         poolSolReserves,
         pool: poolKeypair.publicKey,
       });
+      const ownedLamportsPre = incomingStakePre.add(
+        new BN(reservesLamportsPre)
+      );
 
       await program.methods
         .removeLiquidity(AMOUNT)
@@ -334,7 +355,7 @@ describe("internals", () => {
 
       const {
         lperAtaAmount: lperAtaPost,
-        poolOwnedLamports: ownedLamportsPost,
+        incomingStake: incomingStakePost,
         lperLamports: lperLamportsPost,
         reserveLamports: reservesLamportsPost,
       } = await fetchLpFacingTestParams({
@@ -344,6 +365,9 @@ describe("internals", () => {
         poolSolReserves,
         pool: poolKeypair.publicKey,
       });
+      const ownedLamportsPost = incomingStakePost.add(
+        new BN(reservesLamportsPost)
+      );
 
       expect(lperAtaPost).to.eq(lperAtaPre - BigInt(AMOUNT.toString()));
       expect(lperLamportsPost).to.eq(lperLamportsPre + AMOUNT.toNumber());
@@ -783,6 +807,7 @@ describe("internals", () => {
       const flatFeeRatio = await program.account.fee.fetch(feeAccount).then(
         ({
           fee: {
+            // @ts-ignore
             flat: { ratio },
           },
         }) => ratio.num.toNumber() / ratio.denom.toNumber()
@@ -828,10 +853,13 @@ describe("internals", () => {
       const unstakerBalancePre = await provider.connection.getBalance(
         liquidityLinearFeeUnstaker.publicKey
       );
-      const { ownedLamports: ownedLamportsPre } =
+      const { incomingStake: incomingStakePre } =
         await program.account.pool.fetch(poolKeypair.publicKey);
       const solReservesLamportsPre = await provider.connection.getBalance(
         poolSolReserves
+      );
+      const ownedLamportsPre = incomingStakePre.add(
+        new BN(solReservesLamportsPre)
       );
       const liquidityConsumed =
         stakeAccountLamports +
@@ -869,6 +897,7 @@ describe("internals", () => {
         .then(
           ({
             fee: {
+              // @ts-ignore
               liquidityLinear: { params },
             },
           }) => {

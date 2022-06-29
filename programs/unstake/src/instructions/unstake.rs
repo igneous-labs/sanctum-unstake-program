@@ -123,9 +123,10 @@ impl<'info> Unstake<'info> {
             None, // custodian
         )?;
 
+        let pool_owned_lamports = pool_account.incoming_stake + pool_sol_reserves_lamports;
         let fee_lamports = fee_account
             .apply(
-                pool_account.owned_lamports,
+                pool_owned_lamports,
                 pool_sol_reserves_lamports,
                 stake_account_lamports,
             )
@@ -159,13 +160,10 @@ impl<'info> Unstake<'info> {
         // populate the stake_account_record
         stake_account_record_account.lamports_at_creation = stake_account_lamports;
 
-        // update pool_account
-        // owned_lamports = owned_lamports - lamports_to_transfer + stake_account_lamports
-        //                = owned_lamports - (stake_account_lamports - fee_lamports) + stake_account_lamports
-        //                = owned_lamports + fee_lamports
-        pool_account.owned_lamports = pool_account
-            .owned_lamports
-            .checked_add(fee_lamports)
+        // update pool_account incoming_stake
+        pool_account.incoming_stake = pool_account
+            .incoming_stake
+            .checked_add(stake_account_lamports)
             .ok_or(UnstakeError::InternalError)?;
 
         Ok(())

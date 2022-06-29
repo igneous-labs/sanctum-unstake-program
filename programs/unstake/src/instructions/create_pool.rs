@@ -67,14 +67,12 @@ impl<'info> CreatePool<'info> {
         let fee_authority = &ctx.accounts.fee_authority;
         let lp_mint = &ctx.accounts.lp_mint;
         let pool_account = &mut ctx.accounts.pool_account;
-        let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
 
         fee_account.set_inner(fee);
         pool_account.set_inner(Pool {
             fee_authority: fee_authority.key(),
             lp_mint: lp_mint.key(),
-            // should be 0 unless someone sent lamports to it
-            owned_lamports: pool_sol_reserves.lamports(),
+            incoming_stake: 0,
         });
         Ok(())
     }
