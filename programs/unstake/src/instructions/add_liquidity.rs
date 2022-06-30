@@ -96,7 +96,7 @@ fn calc_lp_tokens_to_mint(
     let to_mint = match pool_owned_lamports == 0 || lp_mint_supply == 0 {
         // 0-edge cases: should all result in pool.owned_lamports 1:1 lp_mint.supply
         // 0 liquidity, 0 supply. mint = amount_to_add
-        // 0 liquidity, non-zero supply. mint = amount_to_add - supply
+        // 0 liquidity, non-zero supply. mint = amount_to_add - supply (note: amount_to_add must > supply in this case)
         // non-zero liquidity, 0 supply. mint = amount_to_add + owned_lamports
         true => amount_to_add
             .checked_add(pool_owned_lamports)
