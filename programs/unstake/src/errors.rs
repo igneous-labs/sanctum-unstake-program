@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+#[derive(PartialEq)]
 #[error_code]
 pub enum UnstakeError {
     #[msg("The provided LP token account is invalid")]
@@ -28,4 +29,7 @@ pub enum UnstakeError {
 
     #[msg("Not enough liquidity to service this unstake")]
     NotEnoughLiquidity, // 0x1778
+
+    #[msg("Liquidity to add too little")]
+    LiquidityToAddTooLittle, // 0x1779
 }

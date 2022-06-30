@@ -93,20 +93,42 @@ fn calc_lp_tokens_to_mint(
     lp_mint_supply: u64,
     amount_to_add: u64,
 ) -> std::result::Result<u64, UnstakeError> {
-    // 0-edge cases: should all result in pool.owned_lamports 1:1 lp_mint.supply
-    // 0 liquidity, 0 supply. mint = amount_to_add
-    // 0 liquidity, non-zero supply. mint = amount_to_add - supply
-    // non-zero liquidity, 0 supply. mint = amount_to_add + owned_lamports
-    if pool_owned_lamports == 0 || lp_mint_supply == 0 {
-        return amount_to_add
+    let to_mint = match pool_owned_lamports == 0 || lp_mint_supply == 0 {
+        // 0-edge cases: should all result in pool.owned_lamports 1:1 lp_mint.supply
+        // 0 liquidity, 0 supply. mint = amount_to_add
+        // 0 liquidity, non-zero supply. mint = amount_to_add - supply
+        // non-zero liquidity, 0 supply. mint = amount_to_add + owned_lamports
+        true => amount_to_add
             .checked_add(pool_owned_lamports)
             .and_then(|v| v.checked_sub(lp_mint_supply))
-            .ok_or(UnstakeError::InternalError);
+            .ok_or(UnstakeError::InternalError)?,
+
+        // mint = amount * supply BEFORE TRANSFER / owned_lamports BEFORE TRANSFER
+        false => u128::from(amount_to_add)
+            .checked_mul(u128::from(lp_mint_supply))
+            .and_then(|v| v.checked_div(u128::from(pool_owned_lamports)))
+            .and_then(|v| u64::try_from(v).ok())
+            .ok_or(UnstakeError::InternalError)?,
+    };
+    if to_mint == 0 {
+        return Err(UnstakeError::LiquidityToAddTooLittle);
     }
-    // mint = amount * supply BEFORE TRANSFER / owned_lamports BEFORE TRANSFER
-    u128::from(amount_to_add)
-        .checked_mul(u128::from(lp_mint_supply))
-        .and_then(|v| v.checked_div(u128::from(pool_owned_lamports)))
-        .and_then(|v| u64::try_from(v).ok())
-        .ok_or(UnstakeError::InternalError)
+    Ok(to_mint)
+}
+
+#[cfg(test)]
+mod tests {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    proptest! {
+        #[test]
+        fn test_amount_to_add_zero_results_in_error(
+            pool_owned_lamports in 1..=u64::MAX,
+            lp_mint_supply in 1..=u64::MAX,
+        ) {
+            prop_assert!(calc_lp_tokens_to_mint(pool_owned_lamports, lp_mint_supply, 0).unwrap_err() == UnstakeError::LiquidityToAddTooLittle);
+        }
+    }
 }
