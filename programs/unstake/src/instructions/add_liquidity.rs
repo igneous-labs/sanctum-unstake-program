@@ -119,8 +119,84 @@ fn calc_lp_tokens_to_mint(
 #[cfg(test)]
 mod tests {
     use proptest::prelude::*;
+    use spl_math::uint::U256;
+    use std::cmp::{max, min};
 
     use super::*;
+
+    prop_compose! {
+        fn owned_lamports_to_add_sum_lte_u64_max()
+            (amount_to_add in 1..=u64::MAX)
+            (amount_to_add in Just(amount_to_add), pool_owned_lamports in 0..=u64::MAX - amount_to_add)
+        -> (u64, u64) {
+            (pool_owned_lamports, amount_to_add)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_lp_mint_supply_zero_results_in_one_to_one(
+            (pool_owned_lamports, amount_to_add) in owned_lamports_to_add_sum_lte_u64_max()
+        ) {
+            let to_mint = calc_lp_tokens_to_mint(pool_owned_lamports, 0, amount_to_add).unwrap();
+            prop_assert!(to_mint == pool_owned_lamports + amount_to_add);
+        }
+    }
+
+    prop_compose! {
+        fn to_add_gte_supply()
+            (amount_to_add in 1..=u64::MAX)
+            (amount_to_add in Just(amount_to_add), lp_mint_supply in 0..=amount_to_add)
+        -> (u64, u64) {
+            (lp_mint_supply, amount_to_add)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_pool_owned_lamports_zero_results_in_one_to_one(
+            (lp_mint_supply, amount_to_add) in to_add_gte_supply()
+        ) {
+            let to_mint = calc_lp_tokens_to_mint(0, lp_mint_supply, amount_to_add).unwrap();
+            prop_assert!(to_mint + lp_mint_supply == amount_to_add);
+        }
+    }
+
+    prop_compose! {
+        fn normal_cases()
+            (amount_to_add in 1..=u64::MAX, lp_mint_supply in 1..=u64::MAX)
+            (
+                amount_to_add in Just(amount_to_add),
+                lp_mint_supply in Just(lp_mint_supply),
+                pool_owned_lamports in
+                    u64::try_from(
+                        max(1u128, amount_to_add as u128 * lp_mint_supply as u128 / u64::MAX as u128)
+                    ).unwrap()
+                    ..=
+                    u64::try_from(
+                        min(u64::MAX as u128, amount_to_add as u128 * lp_mint_supply as u128)
+                    ).unwrap()
+            )
+        -> (u64, u64, u64) {
+            (pool_owned_lamports, lp_mint_supply, amount_to_add)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_normal_cases_proportional(
+            (pool_owned_lamports, lp_mint_supply, amount_to_add) in normal_cases()
+        ) {
+            // to_mint / (lp_mint_supply + to_mint) <= amount_to_add / (pool_owned_lamports + amount_to_add) ->
+            // to_mint * (pool_owned_lamports + amount_to_add) <= amount_to_add * (lp_mint_supply + to_mint)
+
+            let to_mint = calc_lp_tokens_to_mint(pool_owned_lamports, lp_mint_supply, amount_to_add).unwrap();
+            let lhs = (U256::from(to_mint)) * (U256::from(pool_owned_lamports) + U256::from(amount_to_add));
+            let rhs = (U256::from(amount_to_add)) * (U256::from(lp_mint_supply) + U256::from(to_mint));
+            // TODO: there should be an error bound on the ineq, not sure what it is
+            prop_assert!(lhs <= rhs);
+        }
+    }
 
     proptest! {
         #[test]
