@@ -25,6 +25,7 @@ import {
   createDelegateStakeTx,
   fetchLpFacingTestParams,
   waitForEpochToPass,
+  checkAnchorError,
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -99,12 +100,12 @@ describe("internals", () => {
         })
         .signers([payerKeypair, poolKeypair, lpMintKeypair])
         .rpc({ skipPreflight: true })
-    ).to.be.eventually.rejected.then(function (err) {
-      expect(err.code).to.eql(6006);
-      expect(err.msg).to.eql(
+    ).to.be.eventually.rejected.and.satisfy(
+      checkAnchorError(
+        6006,
         "The provided description of fee violates the invariants"
-      );
-    });
+      )
+    );
   });
 
   it("it initializes a liquidity pool", async () => {
@@ -472,12 +473,12 @@ describe("internals", () => {
           })
           .signers([rando])
           .rpc({ skipPreflight: true })
-      ).to.be.eventually.rejected;
-      // NOTE: This sill fails to resolve to a proper error sometimes
-      //).to.be.eventually.rejected.then(function (err) {
-      //  expect(err.code).to.eql(6006);
-      //  expect(err.msg).to.eql("The provided fee authority does not have the authority over the provided pool account");
-      //});
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6002,
+          "The provided fee authority does not have the authority over the provided pool account"
+        )
+      );
     });
 
     it("it rejects to set fee when the fee violates invariants", async () => {
@@ -500,12 +501,12 @@ describe("internals", () => {
           })
           .signers([payerKeypair])
           .rpc({ skipPreflight: true })
-      ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6006);
-        expect(err.msg).to.eql(
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6006,
           "The provided description of fee violates the invariants"
-        );
-      });
+        )
+      );
 
       await expect(
         program.methods
@@ -526,12 +527,12 @@ describe("internals", () => {
           })
           .signers([payerKeypair])
           .rpc({ skipPreflight: true })
-      ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6006);
-        expect(err.msg).to.eql(
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6006,
           "The provided description of fee violates the invariants"
-        );
-      });
+        )
+      );
 
       await expect(
         program.methods
@@ -558,12 +559,12 @@ describe("internals", () => {
           })
           .signers([payerKeypair])
           .rpc({ skipPreflight: true })
-      ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6006);
-        expect(err.msg).to.eql(
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6006,
           "The provided description of fee violates the invariants"
-        );
-      });
+        )
+      );
 
       await expect(
         program.methods
@@ -590,12 +591,12 @@ describe("internals", () => {
           })
           .signers([payerKeypair])
           .rpc({ skipPreflight: true })
-      ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6006);
-        expect(err.msg).to.eql(
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6006,
           "The provided description of fee violates the invariants"
-        );
-      });
+        )
+      );
     });
   });
 
@@ -714,10 +715,9 @@ describe("internals", () => {
           })
           .signers([lockedUpUnstaker])
           .rpc({ skipPreflight: true })
-      ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6005);
-        expect(err.msg).to.eql("The provided stake account is locked up");
-      });
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(6005, "The provided stake account is locked up")
+      );
     });
 
     it("it fails to unstake not enough liquidity", async () => {
@@ -744,10 +744,9 @@ describe("internals", () => {
           })
           .signers([notEnoughLiquidityUnstaker])
           .rpc({ skipPreflight: true })
-      ).to.be.eventually.rejected.then(function (err) {
-        expect(err.code).to.eql(6008);
-        expect(err.msg).to.eql("Not enough liquidity to service this unstake");
-      });
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(6008, "Not enough liquidity to service this unstake")
+      );
     });
 
     it("it charges Flat fee on unstake", async () => {
