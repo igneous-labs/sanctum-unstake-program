@@ -125,10 +125,11 @@ mod tests {
     proptest! {
         #[test]
         fn test_amount_to_add_zero_results_in_error(
-            pool_owned_lamports in 1..=u64::MAX,
-            lp_mint_supply in 1..=u64::MAX,
+            pool_owned_lamports in 0..=u64::MAX,
+            lp_mint_supply in 0..=u64::MAX,
         ) {
-            prop_assert!(calc_lp_tokens_to_mint(pool_owned_lamports, lp_mint_supply, 0).unwrap_err() == UnstakeError::LiquidityToAddTooLittle);
+            let err = calc_lp_tokens_to_mint(pool_owned_lamports, lp_mint_supply, 0).unwrap_err();
+            prop_assert!(err == UnstakeError::LiquidityToAddTooLittle || err == UnstakeError::InternalError);
         }
     }
 }
