@@ -25,27 +25,12 @@ import {
   createDelegateStakeTx,
   fetchLpFacingTestParams,
   waitForEpochToPass,
+  checkAnchorError,
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
 
 chaiUse(chaiAsPromised);
-
-// TODO: move this to util
-const checkAnchorError = (errorCode: number, errorMessage: string) => {
-  return (err) => {
-    if (err.code != undefined) {
-      // first error type
-      return err.code === errorCode && err.msg === errorMessage;
-    } else {
-      // second error type
-      return (
-        err.error.errorCode.number === errorCode &&
-        err.error.errorMessage === errorMessage
-      );
-    }
-  };
-};
 
 describe("internals", () => {
   // Configure the client to use the local cluster.

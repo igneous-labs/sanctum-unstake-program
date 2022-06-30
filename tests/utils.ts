@@ -13,6 +13,28 @@ import { readFileSync } from "fs";
 import BN from "bn.js";
 import { Unstake } from "../target/types/unstake";
 
+// Anchor at the current v0.24.2, is throwing two different shapes of object
+// for program errors. This closure returns a predicate that checks if a given
+// error object matches either type and has the correct error code and message.
+// Intended to be used to generate matcher functions for `satisfy` method from chai.
+export const checkAnchorError = (
+  errorCode: number,
+  errorMessage: string
+): bool => {
+  return (err) => {
+    if (err.code != undefined) {
+      // first error type
+      return err.code === errorCode && err.msg === errorMessage;
+    } else {
+      // second error type
+      return (
+        err.error.errorCode.number === errorCode &&
+        err.error.errorMessage === errorMessage
+      );
+    }
+  };
+};
+
 export async function airdrop(
   connection: Connection,
   address: PublicKey,
