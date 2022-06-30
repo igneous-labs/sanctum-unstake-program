@@ -146,10 +146,13 @@ describe("integration", () => {
       unstakerKeypair.publicKey
     );
 
-    const { ownedLamports: ownedLamportsPre } =
+    const { incomingStake: incomingStakePre } =
       await program.account.pool.fetch(poolKeypair.publicKey);
     const solReservesLamportsPre = await provider.connection.getBalance(
       poolSolReserves
+    );
+    const ownedLamportsPre = incomingStakePre.add(
+      new BN(solReservesLamportsPre)
     );
     const liquidityConsumed =
       stakeAccountLamports +
@@ -193,6 +196,7 @@ describe("integration", () => {
     const feeRatio = await program.account.fee.fetch(feeAccount).then(
       ({
         fee: {
+          // @ts-ignore
           liquidityLinear: { params },
         },
       }) => {
@@ -273,10 +277,13 @@ describe("integration", () => {
     );
     const { lamportsAtCreation } =
       await program.account.stakeAccountRecord.fetch(stakeAccountRecordAccount);
-    const { ownedLamports: ownedLamportsPre } =
+    const { incomingStake: incomingStakePre } =
       await program.account.pool.fetch(poolKeypair.publicKey);
     const solReservesLamportsPre = await provider.connection.getBalance(
       poolSolReserves
+    );
+    const ownedLamportsPre = incomingStakePre.add(
+      new BN(solReservesLamportsPre)
     );
 
     await program.methods
@@ -297,10 +304,13 @@ describe("integration", () => {
     const stakeAccLamportsPost = await provider.connection.getBalance(
       stakeAccountKeypair.publicKey
     );
-    const { ownedLamports: ownedLamportsPost } =
+    const { incomingStake: incomingStakePost } =
       await program.account.pool.fetch(poolKeypair.publicKey);
     const solReservesLamportsPost = await provider.connection.getBalance(
       poolSolReserves
+    );
+    const ownedLamportsPost = incomingStakePost.add(
+      new BN(solReservesLamportsPost)
     );
 
     await expect(
@@ -324,7 +334,7 @@ describe("integration", () => {
   it("it removes all liquidity with gains", async () => {
     const {
       lperAtaAmount: lperAtaPre,
-      poolOwnedLamports: ownedLamportsPre,
+      incomingStake: incomingStakePre,
       lperLamports: lperLamportsPre,
       reserveLamports: reservesLamportsPre,
     } = await fetchLpFacingTestParams({
@@ -334,6 +344,7 @@ describe("integration", () => {
       poolSolReserves,
       pool: poolKeypair.publicKey,
     });
+    const ownedLamportsPre = incomingStakePre.add(new BN(reservesLamportsPre));
 
     await program.methods
       .removeLiquidity(new BN(lperAtaPre.toString()))
@@ -350,7 +361,7 @@ describe("integration", () => {
 
     const {
       lperAtaAmount: lperAtaPost,
-      poolOwnedLamports: ownedLamportsPost,
+      incomingStake: incomingStakePost,
       lperLamports: lperLamportsPost,
       reserveLamports: reservesLamportsPost,
     } = await fetchLpFacingTestParams({
@@ -360,6 +371,9 @@ describe("integration", () => {
       poolSolReserves,
       pool: poolKeypair.publicKey,
     });
+    const ownedLamportsPost = incomingStakePost.add(
+      new BN(reservesLamportsPost)
+    );
 
     const lamportsReceived = lperLamportsPost - lperLamportsPre;
 

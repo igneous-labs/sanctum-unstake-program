@@ -21,12 +21,12 @@ impl Fee {
     /// - sol_reserves_lamports >= stake_account_lamports
     pub fn apply(
         &self,
-        owned_lamports: u64,
+        pool_incoming_stake: u64,
         sol_reserves_lamports: u64,
         stake_account_lamports: u64,
     ) -> Option<u64> {
         self.fee.apply(
-            owned_lamports,
+            pool_incoming_stake,
             sol_reserves_lamports,
             stake_account_lamports,
         )
@@ -98,7 +98,7 @@ impl FeeEnum {
     /// Applies swap fee to given swap amount and pool's liquidity
     pub fn apply(
         &self,
-        owned_lamports: u64,
+        pool_incoming_stake: u64,
         sol_reserves_lamports: u64,
         stake_account_lamports: u64,
     ) -> Option<u64> {
@@ -109,17 +109,18 @@ impl FeeEnum {
                 // x-axis is ratio of liquidity consumed
                 // y-axis is lamports
                 let liq_consumed = (stake_account_lamports as u128)
-                    .checked_add(owned_lamports as u128)?
-                    .checked_sub(sol_reserves_lamports as u128)
+                    .checked_add(pool_incoming_stake as u128)
                     .and_then(PreciseNumber::new)?;
 
                 let zero_liq_fee = params.zero_liq_remaining.into_precise_number()?;
                 let max_liq_fee = params.max_liq_remaining.into_precise_number()?;
+                let owned_lamports =
+                    (pool_incoming_stake as u128).checked_add(sol_reserves_lamports as u128)?;
                 // NOTE: assuming zero_liq_fee > max_liq_fee
                 // TODO: invariant and validation
                 let slope = zero_liq_fee
                     .checked_sub(&max_liq_fee)?
-                    .checked_div(&PreciseNumber::new(owned_lamports as u128)?)?;
+                    .checked_div(&PreciseNumber::new(owned_lamports)?)?;
 
                 slope
                     .checked_mul(&liq_consumed)?

@@ -52,7 +52,11 @@ impl<'info> AddLiquidity<'info> {
         let system_program = &ctx.accounts.system_program;
 
         // order matters, must calculate first before mutation
-        let to_mint = calc_lp_tokens_to_mint(pool_account, lp_mint, amount)?;
+        let pool_owned_lamports = pool_sol_reserves
+            .lamports()
+            .checked_add(pool_account.incoming_stake)
+            .ok_or(UnstakeError::InternalError)?;
+        let to_mint = calc_lp_tokens_to_mint(pool_owned_lamports, lp_mint.supply, amount)?;
 
         // transfer SOL
         let transfer_cpi_accs = system_program::Transfer {
@@ -80,33 +84,29 @@ impl<'info> AddLiquidity<'info> {
         token::mint_to(
             CpiContext::new_with_signer(token_program.to_account_info(), mint_cpi_accs, &[seeds]),
             to_mint,
-        )?;
-
-        // update owned_lamports
-        pool_account.owned_lamports = pool_account
-            .owned_lamports
-            .checked_add(amount)
-            .ok_or(UnstakeError::AddLiquiditySolOverflow)?;
-
-        Ok(())
+        )
     }
 }
 
-fn calc_lp_tokens_to_mint(pool: &Pool, lp_mint: &Mint, amount_to_add: u64) -> Result<u64> {
+fn calc_lp_tokens_to_mint(
+    pool_owned_lamports: u64,
+    lp_mint_supply: u64,
+    amount_to_add: u64,
+) -> std::result::Result<u64, UnstakeError> {
     // 0-edge cases: should all result in pool.owned_lamports 1:1 lp_mint.supply
     // 0 liquidity, 0 supply. mint = amount_to_add
     // 0 liquidity, non-zero supply. mint = amount_to_add - supply
     // non-zero liquidity, 0 supply. mint = amount_to_add + owned_lamports
-    if pool.owned_lamports == 0 || lp_mint.supply == 0 {
-        return Ok(amount_to_add
-            .checked_add(pool.owned_lamports)
-            .and_then(|v| v.checked_sub(lp_mint.supply))
-            .ok_or(UnstakeError::LpMintCalculationFailure)?);
+    if pool_owned_lamports == 0 || lp_mint_supply == 0 {
+        return amount_to_add
+            .checked_add(pool_owned_lamports)
+            .and_then(|v| v.checked_sub(lp_mint_supply))
+            .ok_or(UnstakeError::InternalError);
     }
     // mint = amount * supply BEFORE TRANSFER / owned_lamports BEFORE TRANSFER
-    Ok(u128::from(amount_to_add)
-        .checked_mul(u128::from(lp_mint.supply))
-        .and_then(|v| v.checked_div(u128::from(pool.owned_lamports)))
+    u128::from(amount_to_add)
+        .checked_mul(u128::from(lp_mint_supply))
+        .and_then(|v| v.checked_div(u128::from(pool_owned_lamports)))
         .and_then(|v| u64::try_from(v).ok())
-        .ok_or(UnstakeError::LpMintCalculationFailure)?)
+        .ok_or(UnstakeError::InternalError)
 }

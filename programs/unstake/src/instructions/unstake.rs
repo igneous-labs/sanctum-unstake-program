@@ -1,6 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::stake::state::StakeAuthorize, system_program};
 use anchor_spl::stake::{self, Authorize, Stake, StakeAccount};
-use std::collections::HashSet;
 
 use crate::{
     anchor_len::AnchorLen,
@@ -18,13 +17,16 @@ pub struct Unstake<'info> {
     pub unstaker: Signer<'info>,
 
     /// stake account to be unstaked
-    // Rely on stake program CPI call to verify
+    /// rely on stake program CPI call to ensure owned by unstaker
     #[account(
         mut,
+        // this also checks that a stake account is either
+        // Initialized or Stake 
         constraint = !stake_account.lockup()
             .ok_or(UnstakeError::StakeAccountLockupNotRetrievable)?
             .is_in_force(&clock, None)
             @ UnstakeError::StakeAccountLockupInForce,
+        constraint = stake_account.to_account_info().lamports() <= pool_sol_reserves.lamports() @ UnstakeError::NotEnoughLiquidity
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
@@ -80,20 +82,8 @@ impl<'info> Unstake<'info> {
         let stake_program = &ctx.accounts.stake_program;
         let system_program = &ctx.accounts.system_program;
 
-        // Check enough liquidity
         let stake_account_lamports = stake_account.to_account_info().lamports();
         let pool_sol_reserves_lamports = pool_sol_reserves.lamports();
-        if pool_sol_reserves_lamports < stake_account_lamports {
-            return Err(UnstakeError::NotEnoughLiquidity.into());
-        }
-
-        // NOTE: check for withdrawer authority only since withdrawer can change both
-        let authorized = stake_account
-            .authorized()
-            .ok_or(UnstakeError::StakeAccountAuthorizedNotRetrievable)?;
-        authorized
-            .check(&HashSet::from([unstaker.key()]), StakeAuthorize::Withdrawer)
-            .map_err(|_| UnstakeError::StakeAccountNotOwned)?;
 
         // authorize pool_sol_reserves as staker and withdrawer of the stake_account
         stake::authorize(
@@ -125,7 +115,7 @@ impl<'info> Unstake<'info> {
 
         let fee_lamports = fee_account
             .apply(
-                pool_account.owned_lamports,
+                pool_account.incoming_stake,
                 pool_sol_reserves_lamports,
                 stake_account_lamports,
             )
@@ -159,13 +149,10 @@ impl<'info> Unstake<'info> {
         // populate the stake_account_record
         stake_account_record_account.lamports_at_creation = stake_account_lamports;
 
-        // update pool_account
-        // owned_lamports = owned_lamports - lamports_to_transfer + stake_account_lamports
-        //                = owned_lamports - (stake_account_lamports - fee_lamports) + stake_account_lamports
-        //                = owned_lamports + fee_lamports
-        pool_account.owned_lamports = pool_account
-            .owned_lamports
-            .checked_add(fee_lamports)
+        // update pool_account incoming_stake
+        pool_account.incoming_stake = pool_account
+            .incoming_stake
+            .checked_add(stake_account_lamports)
             .ok_or(UnstakeError::InternalError)?;
 
         Ok(())

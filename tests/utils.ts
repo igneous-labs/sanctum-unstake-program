@@ -26,7 +26,7 @@ export async function airdrop(
 
 type LpFacingTestParams = {
   lperAtaAmount: bigint;
-  poolOwnedLamports: BN;
+  incomingStake: BN;
   lperLamports: number;
   reserveLamports: number;
 };
@@ -48,16 +48,16 @@ export async function fetchLpFacingTestParams({
 }: FechLpFacingTestParamsArgs): Promise<LpFacingTestParams> {
   const provider = program.provider;
   const connection = provider.connection;
-  const [lperAtaAmount, poolOwnedLamports, lperLamports, reserveLamports] =
+  const [lperAtaAmount, incomingStake, lperLamports, reserveLamports] =
     await Promise.all([
       getAccount(connection, lperAta).then((account) => account.amount),
-      program.account.pool.fetch(pool).then((pool) => pool.ownedLamports),
+      program.account.pool.fetch(pool).then((pool) => pool.incomingStake),
       provider.connection.getBalance(lper),
       provider.connection.getBalance(poolSolReserves),
     ]);
   return {
     lperAtaAmount,
-    poolOwnedLamports,
+    incomingStake,
     lperLamports,
     reserveLamports,
   };

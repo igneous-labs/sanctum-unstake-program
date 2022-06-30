@@ -8,8 +8,9 @@ pub struct Pool {
     /// The pool's lp token mint
     pub lp_mint: Pubkey,
 
-    /// The last known value of total number of lamports owned by the pool
-    /// Should be == balance in SOL reserves account + sum of staked_lamports
-    /// of all owned staked accounts if no epoch boundaries have passed yet
-    pub owned_lamports: u64,
+    /// The last known value of total number of lamports in stake accounts
+    /// owned by the pool that have not been reclaimed yet.
+    /// The total SOL owned by a pool accounted for can be calculated by taking
+    /// incoming_stake + pool_sol_reserves.lamports
+    pub incoming_stake: u64,
 }

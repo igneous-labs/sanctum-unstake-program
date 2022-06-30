@@ -56,7 +56,11 @@ impl<'info> RemoveLiquidity<'info> {
         let system_program = &ctx.accounts.system_program;
 
         // order matters, must calculate first before mutation
-        let to_return = calc_lamports_to_return(pool_account, lp_mint, amount_lp)?;
+        let pool_owned_lamports = pool_sol_reserves
+            .lamports()
+            .checked_add(pool_account.incoming_stake)
+            .ok_or(UnstakeError::InternalError)?;
+        let to_return = calc_lamports_to_return(pool_owned_lamports, lp_mint.supply, amount_lp)?;
 
         // transfer SOL
         let transfer_cpi_accs = system_program::Transfer {
@@ -88,27 +92,23 @@ impl<'info> RemoveLiquidity<'info> {
         token::burn(
             CpiContext::new(token_program.to_account_info(), burn_cpi_accs),
             amount_lp,
-        )?;
-
-        // update owned_lamports
-        pool_account.owned_lamports = pool_account
-            .owned_lamports
-            .checked_sub(to_return)
-            .ok_or(UnstakeError::RemoveLiquiditySolOverflow)?;
-
-        Ok(())
+        )
     }
 }
 
-fn calc_lamports_to_return(pool: &Pool, lp_mint: &Mint, amount_lp_to_burn: u64) -> Result<u64> {
+fn calc_lamports_to_return(
+    pool_owned_lamports: u64,
+    lp_mint_supply: u64,
+    amount_lp_to_burn: u64,
+) -> std::result::Result<u64, UnstakeError> {
     // 0 edge-cases: return 0
-    if pool.owned_lamports == 0 || lp_mint.supply == 0 {
+    if pool_owned_lamports == 0 || lp_mint_supply == 0 {
         return Ok(0);
     }
     // return = amount_lp_to_burn * owned_lamports BEFORE BURN / lp_mint.supply BEFORE BURN
-    Ok(u128::from(amount_lp_to_burn)
-        .checked_mul(u128::from(pool.owned_lamports))
-        .and_then(|v| v.checked_div(u128::from(lp_mint.supply)))
+    u128::from(amount_lp_to_burn)
+        .checked_mul(u128::from(pool_owned_lamports))
+        .and_then(|v| v.checked_div(u128::from(lp_mint_supply)))
         .and_then(|v| u64::try_from(v).ok())
-        .ok_or(UnstakeError::RemoveSolCalculationFailure)?)
+        .ok_or(UnstakeError::InternalError)
 }
