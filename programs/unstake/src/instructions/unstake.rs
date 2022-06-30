@@ -113,10 +113,9 @@ impl<'info> Unstake<'info> {
             None, // custodian
         )?;
 
-        let pool_owned_lamports = pool_account.incoming_stake + pool_sol_reserves_lamports;
         let fee_lamports = fee_account
             .apply(
-                pool_owned_lamports,
+                pool_account.incoming_stake,
                 pool_sol_reserves_lamports,
                 stake_account_lamports,
             )
