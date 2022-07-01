@@ -1,5 +1,5 @@
 {
-  "name": "@soceanfi/unstake",
+  "name": "@unstake-it/sol",
   "version": "0.0.1",
   "repository": "github:igneous-labs/unstake",
   "main": "dist/index.js",

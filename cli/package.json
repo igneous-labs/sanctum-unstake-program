@@ -1,5 +1,5 @@
 {
-  "name": "@soceanfi/unstake-cli",
+  "name": "@unstake-it/sol-cli",
   "version": "0.0.1",
   "repository": "github:igneous-labs/unstake",
   "description": "Admin CLI for unstake program",
