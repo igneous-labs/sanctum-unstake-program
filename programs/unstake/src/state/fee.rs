@@ -17,8 +17,6 @@ impl Fee {
         self.fee.validate()
     }
 
-    /// Preconditions:
-    /// - sol_reserves_lamports >= stake_account_lamports
     pub fn apply(
         &self,
         pool_incoming_stake: u64,
@@ -106,25 +104,36 @@ impl FeeEnum {
             FeeEnum::Flat { ratio } => ratio.into_precise_number()?,
             FeeEnum::LiquidityLinear { params } => {
                 // linear interpolation from max_liq_remaining to zero_liq_remaining where y-intercept at max_liq_remaining
-                // x-axis is ratio of liquidity consumed
-                // y-axis is lamports
-                let liq_consumed = (stake_account_lamports as u128)
-                    .checked_add(pool_incoming_stake as u128)
-                    .and_then(PreciseNumber::new)?;
+                // x-axis is liquidity consumed in lamports
+                // y-axis is fee ratio (e.g. 0.01 is 1% fees)
+                //
+                // let I = pool_incoming_stake, S = stake_account_lamports,
+                // m = slope, c = y-intercept at max_liq_remaining
+                // new liquidity consumed after unstake = I + (1 - y)S
+                // y = m(I + (1 - y)S) + c
+                // y = mI + mS - mSy + c
+                // y(1 + mS) = m(I + S) + c
+                // y = (m(I + S) + c) / (1 + mS)
+                // note: fee_ratio can go >zero_liq_remaining
+                // if I + (1 - y)S > pool_owned_lamports
 
                 let zero_liq_fee = params.zero_liq_remaining.into_precise_number()?;
                 let max_liq_fee = params.max_liq_remaining.into_precise_number()?;
                 let owned_lamports =
                     (pool_incoming_stake as u128).checked_add(sol_reserves_lamports as u128)?;
-                // NOTE: assuming zero_liq_fee > max_liq_fee
-                // TODO: invariant and validation
                 let slope = zero_liq_fee
                     .checked_sub(&max_liq_fee)?
                     .checked_div(&PreciseNumber::new(owned_lamports)?)?;
 
-                slope
-                    .checked_mul(&liq_consumed)?
-                    .checked_add(&max_liq_fee)?
+                let incoming_plus_stake =
+                    (pool_incoming_stake as u128).checked_add(stake_account_lamports as u128)?;
+                let num = slope
+                    .checked_mul(&PreciseNumber::new(incoming_plus_stake)?)?
+                    .checked_add(&max_liq_fee)?;
+                let denom = slope
+                    .checked_mul(&PreciseNumber::new(stake_account_lamports as u128)?)?
+                    .checked_add(&PreciseNumber::new(1u128)?)?;
+                num.checked_div(&denom)?
             }
         };
 

@@ -384,6 +384,21 @@ describe("internals", () => {
     });
   });
 
+  const LIQUIDITY_LINEAR_FEE = {
+    liquidityLinear: {
+      params: {
+        maxLiqRemaining: {
+          num: new BN(25),
+          denom: new BN(1000),
+        },
+        zeroLiqRemaining: {
+          num: new BN(42),
+          denom: new BN(1000),
+        },
+      },
+    },
+  };
+
   describe("Admin facing", () => {
     it("it sets fee", async () => {
       // NOTE: assuming the fee account isn't previously set to Flat 69% fee
@@ -413,21 +428,6 @@ describe("internals", () => {
       });
 
       // set LiquidityLinear fee
-      const LIQUIDITY_LINEAR_FEE = {
-        liquidityLinear: {
-          params: {
-            maxLiqRemaining: {
-              num: new BN(25),
-              denom: new BN(1000),
-            },
-            zeroLiqRemaining: {
-              num: new BN(42),
-              denom: new BN(1000),
-            },
-          },
-        },
-      };
-
       await program.methods
         .setFee({ fee: LIQUIDITY_LINEAR_FEE })
         .accounts({
@@ -650,6 +650,17 @@ describe("internals", () => {
         custodian.publicKey
       );
 
+      const {
+        liquidityLinear: {
+          params: {
+            zeroLiqRemaining: { num, denom },
+          },
+        },
+      } = LIQUIDITY_LINEAR_FEE;
+      const maxUnstakeableLamports = liquidityLamports
+        .mul(denom)
+        .divRound(denom.sub(num));
+
       const stakeAccInitParams: [
         Keypair,
         Keypair,
@@ -661,7 +672,7 @@ describe("internals", () => {
           notEnoughLiquidityStakeAcc,
           notEnoughLiquidityUnstaker,
           undefined,
-          liquidityLamports.add(new BN(1)).toNumber(),
+          maxUnstakeableLamports.add(new BN(1)).toNumber(),
         ],
         [flatFeeStakeAcc, flatFeeUnstaker, undefined, undefined],
         [
