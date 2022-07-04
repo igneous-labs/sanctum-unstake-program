@@ -93,20 +93,119 @@ fn calc_lp_tokens_to_mint(
     lp_mint_supply: u64,
     amount_to_add: u64,
 ) -> std::result::Result<u64, UnstakeError> {
-    // 0-edge cases: should all result in pool.owned_lamports 1:1 lp_mint.supply
-    // 0 liquidity, 0 supply. mint = amount_to_add
-    // 0 liquidity, non-zero supply. mint = amount_to_add - supply
-    // non-zero liquidity, 0 supply. mint = amount_to_add + owned_lamports
-    if pool_owned_lamports == 0 || lp_mint_supply == 0 {
-        return amount_to_add
+    let to_mint = match pool_owned_lamports == 0 || lp_mint_supply == 0 {
+        // 0-edge cases: should all result in pool.owned_lamports 1:1 lp_mint.supply
+        // 0 liquidity, 0 supply. mint = amount_to_add
+        // 0 liquidity, non-zero supply. mint = amount_to_add - supply (note: amount_to_add must > supply in this case)
+        // non-zero liquidity, 0 supply. mint = amount_to_add + owned_lamports
+        true => amount_to_add
             .checked_add(pool_owned_lamports)
             .and_then(|v| v.checked_sub(lp_mint_supply))
-            .ok_or(UnstakeError::InternalError);
+            .ok_or(UnstakeError::InternalError)?,
+
+        // mint = amount * supply BEFORE TRANSFER / owned_lamports BEFORE TRANSFER
+        false => u128::from(amount_to_add)
+            .checked_mul(u128::from(lp_mint_supply))
+            .and_then(|v| v.checked_div(u128::from(pool_owned_lamports)))
+            .and_then(|v| u64::try_from(v).ok())
+            .ok_or(UnstakeError::InternalError)?,
+    };
+    if to_mint == 0 {
+        return Err(UnstakeError::LiquidityToAddTooLittle);
     }
-    // mint = amount * supply BEFORE TRANSFER / owned_lamports BEFORE TRANSFER
-    u128::from(amount_to_add)
-        .checked_mul(u128::from(lp_mint_supply))
-        .and_then(|v| v.checked_div(u128::from(pool_owned_lamports)))
-        .and_then(|v| u64::try_from(v).ok())
-        .ok_or(UnstakeError::InternalError)
+    Ok(to_mint)
+}
+
+#[cfg(test)]
+mod tests {
+    use proptest::prelude::*;
+    use spl_math::uint::U256;
+    use std::cmp::{max, min};
+
+    use super::*;
+
+    prop_compose! {
+        fn owned_lamports_to_add_sum_lte_u64_max()
+            (amount_to_add in 1..=u64::MAX)
+            (amount_to_add in Just(amount_to_add), pool_owned_lamports in 0..=u64::MAX - amount_to_add)
+        -> (u64, u64) {
+            (pool_owned_lamports, amount_to_add)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_lp_mint_supply_zero_results_in_one_to_one(
+            (pool_owned_lamports, amount_to_add) in owned_lamports_to_add_sum_lte_u64_max()
+        ) {
+            let to_mint = calc_lp_tokens_to_mint(pool_owned_lamports, 0, amount_to_add).unwrap();
+            prop_assert!(to_mint == pool_owned_lamports + amount_to_add);
+        }
+    }
+
+    prop_compose! {
+        fn to_add_gte_supply()
+            (amount_to_add in 1..=u64::MAX)
+            (amount_to_add in Just(amount_to_add), lp_mint_supply in 0..=amount_to_add)
+        -> (u64, u64) {
+            (lp_mint_supply, amount_to_add)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_pool_owned_lamports_zero_results_in_one_to_one(
+            (lp_mint_supply, amount_to_add) in to_add_gte_supply()
+        ) {
+            let to_mint = calc_lp_tokens_to_mint(0, lp_mint_supply, amount_to_add).unwrap();
+            prop_assert!(to_mint + lp_mint_supply == amount_to_add);
+        }
+    }
+
+    prop_compose! {
+        fn normal_cases()
+            (amount_to_add in 1..=u64::MAX, lp_mint_supply in 1..=u64::MAX)
+            (
+                amount_to_add in Just(amount_to_add),
+                lp_mint_supply in Just(lp_mint_supply),
+                pool_owned_lamports in
+                    u64::try_from(
+                        max(1u128, amount_to_add as u128 * lp_mint_supply as u128 / u64::MAX as u128)
+                    ).unwrap()
+                    ..=
+                    u64::try_from(
+                        min(u64::MAX as u128, amount_to_add as u128 * lp_mint_supply as u128)
+                    ).unwrap()
+            )
+        -> (u64, u64, u64) {
+            (pool_owned_lamports, lp_mint_supply, amount_to_add)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_normal_cases_proportional(
+            (pool_owned_lamports, lp_mint_supply, amount_to_add) in normal_cases()
+        ) {
+            // to_mint / (lp_mint_supply + to_mint) <= amount_to_add / (pool_owned_lamports + amount_to_add) ->
+            // to_mint * (pool_owned_lamports + amount_to_add) <= amount_to_add * (lp_mint_supply + to_mint)
+
+            let to_mint = calc_lp_tokens_to_mint(pool_owned_lamports, lp_mint_supply, amount_to_add).unwrap();
+            let lhs = (U256::from(to_mint)) * (U256::from(pool_owned_lamports) + U256::from(amount_to_add));
+            let rhs = (U256::from(amount_to_add)) * (U256::from(lp_mint_supply) + U256::from(to_mint));
+            // TODO: there should be an error bound on the ineq, not sure what it is
+            prop_assert!(lhs <= rhs);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_amount_to_add_zero_results_in_error(
+            pool_owned_lamports in 0..=u64::MAX,
+            lp_mint_supply in 0..=u64::MAX,
+        ) {
+            let err = calc_lp_tokens_to_mint(pool_owned_lamports, lp_mint_supply, 0).unwrap_err();
+            prop_assert!(err == UnstakeError::LiquidityToAddTooLittle || err == UnstakeError::InternalError);
+        }
+    }
 }
