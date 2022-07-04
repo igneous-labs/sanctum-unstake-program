@@ -17,10 +17,7 @@ import { Unstake } from "../target/types/unstake";
 // for program errors. This closure returns a predicate that checks if a given
 // error object matches either type and has the correct error code and message.
 // Intended to be used to generate matcher functions for `satisfy` method from chai.
-export const checkAnchorError = (
-  errorCode: number,
-  errorMessage: string
-): bool => {
+export const checkAnchorError = (errorCode: number, errorMessage: string) => {
   return (err) => {
     if (err.code != undefined) {
       // first error type
