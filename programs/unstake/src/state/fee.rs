@@ -48,7 +48,9 @@ pub enum FeeEnum {
     ///
     /// Invariants:
     ///  - max_liq_remaining is a valid Rational
+    ///  - max_liq_remaining <= 1
     ///  - zero_liq_remaining is a valid Rational
+    ///  - zero_liq_remaining <= 1
     ///  - max_liq_remaining <= zero_liq_remaining
     LiquidityLinear { params: LiquidityLinearParams },
 }
@@ -68,12 +70,16 @@ impl FeeEnum {
     pub fn validate(&self) -> Result<()> {
         match self {
             FeeEnum::Flat { ratio } => {
-                if !ratio.validate() || ratio.num > ratio.denom {
+                if !ratio.validate() || !ratio.is_lte_one() {
                     return Err(UnstakeError::InvalidFee.into());
                 }
             }
             FeeEnum::LiquidityLinear { params } => {
-                if !params.zero_liq_remaining.validate() || !params.max_liq_remaining.validate() {
+                if !params.zero_liq_remaining.validate()
+                    || !params.zero_liq_remaining.is_lte_one()
+                    || !params.max_liq_remaining.validate()
+                    || !params.max_liq_remaining.is_lte_one()
+                {
                     return Err(UnstakeError::InvalidFee.into());
                 }
                 let zero_liq_fee = params
