@@ -10,7 +10,9 @@ import {
 import { airdrop, keypairFromFile, sleep } from "../tests/utils";
 
 const STAKE_ACCS_TO_CREATE = 10;
-const MAX_AIRDROPS_BEFORE_STAKE = 3;
+// >1 results in 429.
+// Can only airdrop a couple of times before being blocked
+const MAX_AIRDROPS_BEFORE_STAKE = 1;
 
 const AIRDROP_COOLDOWN_MS = 2000;
 const MAX_AIRDROP_AMT_SOL = 1.0;
