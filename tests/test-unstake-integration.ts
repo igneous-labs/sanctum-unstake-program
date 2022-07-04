@@ -11,14 +11,18 @@ import {
 } from "@solana/web3.js";
 import { createAssociatedTokenAccount } from "@solana/spl-token";
 import {
+  applyFee,
+  Fee,
   findPoolFeeAccount,
   findPoolSolReserves,
   findStakeAccountRecordAccount,
-} from "../ts/src/pda";
+  LiquidityLinearFeeInner,
+} from "../ts/src";
 import { Unstake } from "../target/types/unstake";
 import {
   airdrop,
   createDelegateStakeTx,
+  EPSILON_UPPER_BOUND,
   fetchLpFacingTestParams,
   waitForEpochToPass,
 } from "./utils";
@@ -34,9 +38,6 @@ describe("integration", () => {
   const program = anchor.workspace.Unstake as anchor.Program<Unstake>;
   const provider = anchor.getProvider();
 
-  // Upper bound for tolerable rounding error
-  const EPSILON_UPPER_BOUND = 9; // TODO: confirm that the value is reasonable
-
   const payerKeypair = Keypair.generate();
   const lperKeypair = Keypair.generate();
   const poolKeypair = Keypair.generate();
@@ -46,12 +47,9 @@ describe("integration", () => {
 
   const liquidityAmount = new BN(0.1 * LAMPORTS_PER_SOL);
 
-  let [poolSolReserves, poolSolReservesBump] = [null as PublicKey, 0];
-  let [feeAccount, feeAccountBump] = [null as PublicKey, 0];
-  let [stakeAccountRecordAccount, stakeAccountRecordAccountBump] = [
-    null as PublicKey,
-    0,
-  ];
+  let [poolSolReserves] = [null as PublicKey, 0];
+  let [feeAccount] = [null as PublicKey, 0];
+  let [stakeAccountRecordAccount] = [null as PublicKey, 0];
   let lperAta = null as PublicKey;
 
   before(async () => {
@@ -59,20 +57,19 @@ describe("integration", () => {
     await airdrop(provider.connection, payerKeypair.publicKey);
     await airdrop(provider.connection, lperKeypair.publicKey);
     await airdrop(provider.connection, unstakerKeypair.publicKey);
-    [poolSolReserves, poolSolReservesBump] = await findPoolSolReserves(
+    [poolSolReserves] = await findPoolSolReserves(
       program.programId,
       poolKeypair.publicKey
     );
-    [feeAccount, feeAccountBump] = await findPoolFeeAccount(
+    [feeAccount] = await findPoolFeeAccount(
       program.programId,
       poolKeypair.publicKey
     );
-    [stakeAccountRecordAccount, stakeAccountRecordAccountBump] =
-      await findStakeAccountRecordAccount(
-        program.programId,
-        poolKeypair.publicKey,
-        stakeAccountKeypair.publicKey
-      );
+    [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+      program.programId,
+      poolKeypair.publicKey,
+      stakeAccountKeypair.publicKey
+    );
     console.log("creating a new pool");
     await program.methods
       .createPool({
@@ -154,10 +151,6 @@ describe("integration", () => {
     const ownedLamportsPre = incomingStakePre.add(
       new BN(solReservesLamportsPre)
     );
-    const liquidityConsumed =
-      stakeAccountLamports +
-      ownedLamportsPre.toNumber() -
-      solReservesLamportsPre;
 
     await program.methods
       .unstake()
@@ -193,33 +186,48 @@ describe("integration", () => {
     const unstakerBalancePost = await provider.connection.getBalance(
       unstakerKeypair.publicKey
     );
-    const feeRatio = await program.account.fee.fetch(feeAccount).then(
-      ({
-        fee: {
-          // @ts-ignore
-          liquidityLinear: { params },
+
+    // TODO: this depends on tsBindings being correct, should write less coupled tests
+    const [
+      feeLamportsExpected,
+      minFeeLamportsExpected,
+      maxFeeLamportsExpected,
+    ] = await program.account.fee.fetch(feeAccount).then((fee) => {
+      const feeCasted = fee as unknown as Fee;
+      const {
+        liquidityLinear: {
+          params: { zeroLiqRemaining, maxLiqRemaining },
         },
-      }) => {
-        const zeroLiquidityRemaining =
-          params.zeroLiqRemaining.num.toNumber() /
-          params.zeroLiqRemaining.denom.toNumber();
-        const maxLiquidityRemaining =
-          params.maxLiqRemaining.num.toNumber() /
-          params.maxLiqRemaining.denom.toNumber();
-        const slope =
-          (zeroLiquidityRemaining - maxLiquidityRemaining) /
-          ownedLamportsPre.toNumber();
-        return slope * liquidityConsumed + maxLiquidityRemaining;
-      }
-    );
-    const feeLamportsExpected = Math.ceil(stakeAccountLamports * feeRatio);
+      } = feeCasted.fee as LiquidityLinearFeeInner;
+
+      return [
+        applyFee(feeCasted, {
+          poolIncomingStake: incomingStakePre,
+          solReservesLamports: new BN(solReservesLamportsPre),
+          stakeAccountLamports: new BN(stakeAccountLamports),
+        }).toNumber(),
+        Math.ceil(
+          (maxLiqRemaining.num.toNumber() / maxLiqRemaining.denom.toNumber()) *
+            stakeAccountLamports
+        ),
+        Math.ceil(
+          (zeroLiqRemaining.num.toNumber() /
+            zeroLiqRemaining.denom.toNumber()) *
+            stakeAccountLamports
+        ),
+      ];
+    });
     const feeLamportsCharged =
       stakeAccountLamports - (unstakerBalancePost - unstakerBalancePre);
     const epsilon = Math.abs(feeLamportsExpected - feeLamportsCharged);
+    expect(feeLamportsExpected).to.be.gt(0);
+    expect(feeLamportsCharged).to.be.gt(0);
+    expect(epsilon).to.be.below(EPSILON_UPPER_BOUND);
+    expect(feeLamportsCharged).to.be.gt(minFeeLamportsExpected);
+    expect(feeLamportsCharged).to.be.lt(maxFeeLamportsExpected);
 
     expect(stakerPost.equals(poolSolReserves)).to.be.true;
     expect(withdrawerPost.equals(poolSolReserves)).to.be.true;
-    expect(epsilon).to.be.below(EPSILON_UPPER_BOUND);
   });
 
   it("it deactivates", async () => {

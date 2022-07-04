@@ -13,11 +13,17 @@ import { readFileSync } from "fs";
 import BN from "bn.js";
 import { Unstake } from "../target/types/unstake";
 
+// Upper bound for tolerable rounding error of lamport values
+export const EPSILON_UPPER_BOUND = 1; // TODO: confirm that the value is reasonable (no error)
+
 // Anchor at the current v0.24.2, is throwing two different shapes of object
 // for program errors. This closure returns a predicate that checks if a given
 // error object matches either type and has the correct error code and message.
 // Intended to be used to generate matcher functions for `satisfy` method from chai.
-export const checkAnchorError = (errorCode: number, errorMessage: string) => {
+export function checkAnchorError(
+  errorCode: number,
+  errorMessage: string
+): (err: any) => boolean {
   return (err) => {
     if (err.code != undefined) {
       // first error type
@@ -30,7 +36,7 @@ export const checkAnchorError = (errorCode: number, errorMessage: string) => {
       );
     }
   };
-};
+}
 
 export async function airdrop(
   connection: Connection,
