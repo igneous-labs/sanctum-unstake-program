@@ -26,7 +26,6 @@ pub struct Unstake<'info> {
             .ok_or(UnstakeError::StakeAccountLockupNotRetrievable)?
             .is_in_force(&clock, None)
             @ UnstakeError::StakeAccountLockupInForce,
-        constraint = stake_account.to_account_info().lamports() <= pool_sol_reserves.lamports() @ UnstakeError::NotEnoughLiquidity
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
@@ -124,6 +123,10 @@ impl<'info> Unstake<'info> {
             .checked_sub(fee_lamports)
             .ok_or(UnstakeError::InternalError)?;
 
+        if lamports_to_transfer > pool_sol_reserves_lamports {
+            return Err(UnstakeError::NotEnoughLiquidity.into());
+        }
+
         // pay the unstaker from the pool reserves
         // NOTE: rely on CPI call as the constraint
         let transfer_cpi_accs = system_program::Transfer {
@@ -137,6 +140,7 @@ impl<'info> Unstake<'info> {
                 .get("pool_sol_reserves")
                 .ok_or(UnstakeError::PdaBumpNotCached)?],
         ];
+
         system_program::transfer(
             CpiContext::new_with_signer(
                 system_program.to_account_info(),
