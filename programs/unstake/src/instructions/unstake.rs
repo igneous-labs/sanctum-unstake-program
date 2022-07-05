@@ -23,9 +23,10 @@ pub struct Unstake<'info> {
         // this also checks that a stake account is either
         // Initialized or Stake
         // NOTE: https://github.com/igneous-labs/unstake/issues/63
-        //  - if lockup is not in force then there is no custodian for the stake account
+        //  - if lockup is not in force then the custodian cannot do anything
         //  - since the instruction updates both staker and withdrawer, lockup
-        //    cannot be updated by unstaker after the instruction resolves
+        //    cannot be updated by the custodian or unstaker after the instruction
+        //    resolves
         constraint = !stake_account.lockup()
             .ok_or(UnstakeError::StakeAccountLockupNotRetrievable)?
             .is_in_force(&clock, None)
