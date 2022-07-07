@@ -7,6 +7,7 @@ import {
   StakeProgram,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
+import { homedir } from "os";
 import { airdrop, keypairFromFile, sleep } from "../tests/utils";
 
 const STAKE_ACCS_TO_CREATE = 10;
@@ -21,7 +22,7 @@ const MIN_STAKE_LAMPORTS = MIN_STAKE_SOL * LAMPORTS_PER_SOL;
 const BALANCE_BUFFER = 2 * MIN_STAKE_SOL;
 
 const CONN = new Connection(clusterApiUrl("devnet"));
-const WALLET_PATH = "~/.config/solana/id.json";
+const WALLET_PATH = `${homedir()}/.config/solana/id.json`;
 
 async function main() {
   const wallet = keypairFromFile(WALLET_PATH);

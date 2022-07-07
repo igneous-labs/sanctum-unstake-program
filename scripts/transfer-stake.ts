@@ -5,6 +5,7 @@ import {
   sendAndConfirmTransaction,
   StakeProgram,
 } from "@solana/web3.js";
+import { homedir } from "os";
 import { keypairFromFile } from "../tests/utils";
 
 // TODO: fill in
@@ -12,7 +13,7 @@ const STAKE_ACC_TO_TRANSFER = new PublicKey("");
 const NEW_AUTHORITY = new PublicKey("");
 
 const CONN = new Connection(clusterApiUrl("devnet"));
-const WALLET_PATH = "~/.config/solana/id.json";
+const WALLET_PATH = `${homedir()}/.config/solana/id.json`;
 
 async function main() {
   const wallet = keypairFromFile(WALLET_PATH);
