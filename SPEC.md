@@ -67,68 +67,92 @@ Unstaked stake accounts that are owned by the pool have their withdraw and stake
 
 ## Instructions
 
-### CreatePool
+### Admin Facing
+
+#### CreatePool
 
 Creates a new unstake liquidity pool.
 
-#### Requirements:
+##### Requirements:
 
 - Initializes the pool account, fee account and LP token mint
 
-#### Signers:
+##### Signers:
 
 - Payer to pay for the new accounts' rent
 - New pool's fee authority
 
-### AddLiquidity
+#### SetFee
+
+Modify the pool's fees.
+
+##### Requirements:
+
+##### Signers:
+
+### Liquidity Pool Facing
+
+#### AddLiquidity
 
 Add SOL liquidity to a pool, minting LP tokens in return.
 
-#### Requirements:
+##### Requirements:
 
 - Mint LP tokens to the specified destination LP token account
 - Minted tokens should be proportional to the liquidity added i.e. `LP tokens minted / (LP tokens minted + existing LP token supply) = SOL added / (SOL added + pool's existing SOL)`
 - Zero-edge cases: if zero existing liquidity or zero LP token supply, then the minted amount should result in LP token supply being 1:1 with the total SOL owned by the pool.
 
-#### Signers:
+##### Signers:
 
 - Authority of the SystemAccount providing the SOL to add
 
-### RemoveLiquidity
+#### RemoveLiquidity
 
 Burn LP tokens to remove SOL liquidity from a pool.
 
-#### Requirements:
+##### Requirements:
 
 - Burn LP tokens and return SOL from the pool SOL reserves to the destination `SystemAccount`
 - SOL returned should be proportional to the LP tokens burnt i.e. `SOL returned / (pool's existing SOL - SOL returned) = LP tokens burnt / (existing LP token supply - LP tokens burnt)`
 - Fails if pool SOL reserves does not have enough SOL to return to the LP. LP must wait till the next epoch for `ReclaimStakeAccount`s to return liquidity to the pool SOL reserves to try again.
 - Zero-edge cases: if a `RemoveLiquidity` instruction results in LP token supply going to 0, then the SOL owned by the pool should go to 0 as well
 
-#### Signers:
+##### Signers:
 
 - Authority of the LP token account to burn LP tokens from
 
-### Unstake
+### Crank Facing
 
-Unstakes a given stake account to a pool and receive SOL in return.
-
-### DeactivateStakeAccount
+#### DeactivateStakeAccount
 
 Permissionless crank to deactivate an unstaked stake account.
 
-#### Requirements:
+##### Requirements:
 
-- Deactivates an active stake account owned the pool so that its SOL can be reclaimed to the pool's SOL reserves in the next epoch
+- Deactivates an active stake account owned by the pool so that its SOL can be reclaimed to the pool's SOL reserves in the next epoch
 
-#### Signers:
+##### Signers:
 
 None, permissionless crank.
 
-### ReclaimStakeAccount
+#### ReclaimStakeAccount
 
 Permissionless crank to reclaim the SOL in a deactivated unstaked stake account to a pool's SOL reserves.
 
-### SetFee
+##### Requirements:
 
-Modify the pool's fees.
+- Reclaims an inactive stake account owned by the pool to the pool's SOL reserves account
+
+##### Signers:
+
+None, permissionless crank.
+
+### User Facing
+
+#### Unstake
+
+Unstakes a given stake account to a pool and receive SOL in return.
+
+##### Requirements:
+
+##### Signers:
