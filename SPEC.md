@@ -71,13 +71,31 @@ Unstaked stake accounts that are owned by the pool have their withdraw and stake
 
 Creates a new unstake liquidity pool.
 
+#### Requirements:
+
+- Initializes the pool account, fee account and LP token mint
+- Signed by the new pool's new fee authority
+
 ### AddLiquidity
 
 Add SOL liquidity to a pool, minting LP tokens in return.
 
+#### Requirements:
+
+- Mint LP tokens to the specified destination LP token account
+- Minted tokens should be proportional to the liquidity added i.e. `LP tokens minted / (LP tokens minted + existing LP token supply) = SOL added / (SOL added + pool's existing SOL)`
+- Zero-edge cases: if zero existing liquidity or zero LP token supply, then the minted amount should result in LP token supply being 1:1 with the total SOL owned by the pool.
+
 ### RemoveLiquidity
 
-Burn LP tokens to remove SOL liquidity from a pool. Does not work and must wait till the next epoch for `ReclaimStakeAccount`s if pool SOL reserves does not have enough SOL to return to the LP.
+Burn LP tokens to remove SOL liquidity from a pool.
+
+#### Requirements:
+
+- Burn LP tokens and return SOL from the pool SOL reserves to the destination `SystemAccount`
+- SOL returned should be proportional to the LP tokens burnt i.e. `SOL returned / (pool's existing SOL - SOL returned) = LP tokens burnt / (existing LP token supply - LP tokens burnt)`
+- Fails if pool SOL reserves does not have enough SOL to return to the LP. LP must wait till the next epoch for `ReclaimStakeAccount`s to return liquidity to the pool SOL reserves to try again.
+- Zero-edge cases: if a `RemoveLiquidity` instruction results in LP token supply going to 0, then the SOL owned by the pool should go to 0 as well
 
 ### Unstake
 
@@ -86,6 +104,10 @@ Unstakes a given stake account to a pool and receive SOL in return.
 ### DeactivateStakeAccount
 
 Permissionless crank to deactivate an unstaked stake account.
+
+#### Requirements:
+
+- Deactivates an active stake account owned the pool so that its SOL can be reclaimed to the pool's SOL reserves in the next epoch
 
 ### ReclaimStakeAccount
 
