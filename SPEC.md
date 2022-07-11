@@ -3,11 +3,14 @@
 ## Overview
 
 Unstake On-chain program provides a mechanism to instantly convert a native
-Solana Stake Account to SOL. The program performs the conversion using its
+Solana Stake Account to SOL.
+
+The program performs the conversion from stake account to SOL using its
 underlying liquidity pool that contains a SOL reserves that is owned by the LP
-token holders and accrues fees as it performs conversion. The internal operation
-of the program requires two permission-less crank instructions to be executed to
-maintain the optimal operational state.
+token holders and continuously accrues fees as it operates.
+
+The internal operations of the program require two permission-less crank
+instructions to be executed to maintain the optimal operational state.
 
 ## High level design
 
@@ -117,6 +120,8 @@ Modify the pool's fees.
 
 ##### Requirements:
 
+- Updates the pool's associated Fee account to a new fee scheme
+
 ##### Signers:
 
 - Fee authority of the provided pool
@@ -129,7 +134,7 @@ Add SOL liquidity to a pool, minting LP tokens in return.
 
 ##### Requirements:
 
-- Mint LP tokens to the specified destination LP token account
+- Mints LP tokens to the specified destination LP token account
 - Minted tokens should be proportional to the liquidity added i.e. `LP tokens minted / (LP tokens minted + existing LP token supply) = SOL added / (SOL added + pool's existing SOL)`
 - Zero-edge cases: if zero existing liquidity or zero LP token supply, then the minted amount should result in LP token supply being 1:1 with the total SOL owned by the pool.
 
@@ -139,11 +144,11 @@ Add SOL liquidity to a pool, minting LP tokens in return.
 
 #### RemoveLiquidity
 
-Burn LP tokens to remove SOL liquidity from a pool.
+Burns LP tokens to remove SOL liquidity from a pool.
 
 ##### Requirements:
 
-- Burn LP tokens and return SOL from the pool SOL reserves to the destination `SystemAccount`
+- Burns LP tokens and return SOL from the pool SOL reserves to the destination `SystemAccount`
 - SOL returned should be proportional to the LP tokens burnt i.e. `SOL returned / (pool's existing SOL - SOL returned) = LP tokens burnt / (existing LP token supply - LP tokens burnt)`
 - Fails if pool SOL reserves does not have enough SOL to return to the LP. LP must wait till the next epoch for `ReclaimStakeAccount`s to return liquidity to the pool SOL reserves to try again.
 - Zero-edge cases: if a `RemoveLiquidity` instruction results in LP token supply going to 0, then the SOL owned by the pool should go to 0 as well
@@ -186,9 +191,9 @@ Unstakes a given stake account to a pool and receive SOL in return.
 
 ##### Requirements:
 
-- Reject stake accounts that are locked up
-- Transfer the ownership of the provided stake account to the pool SOL reserves
-- Transfer the provided stake accounts SOL amount, excluding the pool's fee, to the specified unstaker account
+- Rejects stake accounts that are locked up
+- Transfers the ownership of the provided stake account to the pool SOL reserves
+- Transfers the provided stake accounts SOL amount, excluding the pool's fee, to the specified unstaker account
 
 ##### Signers:
 
