@@ -1,17 +1,28 @@
+# Unstake On-chain Program Specification
+
+## Overview
+
+Unstake On-chain program provides a mechanism to instantly convert a Solana
+Stake Account to Sol. The program performs the conversion using its underlying
+liquidity pool that contains a Sol reserves that is owned by the LP token
+holders and accrues fees as it performs conversion. The internal operation
+requires two permission-less crank instructions to be executed to maintain the
+optimal operational state.
+
 ## High level design
 
 - Stake accounts' worth are determined using the native `lamports` field (includes rent lamports)
 - Stake accounts are just transferred directly to the pool by setting withdraw and stake authority
 - In return, SOL is transferred directly to the specified destination account, minus the pool's fees
 - Stake accounts with Lockup active are disallowed
-- Unstaked stake accounts are deactivated and reclaimed as liquid SOL on the next epoch via permissionless cranks
+- Unstaked stake accounts are deactivated and reclaimed as liquid SOL on the next epoch via permission-less cranks
 - Discover stake accounts owned by the pool via getProgramAccounts to run the cranks on
 
 ## Program Accounts
 
 ### Pool
 
-The main liquidity pool account.
+The main liquidity pool account. There is a one-to-one relation to a pool to its Sol reserves.
 
 | field            | type     | description                                                                                                                                                                                                                                  |
 | ---------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
