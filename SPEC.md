@@ -119,6 +119,8 @@ Modify the pool's fees.
 
 ##### Signers:
 
+- Fee authority of the provided pool
+
 ### Liquidity Pool Facing
 
 #### AddLiquidity
@@ -184,4 +186,11 @@ Unstakes a given stake account to a pool and receive SOL in return.
 
 ##### Requirements:
 
+- Reject stake accounts that are locked up
+- Transfer the ownership of the provided stake account to the pool SOL reserves
+- Transfer the provided stake accounts SOL amount, excluding the pool's fee, to the specified unstaker account
+
 ##### Signers:
+
+- Payer to pay for the new StakeAccountRecord account's rent
+- Unstaker that owns the provided stake account
