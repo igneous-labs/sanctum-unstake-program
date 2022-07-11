@@ -3,8 +3,8 @@
 ## Overview
 
 Unstake On-chain program provides a mechanism to instantly convert a Solana
-Stake Account to Sol. The program performs the conversion using its underlying
-liquidity pool that contains a Sol reserves that is owned by the LP token
+Stake Account to SOL. The program performs the conversion using its underlying
+liquidity pool that contains a SOL reserves that is owned by the LP token
 holders and accrues fees as it performs conversion. The internal operation
 requires two permission-less crank instructions to be executed to maintain the
 optimal operational state.
@@ -12,17 +12,24 @@ optimal operational state.
 ## High level design
 
 - Stake accounts' worth are determined using the native `lamports` field (includes rent lamports)
-- Stake accounts are just transferred directly to the pool by setting withdraw and stake authority
+- Stake accounts are transferred directly to the pool by setting its `withdrawer` and `staker` authority to the pool's SOL reserves account
 - In return, SOL is transferred directly to the specified destination account, minus the pool's fees
-- Stake accounts with Lockup active are disallowed
+- Stake accounts with an active `Lockup` are disallowed
 - Unstaked stake accounts are deactivated and reclaimed as liquid SOL on the next epoch via permission-less cranks
-- Discover stake accounts owned by the pool via getProgramAccounts to run the cranks on
+- Discover stake accounts owned by the pool via `getProgramAccounts` to run the cranks on
 
 ## Program Accounts
 
 ### Pool
 
-The main liquidity pool account. There is a one-to-one relation to a pool to its Sol reserves.
+The main liquidity pool account.
+
+Each pool has an LP token mint, the amount that keeps track of the last known
+amount of incoming lamports, and specifies an authority that can set the type of
+fee to be applied on the unstake action.
+
+There is one-to-one relation between a pool account and its SOL reserves and a
+fee account (see Fee).
 
 | field            | type     | description                                                                                                                                                                                                                                  |
 | ---------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -34,21 +41,31 @@ The main liquidity pool account. There is a one-to-one relation to a pool to its
 
 The account that stores the pool's fee parameters.
 
-Located at PDA `[pool_account_pubkey, "fee"]`
+Located at PDA `[pool_account_pubkey, "fee"]`.
 
 Single `enum` field, `fee` that implements different fee variants:
 
 #### Flat
 
-Charges a flat percentage fee on all unstakes
+Charges a flat percentage fee on all unstakes.
+
+Fee is specified as a ratio of fee to be taken from the lamports amount of a
+stake account.
 
 #### LiquidityLinear
 
-Charges a fee percentage that increases linearly as the liquiditiy in the pool is consumed.
+Charges a fee percentage that increases linearly as the liquiditiy in the pool
+is consumed.
+
+Fee is specified as a starting ratio of fee when no liquidity is yet to be
+consumed and a maximum ratio to be taken when there is no remaining liquidity in
+the pool. On unstake, the fee is decided by performing a linear interpolation of
+the above values.
 
 ### StakeAccountRecord
 
-An account that stores data for the unstaked stake account that it's 1:1 associated with.
+An account that stores data for the unstaked stake account that it's 1:1
+associated with.
 
 Located at PDA `[pool_account_pubkey, stake_account_pubkey]`
 
@@ -74,7 +91,8 @@ Initialized on `CreatePool`.
 
 ### Unstaked stake accounts
 
-Unstaked stake accounts that are owned by the pool have their withdraw and stake authority set to PDA `[pool_account_pubkey]` (Pool SOL reserves).
+Unstaked stake accounts that are owned by the pool have their `withdrawer` and
+`staker` authority set to PDA `[pool_account_pubkey]` (Pool SOL reserves).
 
 ## Instructions
 
