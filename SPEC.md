@@ -2,12 +2,12 @@
 
 ## Overview
 
-Unstake On-chain program provides a mechanism to instantly convert a Solana
-Stake Account to SOL. The program performs the conversion using its underlying
-liquidity pool that contains a SOL reserves that is owned by the LP token
-holders and accrues fees as it performs conversion. The internal operation
-requires two permission-less crank instructions to be executed to maintain the
-optimal operational state.
+Unstake On-chain program provides a mechanism to instantly convert a native
+Solana Stake Account to SOL. The program performs the conversion using its
+underlying liquidity pool that contains a SOL reserves that is owned by the LP
+token holders and accrues fees as it performs conversion. The internal operation
+of the program requires two permission-less crank instructions to be executed to
+maintain the optimal operational state.
 
 ## High level design
 
@@ -24,9 +24,9 @@ optimal operational state.
 
 The main liquidity pool account.
 
-Each pool has an LP token mint, the amount that keeps track of the last known
+Each pool has an LP token mint, the value that keeps track of the last known
 amount of incoming lamports, and specifies an authority that can set the type of
-fee to be applied on the unstake action.
+fee to be applied on unstake instruction.
 
 There is one-to-one relation between a pool account and its SOL reserves and a
 fee account (see Fee).
@@ -57,10 +57,10 @@ stake account.
 Charges a fee percentage that increases linearly as the liquiditiy in the pool
 is consumed.
 
-Fee is specified as a starting ratio of fee when no liquidity is yet to be
-consumed and a maximum ratio to be taken when there is no remaining liquidity in
-the pool. On unstake, the fee is decided by performing a linear interpolation of
-the above values.
+Fee is specified with a starting ratio of fee, when there is no liquidity consumed
+by unstake instruction yet, and a maximum ratio to be taken, when all of the
+liquidity is already consumed. On unstake, the fee is decided by performing a
+linear interpolation using the above two values.
 
 ### StakeAccountRecord
 
