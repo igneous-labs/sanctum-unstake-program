@@ -164,6 +164,27 @@ impl<'info> Unstake<'info> {
             .checked_add(stake_account_lamports)
             .ok_or(UnstakeError::InternalError)?;
 
+        // emit analytics log
+        let (voter_pubkey, activation_epoch) = stake_account.delegation().map_or_else(
+            || (String::from(""), String::from("")),
+            |delegation| {
+                (
+                    delegation.voter_pubkey.to_string(),
+                    delegation.activation_epoch.to_string(),
+                )
+            },
+        );
+        msg!(
+            "unstake-log: (instruction: Unstake; unstaker: {}; stake_account_lamports: {}; stake_account_voter_pubkey: {}; stake_account_activation_epoch: {}; lamports_paid: {}; fee_type: {:?}; fee_amount: {})",
+            unstaker.key(),
+            stake_account_lamports,
+            voter_pubkey,
+            activation_epoch,
+            lamports_to_transfer,
+            fee_account.fee,
+            fee_lamports,
+        );
+
         Ok(())
     }
 }
