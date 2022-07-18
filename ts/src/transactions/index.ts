@@ -7,4 +7,5 @@ export * from "./createPool";
 export * from "./deactivateStakeAccount";
 export * from "./reclaimStakeAccount";
 export * from "./removeLiquidity";
+export * from "./setFee";
 export * from "./unstake";
