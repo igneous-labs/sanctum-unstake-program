@@ -4,6 +4,7 @@ import { ApplyFeeArgs } from "./args";
 import { applyFlatFee } from "./flat";
 import { applyLiquidityLinearFee } from "./liquidityLinear";
 
+export * from "./args";
 export * from "./flat";
 export * from "./liquidityLinear";
 

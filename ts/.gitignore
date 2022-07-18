@@ -2,3 +2,6 @@
 src/idl/idl*
 dist
 *.tgz
+
+# typedoc
+docs/
