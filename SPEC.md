@@ -183,6 +183,22 @@ Permissionless crank to reclaim the SOL in a deactivated unstaked stake account 
 
 None, permissionless crank.
 
+##### Analytics Log Emission:
+
+Instruction type is marked as 1.
+
+###### Format:
+
+```
+unstake-log: (instruction; stake_account_address; lamports_paid; lamports_reclaimed)
+```
+
+###### Example:
+
+```
+unstake-log: (1; GQuywMnLJgf6ZYLMK1oyiLqMJa8X7bsDt5DnqavyoSxY; 2282881; 2282881)
+```
+
 ### User Facing
 
 #### Unstake
@@ -199,3 +215,19 @@ Unstakes a given stake account to a pool and receive SOL in return.
 
 - Payer to pay for the new StakeAccountRecord account's rent
 - Unstaker that owns the provided stake account
+
+##### Analytics Log Emission:
+
+Instruction type is marked as 0.
+
+###### Format:
+
+```
+unstake-log: (instruction; unstaker; stake_account_lamports; stake_account_voter_pubkey; stake_account_activation_epoch; lamports_paid; fee_type; fee_amount)
+```
+
+###### Example:
+
+```
+unstake-log: (0; EVbrLzH4674c4iRaHga6f4tucNcWxRUjTcDH3kzt29Qg; 2282881; 9tVuZTqmztWo7H62JJmTVY4keJzSsQKC5RxUMqQbNZuJ; 0; 2125362; Flat { ratio: Rational { num: 69, denom: 1000 } }; 157519)
+```

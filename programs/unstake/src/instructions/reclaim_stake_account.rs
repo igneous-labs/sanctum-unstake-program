@@ -85,8 +85,10 @@ impl<'info> ReclaimStakeAccount<'info> {
             .ok_or(UnstakeError::InternalError)?;
 
         // emit analytics log
+        // log format:
+        //  "unstake-log: (instruction; stake_account_address; lamports_paid; lamports_reclaimed)"
         msg!(
-            "unstake-log: (instruction: ReclaimStakeAccount; stake_account_address: {}; lamports_paid; {}; lamports_reclaimed: {})",
+            "unstake-log: (1; {}; {}; {})",
             stake_account.key(),
             stake_account_record_account.lamports_at_creation,
             stake_account_lamports

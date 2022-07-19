@@ -174,8 +174,10 @@ impl<'info> Unstake<'info> {
                 )
             },
         );
+        // log format:
+        //  "unstake-log: (instruction; unstaker; stake_account_lamports; stake_account_voter_pubkey; stake_account_activation_epoch; lamports_paid; fee_type; fee_amount)"
         msg!(
-            "unstake-log: (instruction: Unstake; unstaker: {}; stake_account_lamports: {}; stake_account_voter_pubkey: {}; stake_account_activation_epoch: {}; lamports_paid: {}; fee_type: {:?}; fee_amount: {})",
+            "unstake-log: (0; {}; {}; {}; {}; {}; {:?}; {})",
             unstaker.key(),
             stake_account_lamports,
             voter_pubkey,
