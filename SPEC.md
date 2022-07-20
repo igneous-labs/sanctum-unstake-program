@@ -235,7 +235,7 @@ unstake-log: (instruction; unstaker; stake_account_address; stake_account_voter;
 
 | index | field                            | definition                                                                          |
 | ----- | -------------------------------- | ----------------------------------------------------------------------------------- |
-| 0     | `instruction`                    | instruction type: 0 for `Unstake`                                                   |
+| 0     | `instruction`                    | instruction type: 0 for `Unstake` ix                                                |
 | 1     | `unstaker`                       | base 58 encoded string of unstaker's wallet pubkey                                  |
 | 2     | `stake_account_address`          | base 58 encoded string of stake account address                                     |
 | 3     | `stake_account_voter`            | base 58 encoded string of stake account's voter pubkey                              |
