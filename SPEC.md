@@ -190,13 +190,20 @@ Instruction type is marked as 1.
 ###### Format:
 
 ```
-unstake-log: (instruction; stake_account_address; lamports_paid; lamports_reclaimed)
+unstake-log: (instruction; stake_account_address; recorded_lamports; reclaimed_lamports)
 ```
+
+| index | field                   | definition                                                                                      |
+| ----- | ----------------------- | ----------------------------------------------------------------------------------------------- |
+| 0     | `instruction`           | instruction type: 1 for `ReclaimStakeAccount` ix                                                |
+| 1     | `stake_account_address` | base 58 encoded string of stake account address                                                 |
+| 2     | `recorded_lamports`     | the amount of sol in lamports in stake account observed at the time of `Unstake` ix             |
+| 3     | `reclaimed_lamports`    | the amount of sol in lamports in stake account observed at the time of `ReclaimStakeAccount` ix |
 
 ###### Example:
 
 ```
-unstake-log: (1; GQuywMnLJgf6ZYLMK1oyiLqMJa8X7bsDt5DnqavyoSxY; 2282881; 2282881)
+unstake-log: (1; H7QmCLdC8vpZ73tGs9FnphZeX1c1YWwYW1QzK9c2ynHa; 2282881; 2282881)
 ```
 
 ### User Facing
@@ -223,11 +230,23 @@ Instruction type is marked as 0.
 ###### Format:
 
 ```
-unstake-log: (instruction; unstaker; stake_account_lamports; stake_account_voter_pubkey; stake_account_activation_epoch; lamports_paid; fee_type; fee_amount)
+unstake-log: (instruction; unstaker; stake_account_address; stake_account_voter; stake_account_activation_epoch; fee_type; recorded_lamports; paid_lamports; fee_lamports)
 ```
+
+| index | field                            | definition                                                                          |
+| ----- | -------------------------------- | ----------------------------------------------------------------------------------- |
+| 0     | `instruction`                    | instruction type: 0 for `Unstake`                                                   |
+| 1     | `unstaker`                       | base 58 encoded string of unstaker's wallet pubkey                                  |
+| 2     | `stake_account_address`          | base 58 encoded string of stake account address                                     |
+| 3     | `stake_account_voter`            | base 58 encoded string of stake account's voter pubkey                              |
+| 4     | `stake_account_activation_epoch` | the activation epoch of stake account observed at the time of `Unstake` ix          |
+| 5     | `fee_type`                       | details of `FeeEnum` used                                                           |
+| 6     | `recorded_lamports`              | the amount of sol in lamports in stake account observed at the time of `Unstake` ix |
+| 7     | `paid_lamports`                  | the amount of sol in lamports paid out to unstaker                                  |
+| 8     | `fee_lamports`                   | the amount of sol in lamports charged as fee                                        |
 
 ###### Example:
 
 ```
-unstake-log: (0; EVbrLzH4674c4iRaHga6f4tucNcWxRUjTcDH3kzt29Qg; 2282881; 9tVuZTqmztWo7H62JJmTVY4keJzSsQKC5RxUMqQbNZuJ; 0; 2125362; Flat { ratio: Rational { num: 69, denom: 1000 } }; 157519)
+unstake-log: (0; 2oKBvg3yLrADBskbVt5aC2pcNwowCzFZ1ucLFzAH85CL; 77LueYgj9Ew3tuAYqh31YPRxg5hCKaSJuGJ5zucts7J5; 5FueH2fscqvzZ2ps1pxJCo6pQrjfY7FRnaEc3TFE4Vcm; 0; Flat { ratio: Rational { num: 69, denom: 1000 } }; 2282881; 2125362; 157519)
 ```

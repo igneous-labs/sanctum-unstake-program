@@ -86,7 +86,7 @@ impl<'info> ReclaimStakeAccount<'info> {
 
         // emit analytics log
         // log format:
-        //  "unstake-log: (instruction; stake_account_address; lamports_paid; lamports_reclaimed)"
+        //  "unstake-log: (instruction; stake_account_address; recorded_lamports; reclaimed_lamports)"
         msg!(
             "unstake-log: (1; {}; {}; {})",
             stake_account.key(),
