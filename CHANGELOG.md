@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The minor version will be incremented upon a breaking change and the patch version will be
 incremented for features.
 
+## [0.0.3] - 2022-07-18
+
+### Added
+
+- ts: README examples
+
 ## [0.0.2] - 2022-07-02
 
 ### Changed

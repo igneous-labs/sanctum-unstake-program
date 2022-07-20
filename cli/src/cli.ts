@@ -7,6 +7,7 @@ import {
   addLiquidityTx,
   createPoolTx,
   removeLiquidityTx,
+  setFeeTx,
 } from "@soceanfi/unstake";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
@@ -289,6 +290,59 @@ yargs(hideBin(process.argv))
         amountLp,
         "LP tokens liquidity removed from pool at",
         poolKey.toString()
+      );
+      console.log("TX:", sig);
+    }
+  )
+  .command(
+    "set_fee <pool_account> <fee_path>",
+    "sets the fee for an unstake liquidity pool",
+    (y) =>
+      y
+        .positional("pool_account", {
+          type: "string",
+          description: "Pubkey of the pool to set the fee of",
+        })
+        .positional("fee_path", {
+          type: "string",
+          description:
+            "Path to JSON file defining liquidity pool's fee settings. Example contents:\n" +
+            '{ "liquidityLinear": { "maxLiqRemaining": 0.003, "zeroLiqRemaining": 0.03 }}\n' +
+            '{ "flat": 0.01 }',
+        })
+        .option("fee_authority", {
+          type: "string",
+          description: "Path to keypair that is the pool's fee authority",
+          defaultDescription: "wallet",
+        }),
+    async ({
+      cluster,
+      wallet,
+      program_id,
+      pool_account,
+      fee_path,
+      fee_authority: feeAuthorityOption,
+    }) => {
+      const program = initProgram(cluster, wallet, program_id);
+      const provider = program.provider as AnchorProvider;
+      const poolAccount = new PublicKey(pool_account!);
+      const fee = toFeeChecked(readJsonFile(fee_path!) as FeeArg);
+
+      const signers = [];
+      let feeAuthority = provider.wallet.publicKey;
+      if (feeAuthorityOption) {
+        const kp = keypairFromFile(feeAuthorityOption);
+        signers.push(kp);
+        feeAuthority = kp.publicKey;
+      }
+
+      const tx = await setFeeTx(program, fee, { poolAccount, feeAuthority });
+      const sig = await provider.sendAndConfirm(tx, signers);
+      console.log(
+        "Liquidity pool at",
+        poolAccount.toString(),
+        "fees updated to",
+        JSON.stringify(fee)
       );
       console.log("TX:", sig);
     }
