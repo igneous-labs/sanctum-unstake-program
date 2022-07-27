@@ -190,7 +190,7 @@ Instruction type is marked as 1.
 ###### Format:
 
 ```
-unstake-log: (instruction; stake_account_address; recorded_lamports; reclaimed_lamports)
+unstake-log: [instruction, stake_account_address, recorded_lamports, reclaimed_lamports]
 ```
 
 | index | field                   | definition                                                                                      |
@@ -203,7 +203,7 @@ unstake-log: (instruction; stake_account_address; recorded_lamports; reclaimed_l
 ###### Example:
 
 ```
-unstake-log: (1; H7QmCLdC8vpZ73tGs9FnphZeX1c1YWwYW1QzK9c2ynHa; 2282881; 2282881)
+unstake-log: [1, 5Rdj6vKRUkoZ9cS4FZSfhfhiTRd4VjPqVHsQ8znjHtj1, 2282881, 2282881]
 ```
 
 ### User Facing
@@ -230,7 +230,7 @@ Instruction type is marked as 0.
 ###### Format:
 
 ```
-unstake-log: (instruction; unstaker; stake_account_address; stake_account_voter; stake_account_activation_epoch; fee_type; recorded_lamports; paid_lamports; fee_lamports)
+unstake-log: [instruction, unstaker, stake_account_address, stake_account_voter, stake_account_activation_epoch, FEE, recorded_lamports, paid_lamports, fee_lamports]
 ```
 
 | index | field                            | definition                                                                          |
@@ -240,13 +240,38 @@ unstake-log: (instruction; unstaker; stake_account_address; stake_account_voter;
 | 2     | `stake_account_address`          | base 58 encoded string of stake account address                                     |
 | 3     | `stake_account_voter`            | base 58 encoded string of stake account's voter pubkey                              |
 | 4     | `stake_account_activation_epoch` | the activation epoch of stake account observed at the time of `Unstake` ix          |
-| 5     | `fee_type`                       | details of `FeeEnum` used                                                           |
+| 5     | `FEE`                            | details of `FeeEnum` used (see Fee Format)                                          |
 | 6     | `recorded_lamports`              | the amount of sol in lamports in stake account observed at the time of `Unstake` ix |
 | 7     | `paid_lamports`                  | the amount of sol in lamports paid out to unstaker                                  |
 | 8     | `fee_lamports`                   | the amount of sol in lamports charged as fee                                        |
 
-###### Example:
+###### Fee Format:
 
 ```
-unstake-log: (0; 2oKBvg3yLrADBskbVt5aC2pcNwowCzFZ1ucLFzAH85CL; 77LueYgj9Ew3tuAYqh31YPRxg5hCKaSJuGJ5zucts7J5; 5FueH2fscqvzZ2ps1pxJCo6pQrjfY7FRnaEc3TFE4Vcm; 0; Flat { ratio: Rational { num: 69, denom: 1000 } }; 2282881; 2125362; 157519)
+[fee_type, FEE_DETAILS]
+```
+
+**`Flat` Fee Details**:
+
+| index | field      | definition             |
+| ----- | ---------- | ---------------------- |
+| 0     | `fee_type` | fee type: 0 for `Flat` |
+| 1     | `ratio`    | fee ratio              |
+
+**`LiquidityLinear` Fee Details**:
+
+| index | field                | definition                                           |
+| ----- | -------------------- | ---------------------------------------------------- |
+| 0     | `fee_type`           | fee type: 1 for `LiquidityLinear`                    |
+| 1     | `max_liq_remaining`  | fee ratio when the swap leaves all of its liquidity  |
+| 2     | `zero_liq_remaining` | fee ratio when the swap leaves none of its liquidity |
+
+###### Examples:
+
+```
+unstake-log: [0, Bai6uK4uvY4yWp2zAWQviKopsiSgtwJvzuy6DP2b4uDy, 7AzTg6RXXDbs6GMhqwsDbAdKuopRo4oS3BXVDi5HoJvD, 7VZtM1cDRgqJCxezv18Zykvorzuwn9B6cLRBE9s7rhS3, 0, [0, 69/1000], 2282881, 2125362, 157519]
+```
+
+```
+unstake-log: [0, 6zKThTJd7kG9yJJHdHe1pUUZSSSA7ayUtYLuZT7cYN3J, 5Rdj6vKRUkoZ9cS4FZSfhfhiTRd4VjPqVHsQ8znjHtj1, 7VZtM1cDRgqJCxezv18Zykvorzuwn9B6cLRBE9s7rhS3, 0, [1, 15/1000, 42/1000], 2282881, 2247252, 35629]
 ```
