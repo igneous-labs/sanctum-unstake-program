@@ -12,7 +12,7 @@ export function poolToHr(pool: IdlAccounts<Unstake>["pool"]): PoolHr {
   return {
     feeAuthority: pool.feeAuthority.toString(),
     lpMint: pool.lpMint.toString(),
-    incomingStake: parseLamportsToSol(pool.incomingStake),
+    incomingStake: `${parseLamportsToSol(pool.incomingStake)} SOL`,
   };
 }
 
