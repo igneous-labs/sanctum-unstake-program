@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
-import { Address, AnchorProvider, Program } from "@project-serum/anchor";
+import {
+  Address,
+  AnchorProvider,
+  IdlAccounts,
+  Program,
+} from "@project-serum/anchor";
 import {
   IDL_JSON,
   Unstake,
@@ -8,17 +13,25 @@ import {
   createPoolTx,
   removeLiquidityTx,
   setFeeTx,
-} from "@soceanfi/unstake";
+  findPoolFeeAccount,
+  findPoolSolReserves,
+} from "@unstake-it/sol";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
 import yargs from "yargs";
-import { keypairFromFile, parsePosSolToLamports, readJsonFile } from "./utils";
+import {
+  keypairFromFile,
+  parseLamportsToSol,
+  parsePosSolToLamports,
+  readJsonFile,
+} from "./utils";
 import { FeeArg, toFeeChecked } from "./feeArgs";
 import {
   createAssociatedTokenAccountInstruction,
   getAccount,
   getAssociatedTokenAddress,
 } from "@solana/spl-token";
+import { feeToHr, poolToHr } from "./display";
 
 function initProgram(
   cluster: string,
@@ -49,6 +62,36 @@ yargs(hideBin(process.argv))
     default: "6KBz9djJAH3gRHscq9ujMpyZ5bCK9a27o3ybDtJLXowz",
     type: "string",
   })
+  .command(
+    "view <pool>",
+    "view details about an unstake liquidity pool",
+    (y) =>
+      y.positional("pool", {
+        type: "string",
+        description: "Pubkey of the pool",
+      }),
+    async ({ cluster, wallet, program_id, pool }) => {
+      if (!pool) throw new Error("pool must be provided");
+      const poolPubkey = new PublicKey(pool);
+      const program = initProgram(cluster, wallet, program_id);
+      const [poolAcc, feeAcc, liqLamports] = await Promise.all([
+        program.account.pool.fetch(pool),
+        findPoolFeeAccount(program.programId, poolPubkey).then(([addr]) =>
+          program.account.fee.fetch(addr)
+        ),
+        findPoolSolReserves(program.programId, poolPubkey).then(([addr]) =>
+          program.provider.connection.getBalance(addr)
+        ),
+      ]);
+      console.log("Pool:", poolToHr(poolAcc));
+      // JSON stringify if not too many nested layers results in [Object]
+      console.log(
+        "Fee:",
+        feeToHr(feeAcc as unknown as IdlAccounts<Unstake>["fee"])
+      );
+      console.log("Liquidity:", parseLamportsToSol(liqLamports), "SOL");
+    }
+  )
   .command(
     "create_pool <fee_path>",
     "create a new unstake liquidity pool",

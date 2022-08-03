@@ -2,3 +2,5 @@
 src/idl/idl*
 dist
 *.tgz
+docs/*
+yarn-error.log
