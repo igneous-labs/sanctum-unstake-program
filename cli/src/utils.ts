@@ -1,4 +1,4 @@
-import { Rational } from "@soceanfi/unstake";
+import { Rational } from "@unstake-it/sol";
 import { Keypair } from "@solana/web3.js";
 import BN from "bn.js";
 import { readFileSync } from "fs";
@@ -60,4 +60,18 @@ const SOL_DECIMALS = 9;
  */
 export function parsePosSolToLamports(sol: number): BN {
   return parsePosDecimalsToAtomics(sol.toString(), SOL_DECIMALS);
+}
+
+export function parseLamportsToSol(lamports: number | BN) {
+  const lamportsBn = new BN(lamports);
+  return tokenAtomicsToDecimalString(lamportsBn, SOL_DECIMALS);
+}
+
+function tokenAtomicsToDecimalString(
+  tokenAtomics: BN,
+  decimals: number
+): string {
+  const s = tokenAtomics.toString().padStart(decimals + 1, "0");
+  const decIndex = s.length - decimals;
+  return `${s.substring(0, decIndex)}.${s.substring(decIndex)}`;
 }
