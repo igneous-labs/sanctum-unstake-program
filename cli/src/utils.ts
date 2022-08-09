@@ -75,3 +75,7 @@ function tokenAtomicsToDecimalString(
   const decIndex = s.length - decimals;
   return `${s.substring(0, decIndex)}.${s.substring(decIndex)}`;
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
