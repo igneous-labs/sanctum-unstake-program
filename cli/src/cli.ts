@@ -16,7 +16,7 @@ import {
   findPoolFeeAccount,
   findPoolSolReserves,
 } from "@unstake-it/sol";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
 import yargs from "yargs";
 import {
@@ -24,6 +24,7 @@ import {
   parseLamportsToSol,
   parsePosSolToLamports,
   readJsonFile,
+  sleep,
 } from "./utils";
 import { FeeArg, toFeeChecked } from "./feeArgs";
 import {
@@ -32,6 +33,7 @@ import {
   getAssociatedTokenAddress,
 } from "@solana/spl-token";
 import { feeToHr, poolToHr } from "./display";
+import { BN } from "bn.js";
 
 function initProgram(
   cluster: string,
@@ -388,5 +390,129 @@ yargs(hideBin(process.argv))
         JSON.stringify(fee)
       );
       console.log("TX:", sig);
+    }
+  )
+  .command(
+    "unstakes <pool_account>",
+    "gets all successful unstakes for a pool",
+    (y) =>
+      y
+        .option("before", {
+          type: "string",
+          description:
+            "Look up all unstakes before this transaction, exclusive",
+          defaultDescription: "undefined",
+        })
+        .option("until", {
+          type: "string",
+          description: "Look up all unstakes after this transaction, exclusive",
+          defaultDescription: "undefined",
+        })
+        .option("batch_size", {
+          type: "number",
+          description:
+            "The number of transactions to fetch per RPC batch request",
+          defaultDescription: "1",
+          default: 1,
+        }),
+    async ({
+      cluster,
+      program_id,
+      pool_account,
+      before: beforeOption,
+      until,
+      batch_size,
+    }) => {
+      // api.mainnet-beta.solana.com sucks
+      // any batch size more than 1 causes 429 at getTransactions
+      const UNSTAKE_IX_DATA_B58 = "G7jGGZx8TVS";
+      const COOLDOWN_MS = 500;
+
+      const STAKE_IX_IDX = 2;
+      const RESERVES_IX_IDX = 5;
+      const POOL_IX_IDX = 4;
+
+      const poolAccount = new PublicKey(pool_account!);
+      const programId = new PublicKey(program_id);
+      const connection = new Connection(cluster, "confirmed");
+
+      let totalUnstakedLamports = new BN(0);
+      let totalFeesLamports = new BN(0);
+
+      console.log("TX, Unstaked (SOL), Fee (SOL)");
+
+      let before = beforeOption;
+      let hasMore = true;
+      while (hasMore) {
+        const signatures = await connection.getSignaturesForAddress(programId, {
+          before,
+          until,
+          limit: batch_size,
+        });
+        // update
+        before = signatures[signatures.length - 1]?.signature; // undefined if length === 0
+        hasMore = signatures.length === batch_size;
+
+        const succeeded = signatures.filter((s) => s.err === null);
+        const succeededSigs = succeeded.map((s) => s.signature);
+        const confirmedTxs = await connection.getTransactions(succeededSigs);
+        confirmedTxs.forEach((c, sigIdx) => {
+          if (!c) return;
+          if (!c.meta) return;
+          const { accountKeys, instructions } = c.transaction.message;
+          const { err, innerInstructions, preBalances, postBalances } = c.meta;
+          if (err) return;
+          if (!innerInstructions) return;
+
+          let reservesIdx: number | null = null;
+          let unstakedLamportsThisTx = new BN(0);
+
+          instructions.forEach(({ accounts, data, programIdIndex }) => {
+            const ixProgramId = accountKeys[programIdIndex];
+            if (!ixProgramId.equals(programId)) return;
+            const ixPoolId = accountKeys[accounts[POOL_IX_IDX]];
+            if (!ixPoolId.equals(poolAccount)) return;
+            if (data !== UNSTAKE_IX_DATA_B58) return;
+            if (reservesIdx === null) {
+              reservesIdx = accounts[RESERVES_IX_IDX];
+            }
+            const stakeIdx = accounts[STAKE_IX_IDX];
+            unstakedLamportsThisTx = unstakedLamportsThisTx.add(
+              new BN(postBalances[stakeIdx])
+            );
+          });
+
+          if (!unstakedLamportsThisTx.isZero()) {
+            const paidOutLamportsThisTx = new BN(
+              preBalances[reservesIdx!] - postBalances[reservesIdx!]
+            );
+            const feeLamports = unstakedLamportsThisTx.sub(
+              paidOutLamportsThisTx
+            );
+
+            console.log(
+              succeededSigs[sigIdx],
+              ",",
+              parseLamportsToSol(unstakedLamportsThisTx),
+              ",",
+              parseLamportsToSol(feeLamports)
+            );
+
+            totalUnstakedLamports = totalUnstakedLamports.add(
+              unstakedLamportsThisTx
+            );
+            totalFeesLamports = totalFeesLamports.add(feeLamports);
+          }
+        });
+
+        await sleep(COOLDOWN_MS);
+      }
+      console.log();
+      console.log(
+        "Total Unstaked (SOL):",
+        parseLamportsToSol(totalUnstakedLamports),
+        ". Total fees (SOL):",
+        parseLamportsToSol(totalFeesLamports)
+      );
     }
   ).argv;
