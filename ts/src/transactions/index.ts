@@ -8,4 +8,5 @@ export * from "./deactivateStakeAccount";
 export * from "./reclaimStakeAccount";
 export * from "./removeLiquidity";
 export * from "./setFee";
+export * from "./setFeeAuthority";
 export * from "./unstake";
