@@ -447,6 +447,42 @@ describe("internals", () => {
       });
     });
 
+    it("it set fee authority", async () => {
+      const tempFeeAuthority = Keypair.generate();
+      await program.methods
+        .setFeeAuthority()
+        .accounts({
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          newFeeAuthority: tempFeeAuthority.publicKey,
+        })
+        .signers([payerKeypair, tempFeeAuthority])
+        .rpc({ skipPreflight: true });
+
+      await program.account.pool
+        .fetch(poolKeypair.publicKey)
+        .then(({ feeAuthority }) => {
+          expect(feeAuthority.equals(tempFeeAuthority.publicKey)).to.be.true;
+        });
+
+      // revert the change for the tests bellow
+      await program.methods
+        .setFeeAuthority()
+        .accounts({
+          feeAuthority: tempFeeAuthority.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          newFeeAuthority: payerKeypair.publicKey,
+        })
+        .signers([tempFeeAuthority, payerKeypair])
+        .rpc({ skipPreflight: true });
+
+      await program.account.pool
+        .fetch(poolKeypair.publicKey)
+        .then(({ feeAuthority }) => {
+          expect(feeAuthority.equals(payerKeypair.publicKey)).to.be.true;
+        });
+    });
+
     it("it rejects to set fee when the authority does not match", async () => {
       const rando = Keypair.generate();
       await expect(
