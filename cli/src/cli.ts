@@ -407,6 +407,13 @@ yargs(hideBin(process.argv))
           type: "string",
           description: "Look up all unstakes after this transaction, exclusive",
           defaultDescription: "undefined",
+        })
+        .option("batch_size", {
+          type: "number",
+          description:
+            "The number of transactions to fetch per RPC batch request",
+          defaultDescription: "1",
+          default: 1,
         }),
     async ({
       cluster,
@@ -414,10 +421,10 @@ yargs(hideBin(process.argv))
       pool_account,
       before: beforeOption,
       until,
+      batch_size,
     }) => {
       // api.mainnet-beta.solana.com sucks
-      // anything more than 1 causes 429 at getTransactions
-      const BATCH_SIZE = 1;
+      // any batch size more than 1 causes 429 at getTransactions
       const UNSTAKE_IX_DATA_B58 = "G7jGGZx8TVS";
       const COOLDOWN_MS = 500;
 
@@ -440,11 +447,11 @@ yargs(hideBin(process.argv))
         const signatures = await connection.getSignaturesForAddress(programId, {
           before,
           until,
-          limit: BATCH_SIZE,
+          limit: batch_size,
         });
         // update
         before = signatures[signatures.length - 1]?.signature; // undefined if length === 0
-        hasMore = signatures.length === BATCH_SIZE;
+        hasMore = signatures.length === batch_size;
 
         const succeeded = signatures.filter((s) => s.err === null);
         const succeededSigs = succeeded.map((s) => s.signature);
