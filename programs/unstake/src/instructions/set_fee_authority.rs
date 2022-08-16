@@ -15,7 +15,8 @@ pub struct SetFeeAuthority<'info> {
     pub pool_account: Account<'info, Pool>,
 
     /// new fee_authority to replace the current authority with
-    pub new_fee_authority: Signer<'info>,
+    /// CHECK: Double check this account since a mistake here CAN BRICK THE FEE AUTHORITY FOR THE POOL FOREVER.
+    pub new_fee_authority: UncheckedAccount<'info>,
 }
 
 impl<'info> SetFeeAuthority<'info> {

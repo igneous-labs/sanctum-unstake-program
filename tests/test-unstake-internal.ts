@@ -459,7 +459,7 @@ describe("internals", () => {
             poolAccount: poolKeypair.publicKey,
             newFeeAuthority: tempFeeAuthority.publicKey,
           })
-          .signers([rando, tempFeeAuthority])
+          .signers([rando])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.and.satisfy(
         checkAnchorError(
@@ -478,7 +478,7 @@ describe("internals", () => {
           poolAccount: poolKeypair.publicKey,
           newFeeAuthority: tempFeeAuthority.publicKey,
         })
-        .signers([payerKeypair, tempFeeAuthority])
+        .signers([payerKeypair])
         .rpc({ skipPreflight: true });
 
       await program.account.pool
@@ -495,7 +495,7 @@ describe("internals", () => {
           poolAccount: poolKeypair.publicKey,
           newFeeAuthority: payerKeypair.publicKey,
         })
-        .signers([tempFeeAuthority, payerKeypair])
+        .signers([tempFeeAuthority])
         .rpc({ skipPreflight: true });
 
       await program.account.pool
