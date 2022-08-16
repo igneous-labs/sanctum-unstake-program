@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use spl_math::precise_number::PreciseNumber;
 use std::convert::TryFrom;
+use std::fmt;
 
 use crate::{errors::UnstakeError, rational::Rational};
 
@@ -155,5 +156,23 @@ impl FeeEnum {
             .ceiling()?
             .to_imprecise()
             .and_then(|v| u64::try_from(v).ok())
+    }
+}
+
+// used for analytics log emission
+//
+// Log Format:
+//  - Flat: "[0, ratio]"
+//  - LiquidityLinear: "[1, max_liq_remaining, zero_liq_remaining]"
+impl fmt::Display for FeeEnum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            FeeEnum::Flat { ratio } => write!(f, "[0, {}]", ratio),
+            FeeEnum::LiquidityLinear { params } => write!(
+                f,
+                "[1, {}, {}]",
+                params.max_liq_remaining, params.zero_liq_remaining
+            ),
+        }
     }
 }
