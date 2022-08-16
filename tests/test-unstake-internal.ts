@@ -447,6 +447,28 @@ describe("internals", () => {
       });
     });
 
+    it("it rejects to set fee authority if the authority doesn't match", async () => {
+      const rando = Keypair.generate();
+      const tempFeeAuthority = Keypair.generate();
+
+      await expect(
+        program.methods
+          .setFeeAuthority()
+          .accounts({
+            feeAuthority: rando.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            newFeeAuthority: tempFeeAuthority.publicKey,
+          })
+          .signers([rando, tempFeeAuthority])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6002,
+          "The provided fee authority does not have the authority over the provided pool account"
+        )
+      );
+    });
+
     it("it set fee authority", async () => {
       const tempFeeAuthority = Keypair.generate();
       await program.methods
