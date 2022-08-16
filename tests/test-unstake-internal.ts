@@ -465,7 +465,7 @@ describe("internals", () => {
           expect(feeAuthority.equals(tempFeeAuthority.publicKey)).to.be.true;
         });
 
-      // revert the change for the tests bellow
+      // revert the change to keep the tests bellow unaffected by this test
       await program.methods
         .setFeeAuthority()
         .accounts({
