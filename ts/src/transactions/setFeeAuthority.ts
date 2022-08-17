@@ -5,13 +5,15 @@ import { Unstake } from "../idl/idl";
 export type SetFeeAuthorityAccounts = {
   /**
    * The liquidity pool's fee authority
+   * Must be provided if `poolAccount` is `Address`.
+   * Otherwise, uses the one read from `poolAccount`
    */
-  feeAuthority: Address;
+  feeAuthority?: Address;
 
   /**
    * The liquidity pool to set fee authority of
    */
-  poolAccount: Address;
+  poolAccount: Address | ProgramAccount<IdlAccounts<Unstake>["pool"]>;
 
   /**
    * The new fee authority to update the fee authority with
