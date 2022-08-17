@@ -275,3 +275,53 @@ unstake-log: [0, Bai6uK4uvY4yWp2zAWQviKopsiSgtwJvzuy6DP2b4uDy, 7AzTg6RXXDbs6GMhq
 ```
 unstake-log: [0, 6zKThTJd7kG9yJJHdHe1pUUZSSSA7ayUtYLuZT7cYN3J, 5Rdj6vKRUkoZ9cS4FZSfhfhiTRd4VjPqVHsQ8znjHtj1, 7VZtM1cDRgqJCxezv18Zykvorzuwn9B6cLRBE9s7rhS3, 0, [1, 15/1000, 42/1000], 2282881, 2247252, 35629]
 ```
+
+#### UnstakeWSOL
+
+Unstakes a given stake account to a pool and receive SOL in return to a wSOL token account.
+
+##### Requirements:
+
+Same as [Unstake](#unstake)
+
+##### Signers:
+
+Same as [Unstake](#unstake)
+
+##### Analytics Log Emission:
+
+Instruction type is marked as 2.
+
+###### Format:
+
+Same as [Unstake](#unstake), apart from instruction type
+
+```
+unstake-log: [instruction, unstaker, stake_account_address, stake_account_voter, stake_account_activation_epoch, FEE, recorded_lamports, paid_lamports, fee_lamports]
+```
+
+| index | field                            | definition                                                                          |
+| ----- | -------------------------------- | ----------------------------------------------------------------------------------- |
+| 0     | `instruction`                    | instruction type: 2 for `UnstakeWSOL` ix                                            |
+| 1     | `unstaker`                       | base 58 encoded string of unstaker's wallet pubkey                                  |
+| 2     | `stake_account_address`          | base 58 encoded string of stake account address                                     |
+| 3     | `stake_account_voter`            | base 58 encoded string of stake account's voter pubkey                              |
+| 4     | `stake_account_activation_epoch` | the activation epoch of stake account observed at the time of `Unstake` ix          |
+| 5     | `FEE`                            | details of `FeeEnum` used (see Fee Format)                                          |
+| 6     | `recorded_lamports`              | the amount of sol in lamports in stake account observed at the time of `Unstake` ix |
+| 7     | `paid_lamports`                  | the amount of sol in lamports paid out to unstaker                                  |
+| 8     | `fee_lamports`                   | the amount of sol in lamports charged as fee                                        |
+
+###### Fee Format:
+
+See details in [Unstake](#unstake)
+
+###### Examples:
+
+```
+unstake-log: [2, Bai6uK4uvY4yWp2zAWQviKopsiSgtwJvzuy6DP2b4uDy, 7AzTg6RXXDbs6GMhqwsDbAdKuopRo4oS3BXVDi5HoJvD, 7VZtM1cDRgqJCxezv18Zykvorzuwn9B6cLRBE9s7rhS3, 0, [0, 69/1000], 2282881, 2125362, 157519]
+```
+
+```
+unstake-log: [2, 6zKThTJd7kG9yJJHdHe1pUUZSSSA7ayUtYLuZT7cYN3J, 5Rdj6vKRUkoZ9cS4FZSfhfhiTRd4VjPqVHsQ8znjHtj1, 7VZtM1cDRgqJCxezv18Zykvorzuwn9B6cLRBE9s7rhS3, 0, [1, 15/1000, 42/1000], 2282881, 2247252, 35629]
+```
