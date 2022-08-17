@@ -734,19 +734,14 @@ describe("internals", () => {
           notEnoughLiquidityUnstaker,
           flatFeeWSolUnstaker,
           liquidityLinearFeeWSolUnstaker,
-        ].map(async (kp) => {
-          const addr = await getAssociatedTokenAddress(
-            NATIVE_MINT,
-            kp.publicKey
-          );
-          await createAssociatedTokenAccount(
+        ].map((kp) =>
+          createAssociatedTokenAccount(
             provider.connection,
             kp,
             NATIVE_MINT,
             kp.publicKey
-          );
-          return addr;
-        })
+          )
+        )
       );
 
       await waitForEpochToPass(provider.connection);
@@ -867,6 +862,39 @@ describe("internals", () => {
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.and.satisfy(
         checkAnchorError(6008, "Not enough liquidity to service this unstake")
+      );
+    });
+
+    it("it fails to unstakeWSOL different mint", async () => {
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        notEnoughLiquidityStakeAcc.publicKey
+      );
+
+      await expect(
+        program.methods
+          .unstakeWsol()
+          .accounts({
+            payer: notEnoughLiquidityUnstaker.publicKey,
+            unstaker: notEnoughLiquidityUnstaker.publicKey,
+            stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
+            destination: lperAta,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            feeAccount,
+            stakeAccountRecordAccount,
+            clock: SYSVAR_CLOCK_PUBKEY,
+            stakeProgram: StakeProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([notEnoughLiquidityUnstaker])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6010,
+          "Destination token account is not a wrapped SOL account"
+        )
       );
     });
 
