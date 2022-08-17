@@ -11,8 +11,11 @@ import {
 } from "@solana/web3.js";
 import {
   createAssociatedTokenAccount,
+  getAccount,
   getAssociatedTokenAddress,
   getMint,
+  NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
   applyFee,
@@ -606,13 +609,22 @@ describe("internals", () => {
     const notEnoughLiquidityStakeAcc = Keypair.generate();
     const flatFeeStakeAcc = Keypair.generate();
     const liquidityLinearFeeStakeAcc = Keypair.generate();
+    const flatFeeWSolStakeAcc = Keypair.generate();
+    const liquidityLinearFeeWSolStakeAcc = Keypair.generate();
 
     const lockedUpUnstaker = Keypair.generate();
     const notEnoughLiquidityUnstaker = Keypair.generate();
     const flatFeeUnstaker = Keypair.generate();
     const liquidityLinearFeeUnstaker = Keypair.generate();
+    const flatFeeWSolUnstaker = Keypair.generate();
+    const liquidityLinearFeeWSolUnstaker = Keypair.generate();
 
     const liquidityLamports = new BN(0.1 * LAMPORTS_PER_SOL);
+
+    let lockedupUnstakerWSolAcc: PublicKey;
+    let notEnoughLiquidityUnstakerWSolAcc: PublicKey;
+    let flatFeeWSolUnstakerWSolAcc: PublicKey;
+    let liquidityLinearFeeWSolUnstakerWSolAcc: PublicKey;
 
     before(async () => {
       // airdrop to lper and unstakers
@@ -623,6 +635,8 @@ describe("internals", () => {
           notEnoughLiquidityUnstaker,
           flatFeeUnstaker,
           liquidityLinearFeeUnstaker,
+          flatFeeWSolUnstaker,
+          liquidityLinearFeeWSolUnstaker,
         ].map((kp) => airdrop(provider.connection, kp.publicKey))
       );
 
@@ -682,6 +696,13 @@ describe("internals", () => {
           undefined,
           undefined,
         ],
+        [flatFeeWSolStakeAcc, flatFeeWSolUnstaker, undefined, undefined],
+        [
+          liquidityLinearFeeWSolStakeAcc,
+          liquidityLinearFeeWSolUnstaker,
+          undefined,
+          undefined,
+        ],
       ];
       await Promise.all(
         stakeAccInitParams.map(
@@ -700,6 +721,34 @@ describe("internals", () => {
             )
         )
       );
+
+      // create wSOL account
+      [
+        lockedupUnstakerWSolAcc,
+        notEnoughLiquidityUnstakerWSolAcc,
+        flatFeeWSolUnstakerWSolAcc,
+        liquidityLinearFeeWSolUnstakerWSolAcc,
+      ] = await Promise.all(
+        [
+          lockedUpUnstaker,
+          notEnoughLiquidityUnstaker,
+          flatFeeWSolUnstaker,
+          liquidityLinearFeeWSolUnstaker,
+        ].map(async (kp) => {
+          const addr = await getAssociatedTokenAddress(
+            NATIVE_MINT,
+            kp.publicKey
+          );
+          await createAssociatedTokenAccount(
+            provider.connection,
+            kp,
+            NATIVE_MINT,
+            kp.publicKey
+          );
+          return addr;
+        })
+      );
+
       await waitForEpochToPass(provider.connection);
     });
 
@@ -732,6 +781,36 @@ describe("internals", () => {
       );
     });
 
+    it("it rejects to unstakeWSOL a locked up stake account", async () => {
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        lockedUpStakeAcc.publicKey
+      );
+
+      await expect(
+        program.methods
+          .unstakeWsol()
+          .accounts({
+            payer: lockedUpUnstaker.publicKey,
+            unstaker: lockedUpUnstaker.publicKey,
+            stakeAccount: lockedUpStakeAcc.publicKey,
+            destination: lockedupUnstakerWSolAcc,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            feeAccount,
+            stakeAccountRecordAccount,
+            clock: SYSVAR_CLOCK_PUBKEY,
+            stakeProgram: StakeProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([lockedUpUnstaker])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(6005, "The provided stake account is locked up")
+      );
+    });
+
     it("it fails to unstake not enough liquidity", async () => {
       const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
         program.programId,
@@ -753,6 +832,36 @@ describe("internals", () => {
             stakeAccountRecordAccount,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
+          })
+          .signers([notEnoughLiquidityUnstaker])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(6008, "Not enough liquidity to service this unstake")
+      );
+    });
+
+    it("it fails to unstakeWSOL not enough liquidity", async () => {
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        notEnoughLiquidityStakeAcc.publicKey
+      );
+
+      await expect(
+        program.methods
+          .unstakeWsol()
+          .accounts({
+            payer: notEnoughLiquidityUnstaker.publicKey,
+            unstaker: notEnoughLiquidityUnstaker.publicKey,
+            stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
+            destination: notEnoughLiquidityUnstakerWSolAcc,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            feeAccount,
+            stakeAccountRecordAccount,
+            clock: SYSVAR_CLOCK_PUBKEY,
+            stakeProgram: StakeProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
           })
           .signers([notEnoughLiquidityUnstaker])
           .rpc({ skipPreflight: true })
@@ -832,6 +941,79 @@ describe("internals", () => {
       expect(feeLamportsCharged).to.eql(feeLamportsExpected);
     });
 
+    it("it charges Flat fee on unstakeWSOL", async () => {
+      await program.methods
+        .setFee({
+          fee: {
+            flat: {
+              ratio: {
+                num: new BN(69),
+                denom: new BN(1000),
+              },
+            },
+          },
+        })
+        .accounts({
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          feeAccount,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+
+      const stakeAccountLamports = await provider.connection.getBalance(
+        flatFeeWSolStakeAcc.publicKey
+      );
+      const unstakerWSolBalancePre = (
+        await getAccount(provider.connection, flatFeeWSolUnstakerWSolAcc)
+      ).amount;
+
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        flatFeeWSolStakeAcc.publicKey
+      );
+
+      await program.methods
+        .unstakeWsol()
+        .accounts({
+          payer: payerKeypair.publicKey,
+          unstaker: flatFeeWSolUnstaker.publicKey,
+          stakeAccount: flatFeeWSolStakeAcc.publicKey,
+          destination: flatFeeWSolUnstakerWSolAcc,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          feeAccount,
+          stakeAccountRecordAccount,
+          clock: SYSVAR_CLOCK_PUBKEY,
+          stakeProgram: StakeProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([payerKeypair, flatFeeWSolUnstaker])
+        .rpc({ skipPreflight: true });
+
+      const unstakerWSolBalancePost = (
+        await getAccount(provider.connection, flatFeeWSolUnstakerWSolAcc)
+      ).amount;
+
+      const flatFeeRatio = await program.account.fee.fetch(feeAccount).then(
+        ({
+          fee: {
+            // @ts-ignore
+            flat: { ratio },
+          },
+        }) => ratio.num.toNumber() / ratio.denom.toNumber()
+      );
+      const feeLamportsExpected = Math.ceil(
+        stakeAccountLamports * flatFeeRatio
+      );
+      const feeLamportsCharged =
+        stakeAccountLamports -
+        (Number(unstakerWSolBalancePost) - Number(unstakerWSolBalancePre));
+
+      expect(feeLamportsCharged).to.eql(feeLamportsExpected);
+    });
+
     it("it charges LiquidityLinear fee on unstake", async () => {
       await program.methods
         .setFee({
@@ -897,7 +1079,7 @@ describe("internals", () => {
         liquidityLinearFeeUnstaker.publicKey
       );
 
-      // TODO: this depends on tsBindings being correct, should write less coupled tests
+      // TODO: this depends on tsBindings (applyFee) being correct, should write less coupled tests
       const [
         feeLamportsExpected,
         minFeeLamportsExpected,
@@ -930,6 +1112,122 @@ describe("internals", () => {
       });
       const feeLamportsCharged =
         stakeAccountLamports - (unstakerBalancePost - unstakerBalancePre);
+
+      expect(feeLamportsExpected).to.be.gt(0);
+      expect(feeLamportsCharged).to.be.gt(0);
+      const epsilon = Math.abs(feeLamportsExpected - feeLamportsCharged);
+      expect(epsilon).to.be.below(EPSILON_UPPER_BOUND);
+      expect(feeLamportsCharged).to.be.gt(minFeeLamportsExpected);
+      expect(feeLamportsCharged).to.be.lt(maxFeeLamportsExpected);
+    });
+
+    it("it charges LiquidityLinear fee on unstakeWSOL", async () => {
+      await program.methods
+        .setFee({
+          fee: {
+            liquidityLinear: {
+              params: {
+                maxLiqRemaining: {
+                  num: new BN(25),
+                  denom: new BN(1000),
+                },
+                zeroLiqRemaining: {
+                  num: new BN(42),
+                  denom: new BN(1000),
+                },
+              },
+            },
+          },
+        })
+        .accounts({
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          feeAccount,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+
+      const stakeAccountLamports = await provider.connection.getBalance(
+        liquidityLinearFeeWSolStakeAcc.publicKey
+      );
+      const unstakerWSolBalancePre = (
+        await getAccount(
+          provider.connection,
+          liquidityLinearFeeWSolUnstakerWSolAcc
+        )
+      ).amount;
+
+      const { incomingStake: incomingStakePre } =
+        await program.account.pool.fetch(poolKeypair.publicKey);
+      const solReservesLamportsPre = await provider.connection.getBalance(
+        poolSolReserves
+      );
+
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        liquidityLinearFeeWSolStakeAcc.publicKey
+      );
+
+      await program.methods
+        .unstakeWsol()
+        .accounts({
+          payer: payerKeypair.publicKey,
+          unstaker: liquidityLinearFeeWSolUnstaker.publicKey,
+          stakeAccount: liquidityLinearFeeWSolStakeAcc.publicKey,
+          destination: liquidityLinearFeeWSolUnstakerWSolAcc,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          feeAccount,
+          stakeAccountRecordAccount,
+          clock: SYSVAR_CLOCK_PUBKEY,
+          stakeProgram: StakeProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([payerKeypair, liquidityLinearFeeWSolUnstaker])
+        .rpc({ skipPreflight: true });
+
+      const unstakerWSolBalancePost = (
+        await getAccount(
+          provider.connection,
+          liquidityLinearFeeWSolUnstakerWSolAcc
+        )
+      ).amount;
+
+      // TODO: this depends on tsBindings (applyFee) being correct, should write less coupled tests
+      const [
+        feeLamportsExpected,
+        minFeeLamportsExpected,
+        maxFeeLamportsExpected,
+      ] = await program.account.fee.fetch(feeAccount).then((fee) => {
+        const feeCasted = fee as unknown as Fee;
+        const {
+          liquidityLinear: {
+            params: { zeroLiqRemaining, maxLiqRemaining },
+          },
+        } = feeCasted.fee as LiquidityLinearFeeInner;
+
+        return [
+          applyFee(feeCasted, {
+            poolIncomingStake: incomingStakePre,
+            solReservesLamports: new BN(solReservesLamportsPre),
+            stakeAccountLamports: new BN(stakeAccountLamports),
+          }).toNumber(),
+          Math.ceil(
+            (maxLiqRemaining.num.toNumber() /
+              maxLiqRemaining.denom.toNumber()) *
+              stakeAccountLamports
+          ),
+          Math.ceil(
+            (zeroLiqRemaining.num.toNumber() /
+              zeroLiqRemaining.denom.toNumber()) *
+              stakeAccountLamports
+          ),
+        ];
+      });
+      const feeLamportsCharged =
+        stakeAccountLamports -
+        (Number(unstakerWSolBalancePost) - Number(unstakerWSolBalancePre));
 
       expect(feeLamportsExpected).to.be.gt(0);
       expect(feeLamportsCharged).to.be.gt(0);

@@ -1,12 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     stake::{Stake, StakeAccount},
-    token::{self, SyncNative, Token, TokenAccount},
+    token::{self, spl_token, SyncNative, Token, TokenAccount},
 };
 
 use crate::{
     anchor_len::AnchorLen,
-    consts::WRAPPED_SOL_MINT,
     errors::UnstakeError,
     state::{Fee, Pool, StakeAccountRecord, FEE_SEED_SUFFIX},
 };
@@ -43,7 +42,7 @@ pub struct UnstakeWSOL<'info> {
     /// Solana native wallet pubkey to receive the unstaked amount
     #[account(
         mut,
-        constraint = destination.mint == WRAPPED_SOL_MINT @ UnstakeError::DestinationNotWSol
+        constraint = destination.mint == spl_token::native_mint::id() @ UnstakeError::DestinationNotWSol
     )]
     pub destination: Account<'info, TokenAccount>,
 

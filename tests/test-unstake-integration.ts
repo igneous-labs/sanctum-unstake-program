@@ -148,9 +148,6 @@ describe("integration", () => {
     const solReservesLamportsPre = await provider.connection.getBalance(
       poolSolReserves
     );
-    const ownedLamportsPre = incomingStakePre.add(
-      new BN(solReservesLamportsPre)
-    );
 
     await program.methods
       .unstake()
@@ -187,7 +184,7 @@ describe("integration", () => {
       unstakerKeypair.publicKey
     );
 
-    // TODO: this depends on tsBindings being correct, should write less coupled tests
+    // TODO: this depends on tsBindings (applyFee) being correct, should write less coupled tests
     const [
       feeLamportsExpected,
       minFeeLamportsExpected,
@@ -266,7 +263,8 @@ describe("integration", () => {
   });
 
   it("it reclaims", async () => {
-    // should follow it deactivates
+    // reclaims the stake acc deactivated in "it deactivates"
+    // should follow immediately
     console.log("awaiting epoch to pass");
     await waitForEpochToPass(provider.connection);
 
