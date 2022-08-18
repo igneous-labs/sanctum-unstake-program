@@ -9,7 +9,7 @@ import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { Unstake } from "../idl/idl";
 import { findPoolSolReserves } from "../pda";
 import BN from "bn.js";
-import { derivePoolAccounts } from "./utils";
+import { derivePoolLpMint } from "./utils";
 
 export type AddLiquidityAccounts = {
   /**
@@ -52,7 +52,7 @@ export async function addLiquidityTx(
     mintLpTokensTo: mintLpTokensToOption,
   }: AddLiquidityAccounts
 ): Promise<Transaction> {
-  const { lpMint, poolAccount } = derivePoolAccounts(
+  const { lpMint, poolAccount } = derivePoolLpMint(
     poolAccountUnion,
     lpMintOption
   );
