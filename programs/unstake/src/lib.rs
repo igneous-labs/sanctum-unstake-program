@@ -20,6 +20,10 @@ use state::*;
 pub mod unstake {
     use super::*;
 
+    pub fn init_protocol_fee(ctx: Context<InitProtocolFee>) -> Result<()> {
+        InitProtocolFee::run(ctx)
+    }
+
     pub fn create_pool(ctx: Context<CreatePool>, fee: Fee) -> Result<()> {
         CreatePool::validate(&fee)?;
         CreatePool::run(ctx, fee)
