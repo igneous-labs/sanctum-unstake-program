@@ -834,7 +834,7 @@ describe("internals", () => {
       );
     });
 
-    it("it rejects to unstakeWSOL a locked up stake account", async () => {
+    it("it rejects to unstakeWsol a locked up stake account", async () => {
       const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
         program.programId,
         poolKeypair.publicKey,
@@ -893,7 +893,7 @@ describe("internals", () => {
       );
     });
 
-    it("it fails to unstakeWSOL not enough liquidity", async () => {
+    it("it fails to unstakeWsol not enough liquidity", async () => {
       const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
         program.programId,
         poolKeypair.publicKey,
@@ -923,7 +923,7 @@ describe("internals", () => {
       );
     });
 
-    it("it fails to unstakeWSOL different mint", async () => {
+    it("it fails to unstakeWsol different mint", async () => {
       const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
         program.programId,
         poolKeypair.publicKey,
@@ -1027,7 +1027,7 @@ describe("internals", () => {
       expect(feeLamportsCharged).to.eql(feeLamportsExpected);
     });
 
-    it("it charges Flat fee on unstakeWSOL", async () => {
+    it("it charges Flat fee on unstakeWsol", async () => {
       await program.methods
         .setFee({
           fee: {
@@ -1207,7 +1207,7 @@ describe("internals", () => {
       expect(feeLamportsCharged).to.be.lt(maxFeeLamportsExpected);
     });
 
-    it("it charges LiquidityLinear fee on unstakeWSOL", async () => {
+    it("it charges LiquidityLinear fee on unstakeWsol", async () => {
       await program.methods
         .setFee({
           fee: {

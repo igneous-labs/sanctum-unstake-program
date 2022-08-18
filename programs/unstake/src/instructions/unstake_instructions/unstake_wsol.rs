@@ -13,7 +13,7 @@ use crate::{
 use super::unstake_accounts::UnstakeAccounts;
 
 #[derive(Accounts)]
-pub struct UnstakeWSOL<'info> {
+pub struct UnstakeWsol<'info> {
     /// pubkey paying for a new StakeAccountRecord account's rent
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -81,9 +81,9 @@ pub struct UnstakeWSOL<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl_unstake_accounts!(UnstakeWSOL, 2);
+impl_unstake_accounts!(UnstakeWsol, 2);
 
-impl<'info> UnstakeWSOL<'info> {
+impl<'info> UnstakeWsol<'info> {
     #[inline(always)]
     pub fn run(mut ctx: Context<Self>) -> Result<()> {
         let unstake_result = Self::run_unstake(&mut ctx)?;

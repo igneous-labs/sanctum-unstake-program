@@ -276,7 +276,7 @@ unstake-log: [0, Bai6uK4uvY4yWp2zAWQviKopsiSgtwJvzuy6DP2b4uDy, 7AzTg6RXXDbs6GMhq
 unstake-log: [0, 6zKThTJd7kG9yJJHdHe1pUUZSSSA7ayUtYLuZT7cYN3J, 5Rdj6vKRUkoZ9cS4FZSfhfhiTRd4VjPqVHsQ8znjHtj1, 7VZtM1cDRgqJCxezv18Zykvorzuwn9B6cLRBE9s7rhS3, 0, [1, 15/1000, 42/1000], 2282881, 2247252, 35629]
 ```
 
-#### UnstakeWSOL
+#### UnstakeWsol
 
 Unstakes a given stake account to a pool and receive SOL in return to a wSOL token account.
 
@@ -302,7 +302,7 @@ unstake-log: [instruction, unstaker, stake_account_address, stake_account_voter,
 
 | index | field                            | definition                                                                          |
 | ----- | -------------------------------- | ----------------------------------------------------------------------------------- |
-| 0     | `instruction`                    | instruction type: 2 for `UnstakeWSOL` ix                                            |
+| 0     | `instruction`                    | instruction type: 2 for `UnstakeWsol` ix                                            |
 | 1     | `unstaker`                       | base 58 encoded string of unstaker's wallet pubkey                                  |
 | 2     | `stake_account_address`          | base 58 encoded string of stake account address                                     |
 | 3     | `stake_account_voter`            | base 58 encoded string of stake account's voter pubkey                              |

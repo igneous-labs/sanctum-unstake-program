@@ -54,7 +54,7 @@ pub mod unstake {
         Unstake::run(ctx)
     }
 
-    pub fn unstake_wsol(ctx: Context<UnstakeWSOL>) -> Result<()> {
-        UnstakeWSOL::run(ctx)
+    pub fn unstake_wsol(ctx: Context<UnstakeWsol>) -> Result<()> {
+        UnstakeWsol::run(ctx)
     }
 }
