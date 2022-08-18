@@ -183,6 +183,29 @@ Permissionless crank to reclaim the SOL in a deactivated unstaked stake account 
 
 None, permissionless crank.
 
+##### Analytics Log Emission:
+
+Instruction type is marked as 1.
+
+###### Format:
+
+```
+unstake-log: [instruction, stake_account_address, recorded_lamports, reclaimed_lamports]
+```
+
+| index | field                   | definition                                                                                      |
+| ----- | ----------------------- | ----------------------------------------------------------------------------------------------- |
+| 0     | `instruction`           | instruction type: 1 for `ReclaimStakeAccount` ix                                                |
+| 1     | `stake_account_address` | base 58 encoded string of stake account address                                                 |
+| 2     | `recorded_lamports`     | the amount of sol in lamports in stake account observed at the time of `Unstake` ix             |
+| 3     | `reclaimed_lamports`    | the amount of sol in lamports in stake account observed at the time of `ReclaimStakeAccount` ix |
+
+###### Example:
+
+```
+unstake-log: [1, 5Rdj6vKRUkoZ9cS4FZSfhfhiTRd4VjPqVHsQ8znjHtj1, 2282881, 2282881]
+```
+
 ### User Facing
 
 #### Unstake
@@ -199,3 +222,56 @@ Unstakes a given stake account to a pool and receive SOL in return.
 
 - Payer to pay for the new StakeAccountRecord account's rent
 - Unstaker that owns the provided stake account
+
+##### Analytics Log Emission:
+
+Instruction type is marked as 0.
+
+###### Format:
+
+```
+unstake-log: [instruction, unstaker, stake_account_address, stake_account_voter, stake_account_activation_epoch, FEE, recorded_lamports, paid_lamports, fee_lamports]
+```
+
+| index | field                            | definition                                                                          |
+| ----- | -------------------------------- | ----------------------------------------------------------------------------------- |
+| 0     | `instruction`                    | instruction type: 0 for `Unstake` ix                                                |
+| 1     | `unstaker`                       | base 58 encoded string of unstaker's wallet pubkey                                  |
+| 2     | `stake_account_address`          | base 58 encoded string of stake account address                                     |
+| 3     | `stake_account_voter`            | base 58 encoded string of stake account's voter pubkey                              |
+| 4     | `stake_account_activation_epoch` | the activation epoch of stake account observed at the time of `Unstake` ix          |
+| 5     | `FEE`                            | details of `FeeEnum` used (see Fee Format)                                          |
+| 6     | `recorded_lamports`              | the amount of sol in lamports in stake account observed at the time of `Unstake` ix |
+| 7     | `paid_lamports`                  | the amount of sol in lamports paid out to unstaker                                  |
+| 8     | `fee_lamports`                   | the amount of sol in lamports charged as fee                                        |
+
+###### Fee Format:
+
+```
+[fee_type, FEE_DETAILS]
+```
+
+**`Flat` Fee Details**:
+
+| index | field      | definition             |
+| ----- | ---------- | ---------------------- |
+| 0     | `fee_type` | fee type: 0 for `Flat` |
+| 1     | `ratio`    | fee ratio              |
+
+**`LiquidityLinear` Fee Details**:
+
+| index | field                | definition                                           |
+| ----- | -------------------- | ---------------------------------------------------- |
+| 0     | `fee_type`           | fee type: 1 for `LiquidityLinear`                    |
+| 1     | `max_liq_remaining`  | fee ratio when the swap leaves all of its liquidity  |
+| 2     | `zero_liq_remaining` | fee ratio when the swap leaves none of its liquidity |
+
+###### Examples:
+
+```
+unstake-log: [0, Bai6uK4uvY4yWp2zAWQviKopsiSgtwJvzuy6DP2b4uDy, 7AzTg6RXXDbs6GMhqwsDbAdKuopRo4oS3BXVDi5HoJvD, 7VZtM1cDRgqJCxezv18Zykvorzuwn9B6cLRBE9s7rhS3, 0, [0, 69/1000], 2282881, 2125362, 157519]
+```
+
+```
+unstake-log: [0, 6zKThTJd7kG9yJJHdHe1pUUZSSSA7ayUtYLuZT7cYN3J, 5Rdj6vKRUkoZ9cS4FZSfhfhiTRd4VjPqVHsQ8znjHtj1, 7VZtM1cDRgqJCxezv18Zykvorzuwn9B6cLRBE9s7rhS3, 0, [1, 15/1000, 42/1000], 2282881, 2247252, 35629]
+```

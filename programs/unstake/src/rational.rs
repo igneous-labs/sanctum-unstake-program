@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use spl_math::precise_number::PreciseNumber;
 
+use std::fmt;
+
 /// A ratio. Denom should not = 0
 #[derive(Debug, PartialEq, Clone, Copy, AnchorSerialize, AnchorDeserialize)]
 pub struct Rational {
@@ -19,5 +21,11 @@ impl Rational {
 
     pub fn is_lte_one(&self) -> bool {
         self.num <= self.denom
+    }
+}
+
+impl fmt::Display for Rational {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}/{}", self.num, self.denom)
     }
 }
