@@ -4,6 +4,7 @@ mod deactivate_stake_account;
 mod reclaim_stake_account;
 mod remove_liquidity;
 mod set_fee;
+mod set_fee_authority;
 mod unstake_instructions;
 
 pub use add_liquidity::*;
@@ -12,4 +13,5 @@ pub use deactivate_stake_account::*;
 pub use reclaim_stake_account::*;
 pub use remove_liquidity::*;
 pub use set_fee::*;
+pub use set_fee_authority::*;
 pub use unstake_instructions::*;
