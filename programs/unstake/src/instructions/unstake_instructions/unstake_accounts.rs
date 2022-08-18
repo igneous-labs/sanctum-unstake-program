@@ -16,6 +16,8 @@ pub trait UnstakeAccounts<'info>
 where
     Self: Sized,
 {
+    const LOG_IX_TAG: u8;
+
     fn destination_account_info(&self) -> AccountInfo<'info>;
 
     fn unstaker(&self) -> &Signer<'info>;
@@ -127,14 +129,48 @@ where
             fee_lamports,
         })
     }
+
+    fn log_successful_unstake(ctx: &Context<Self>, unstake_result: UnstakeResult) {
+        // emit analytics log
+        let (voter_pubkey, activation_epoch) =
+            ctx.accounts.stake_account().delegation().map_or_else(
+                || (String::from(""), String::from("")),
+                |delegation| {
+                    (
+                        delegation.voter_pubkey.to_string(),
+                        delegation.activation_epoch.to_string(),
+                    )
+                },
+            );
+
+        // Log Format:
+        //  "unstake-log: [instruction, unstaker, stake_account_address, stake_account_voter, stake_account_activation_epoch, FEE, recorded_lamports, paid_lamports, fee_lamports]"
+        //
+        // Fee Format (see SPEC.md or fee.rs for details):
+        //  "[fee_type; FEE_DETAILS]"
+        msg!(
+            "unstake-log: [{}, {}, {}, {}, {}, {}, {}, {}, {}]",
+            Self::LOG_IX_TAG,
+            ctx.accounts.unstaker().key(),
+            ctx.accounts.stake_account().key(),
+            voter_pubkey,
+            activation_epoch,
+            ctx.accounts.fee_account().fee,
+            unstake_result.stake_account_lamports,
+            unstake_result.lamports_to_transfer,
+            unstake_result.fee_lamports,
+        );
+    }
 }
 
 macro_rules! impl_unstake_accounts {
-    ($struct: ident) => {
+    ($struct: ident, $log_ix_tag: expr) => {
         impl<'info>
             crate::instructions::unstake_instructions::unstake_accounts::UnstakeAccounts<'info>
             for $struct<'info>
         {
+            const LOG_IX_TAG: u8 = $log_ix_tag;
+
             fn destination_account_info(&self) -> anchor_lang::prelude::AccountInfo<'info> {
                 self.destination.to_account_info()
             }

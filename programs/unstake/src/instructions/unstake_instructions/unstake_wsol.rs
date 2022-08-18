@@ -81,7 +81,7 @@ pub struct UnstakeWSOL<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl_unstake_accounts!(UnstakeWSOL);
+impl_unstake_accounts!(UnstakeWSOL, 2);
 
 impl<'info> UnstakeWSOL<'info> {
     #[inline(always)]
@@ -97,33 +97,7 @@ impl<'info> UnstakeWSOL<'info> {
         ))?;
 
         // emit analytics log
-        let (voter_pubkey, activation_epoch) =
-            ctx.accounts.stake_account().delegation().map_or_else(
-                || (String::from(""), String::from("")),
-                |delegation| {
-                    (
-                        delegation.voter_pubkey.to_string(),
-                        delegation.activation_epoch.to_string(),
-                    )
-                },
-            );
-
-        // Log Format:
-        //  "unstake-log: [instruction, unstaker, stake_account_address, stake_account_voter, stake_account_activation_epoch, FEE, recorded_lamports, paid_lamports, fee_lamports]"
-        //
-        // Fee Format (see SPEC.md or fee.rs for details):
-        //  "[fee_type; FEE_DETAILS]"
-        msg!(
-            "unstake-log: [2, {}, {}, {}, {}, {}, {}, {}, {}]",
-            ctx.accounts.unstaker().key(),
-            ctx.accounts.stake_account().key(),
-            voter_pubkey,
-            activation_epoch,
-            ctx.accounts.fee_account().fee,
-            unstake_result.stake_account_lamports,
-            unstake_result.lamports_to_transfer,
-            unstake_result.fee_lamports,
-        );
+        Self::log_successful_unstake(&ctx, unstake_result);
 
         Ok(())
     }
