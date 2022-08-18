@@ -230,6 +230,48 @@ describe("ts bindings", () => {
     });
   });
 
+  describe("transaction generation", () => {
+    describe("Admin facing", () => {
+      it("it generates createPool tx", async () => {
+        throw new Error("Not yet implemented");
+      });
+
+      it("it generates setFee tx", async () => {
+        throw new Error("Not yet implemented");
+      });
+
+      it("it generates setFeeAuthority tx", async () => {
+        throw new Error("Not yet implemented");
+      });
+    });
+
+    describe("Crank facing", () => {
+      it("it generates deactivateStakeAccount tx", async () => {
+        throw new Error("Not yet implemented");
+      });
+
+      it("it generates reclaimStakeAccount tx", async () => {
+        throw new Error("Not yet implemented");
+      });
+    });
+
+    describe("LP facing", () => {
+      it("it generates addLiquidity tx", async () => {
+        throw new Error("Not yet implemented");
+      });
+
+      it("it generates removeLiquidity tx", async () => {
+        throw new Error("Not yet implemented");
+      });
+    });
+
+    describe("User facing", () => {
+      it("it generates unstake tx", async () => {
+        throw new Error("Not yet implemented");
+      });
+    });
+  });
+
   describe("previewUnstake and unstakeTx", () => {
     const testCases = 4;
     const stakeAccKeypairs = [...Array(testCases).keys()].map(() =>
