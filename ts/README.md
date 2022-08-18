@@ -193,6 +193,10 @@ if (stakeState === "active" || stakeState === "activating") {
 const signature = await UNSTAKE_PROGRAM.provider.sendAndConfirm(tx);
 ```
 
+### UnstakeWsol
+
+We also provide an instruction for unstaking SOL to wrapped SOL token accounts. Its usage is the same as [Unstake](#unstake); simply replace `unstakeTx()` with `unstakeWsolTx()` in the example above.
+
 ### Reclaim Stake
 
 ReclaimStake is a permissionless crank instruction that returns SOL from previously unstaked stake accounts that have now successfully deactivated to the pool's SOL reserves. This increases the liquidity available for unstaking and gives users a better rate.

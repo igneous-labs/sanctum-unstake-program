@@ -1,5 +1,10 @@
 import * as anchor from "@project-serum/anchor";
-import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import {
+  createAssociatedTokenAccount,
+  getAccount,
+  getOrCreateAssociatedTokenAccount,
+  NATIVE_MINT,
+} from "@solana/spl-token";
 import {
   Keypair,
   PublicKey,
@@ -18,6 +23,7 @@ import {
   findStakeAccountRecordAccount,
   previewUnstake,
   unstakeTx,
+  unstakeWsolTx,
   Unstake,
 } from "../ts/src";
 import {
@@ -230,13 +236,14 @@ describe("ts bindings", () => {
     });
   });
 
-  describe("previewUnstake and unstakeTx", () => {
-    const testCases = 4;
+  describe("previewUnstake, unstakeTx, unstakeWsolTx", () => {
+    const testCases = 5;
     const stakeAccKeypairs = [...Array(testCases).keys()].map(() =>
       Keypair.generate()
     );
     const unstakerKeypair = Keypair.generate();
     const destinationKeypair = Keypair.generate();
+    let unstakerWSol = null as PublicKey;
 
     let unstakerPayerDestination: number = 0;
     let unstakerNotPayerDestination: number = 0;
@@ -258,6 +265,12 @@ describe("ts bindings", () => {
             ])
           )
         )
+      );
+      unstakerWSol = await createAssociatedTokenAccount(
+        provider.connection,
+        unstakerKeypair,
+        NATIVE_MINT,
+        unstakerKeypair.publicKey
       );
       console.log("awaiting epoch to pass");
       await waitForEpochToPass(program.provider.connection);
@@ -365,6 +378,31 @@ describe("ts bindings", () => {
       // destination doesnt pay for fees, so should be same as unstakerNotPayerDestination
       expect(unstakerNotPayerNotDestination).to.be.eq(
         unstakerNotPayerDestination
+      );
+    });
+
+    it("unstake wSOL", async () => {
+      const stakeAccKeypair = stakeAccKeypairs[4];
+      const accounts = {
+        poolAccount: poolKeypair.publicKey,
+        stakeAccount: stakeAccKeypair.publicKey,
+        unstaker: unstakerKeypair.publicKey,
+        payer: unstakerKeypair.publicKey,
+        destination: unstakerWSol,
+      };
+      const destinationPre = (
+        await getAccount(provider.connection, unstakerWSol)
+      ).amount;
+      const tx = await unstakeWsolTx(program, accounts);
+      await sendAndConfirmTransaction(program.provider.connection, tx, [
+        unstakerKeypair,
+      ]);
+      const destinationPost = (
+        await getAccount(provider.connection, unstakerWSol)
+      ).amount;
+      // wSOL account doesnt pay for fees, so should be the same as unstakerNotPayerNotDestination
+      expect(unstakerNotPayerNotDestination).to.be.eq(
+        Number(destinationPost - destinationPre)
       );
     });
   });

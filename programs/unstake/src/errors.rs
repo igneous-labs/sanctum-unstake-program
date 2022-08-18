@@ -32,4 +32,7 @@ pub enum UnstakeError {
 
     #[msg("Liquidity to add too little")]
     LiquidityToAddTooLittle, // 0x1779
+
+    #[msg("Destination token account is not a wrapped SOL account")]
+    DestinationNotWSol, // 0x1780
 }

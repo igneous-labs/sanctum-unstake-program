@@ -9,7 +9,7 @@ import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { Unstake } from "../idl/idl";
 import { findPoolSolReserves } from "../pda";
 import BN from "bn.js";
-import { derivePoolAccounts } from "./utils";
+import { derivePoolLpMint } from "./utils";
 
 export type RemoveLiquidityAccounts = {
   /**
@@ -59,7 +59,7 @@ export async function removeLiquidityTx(
     sendLamportsTo: sendLamportsToOption,
   }: RemoveLiquidityAccounts
 ): Promise<Transaction> {
-  const { lpMint, poolAccount } = derivePoolAccounts(
+  const { lpMint, poolAccount } = derivePoolLpMint(
     poolAccountUnion,
     lpMintOption
   );
