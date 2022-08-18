@@ -1,6 +1,12 @@
-import { Address, Program } from "@project-serum/anchor";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import {
+  Address,
+  IdlAccounts,
+  Program,
+  ProgramAccount,
+} from "@project-serum/anchor";
+import { Transaction } from "@solana/web3.js";
 import { Unstake } from "../idl/idl";
+import { derivePoolFeeAuthority } from "./utils";
 
 export type SetFeeAuthorityAccounts = {
   /**
@@ -29,8 +35,17 @@ export type SetFeeAuthorityAccounts = {
  */
 export async function setFeeAuthorityTx(
   program: Program<Unstake>,
-  { feeAuthority, poolAccount, newFeeAuthority }: SetFeeAuthorityAccounts
+  {
+    feeAuthority: feeAuthorityOption,
+    poolAccount: poolAccountUnion,
+    newFeeAuthority,
+  }: SetFeeAuthorityAccounts
 ): Promise<Transaction> {
+  const { feeAuthority, poolAccount } = derivePoolFeeAuthority(
+    poolAccountUnion,
+    feeAuthorityOption
+  );
+
   return program.methods
     .setFeeAuthority()
     .accounts({
