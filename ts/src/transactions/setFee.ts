@@ -11,7 +11,7 @@ export type SetFeeAccounts = {
   poolAccount: Address;
 
   /**
-   * The liquidityt pool's fee authority
+   * The liquidity pool's fee authority
    */
   feeAuthority: Address;
 };

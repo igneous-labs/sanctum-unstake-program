@@ -13,6 +13,7 @@ import {
   createPoolTx,
   removeLiquidityTx,
   setFeeTx,
+  setFeeAuthorityTx,
   findPoolFeeAccount,
   findPoolSolReserves,
 } from "@unstake-it/sol";
@@ -393,6 +394,63 @@ yargs(hideBin(process.argv))
     }
   )
   .command(
+    "set_fee_authority <pool_account> <new_fee_authority>",
+    "sets the fee authority for an unstake liquidity pool",
+    (y) =>
+      y
+        .positional("pool_account", {
+          type: "string",
+          description: "Pubkey of the pool to set the fee of",
+        })
+        .positional("new_fee_authority", {
+          type: "string",
+          description: "Pubkey that is to be the pool's new fee authority",
+        })
+        .option("fee_authority", {
+          type: "string",
+          description:
+            "Path to keypair that is the pool's current fee authority",
+          defaultDescription: "wallet",
+        }),
+    async ({
+      cluster,
+      wallet,
+      program_id,
+      pool_account,
+      new_fee_authority,
+      fee_authority: feeAuthorityOption,
+    }) => {
+      const program = initProgram(cluster, wallet, program_id);
+      const provider = program.provider as AnchorProvider;
+      const poolAccount = new PublicKey(pool_account!);
+      const newFeeAuthority = new PublicKey(new_fee_authority!);
+
+      const signers = [];
+      let feeAuthority = provider.wallet.publicKey;
+      if (feeAuthorityOption) {
+        const kp = keypairFromFile(feeAuthorityOption);
+        signers.push(kp);
+        feeAuthority = kp.publicKey;
+      }
+
+      const tx = await setFeeAuthorityTx(program, {
+        feeAuthority,
+        poolAccount,
+        newFeeAuthority,
+      });
+      const sig = await provider.sendAndConfirm(tx, signers);
+      console.log(
+        "Liquidity pool at",
+        poolAccount.toString(),
+        "fee authority updated from",
+        feeAuthority.toString(),
+        "to",
+        newFeeAuthority.toString()
+      );
+      console.log("TX:", sig);
+    }
+  )
+  .command(
     "unstakes <pool_account>",
     "gets all successful unstakes for a pool",
     (y) =>
@@ -471,7 +529,7 @@ yargs(hideBin(process.argv))
             const ixProgramId = accountKeys[programIdIndex];
             if (!ixProgramId.equals(programId)) return;
             const ixPoolId = accountKeys[accounts[POOL_IX_IDX]];
-            if (!ixPoolId.equals(poolAccount)) return;
+            if (ixPoolId === undefined || !ixPoolId.equals(poolAccount)) return;
             if (data !== UNSTAKE_IX_DATA_B58) return;
             if (reservesIdx === null) {
               reservesIdx = accounts[RESERVES_IX_IDX];
@@ -491,11 +549,9 @@ yargs(hideBin(process.argv))
             );
 
             console.log(
-              succeededSigs[sigIdx],
-              ",",
-              parseLamportsToSol(unstakedLamportsThisTx),
-              ",",
-              parseLamportsToSol(feeLamports)
+              `${succeededSigs[sigIdx]}, ` +
+                `${parseLamportsToSol(unstakedLamportsThisTx)}, ` +
+                `${parseLamportsToSol(feeLamports)}`
             );
 
             totalUnstakedLamports = totalUnstakedLamports.add(

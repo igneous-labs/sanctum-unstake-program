@@ -38,6 +38,10 @@ pub mod unstake {
         SetFee::run(ctx, fee)
     }
 
+    pub fn set_fee_authority(ctx: Context<SetFeeAuthority>) -> Result<()> {
+        SetFeeAuthority::run(ctx)
+    }
+
     pub fn deactivate_stake_account(ctx: Context<DeactivateStakeAccount>) -> Result<()> {
         DeactivateStakeAccount::run(ctx)
     }

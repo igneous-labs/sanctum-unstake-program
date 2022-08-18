@@ -447,6 +447,64 @@ describe("internals", () => {
       });
     });
 
+    it("it rejects to set fee authority if the authority doesn't match", async () => {
+      const rando = Keypair.generate();
+      const tempFeeAuthority = Keypair.generate();
+
+      await expect(
+        program.methods
+          .setFeeAuthority()
+          .accounts({
+            feeAuthority: rando.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            newFeeAuthority: tempFeeAuthority.publicKey,
+          })
+          .signers([rando])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6002,
+          "The provided fee authority does not have the authority over the provided pool account"
+        )
+      );
+    });
+
+    it("it set fee authority", async () => {
+      const tempFeeAuthority = Keypair.generate();
+      await program.methods
+        .setFeeAuthority()
+        .accounts({
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          newFeeAuthority: tempFeeAuthority.publicKey,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+
+      await program.account.pool
+        .fetch(poolKeypair.publicKey)
+        .then(({ feeAuthority }) => {
+          expect(feeAuthority.equals(tempFeeAuthority.publicKey)).to.be.true;
+        });
+
+      // revert the change to keep the tests bellow unaffected by this test
+      await program.methods
+        .setFeeAuthority()
+        .accounts({
+          feeAuthority: tempFeeAuthority.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          newFeeAuthority: payerKeypair.publicKey,
+        })
+        .signers([tempFeeAuthority])
+        .rpc({ skipPreflight: true });
+
+      await program.account.pool
+        .fetch(poolKeypair.publicKey)
+        .then(({ feeAuthority }) => {
+          expect(feeAuthority.equals(payerKeypair.publicKey)).to.be.true;
+        });
+    });
+
     it("it rejects to set fee when the authority does not match", async () => {
       const rando = Keypair.generate();
       await expect(
