@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// TODO: CLI is currently uncompilable and can only be ran via ts-node due to multiple versions of
+// @solana/web3.js existing. Resolve this dependency hell.
+
 import {
   Address,
   AnchorProvider,
@@ -7,6 +10,8 @@ import {
   Program,
 } from "@project-serum/anchor";
 import {
+  // Need to use raw IDL json file instead of IDL const to workaround missing typedefs:
+  // https://github.com/coral-xyz/anchor/issues/1632#issuecomment-1168404435
   IDL_JSON,
   Unstake,
   addLiquidityTx,
@@ -16,6 +21,7 @@ import {
   setFeeAuthorityTx,
   findPoolFeeAccount,
   findPoolSolReserves,
+  findProtocolFeeAccount,
 } from "@unstake-it/sol";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
@@ -33,7 +39,7 @@ import {
   getAccount,
   getAssociatedTokenAddress,
 } from "@solana/spl-token";
-import { feeToHr, poolToHr } from "./display";
+import { feeToHr, poolToHr, protocolFeeToHr } from "./display";
 import { BN } from "bn.js";
 
 function initProgram(
@@ -43,7 +49,12 @@ function initProgram(
 ): Program<Unstake> {
   process.env.ANCHOR_PROVIDER_URL = cluster;
   process.env.ANCHOR_WALLET = wallet;
-  return new Program(IDL_JSON as Unstake, program, AnchorProvider.env());
+  // TODO: smth seems to have broke the typedefs in the IDL, requiring this unknown cast
+  return new Program(
+    IDL_JSON as unknown as Unstake,
+    program,
+    AnchorProvider.env()
+  );
 }
 
 yargs(hideBin(process.argv))
@@ -569,6 +580,43 @@ yargs(hideBin(process.argv))
         parseLamportsToSol(totalUnstakedLamports),
         ". Total fees (SOL):",
         parseLamportsToSol(totalFeesLamports)
+      );
+    }
+  )
+  .command(
+    "init_protocol_fee",
+    "Initializes the protocol fee for the program",
+    (y) => y,
+    async ({ cluster, wallet, program_id }) => {
+      const program = initProgram(cluster, wallet, program_id);
+      const provider = program.provider as AnchorProvider;
+      const [protocolFeeAccount] = await findProtocolFeeAccount(
+        program.programId
+      );
+      const sig = await program.methods
+        .initProtocolFee()
+        .accounts({
+          payer: provider.wallet.publicKey,
+          protocolFeeAccount,
+        })
+        .rpc();
+      console.log("Protocol fee initialized at", protocolFeeAccount.toString());
+      console.log("TX:", sig);
+    }
+  )
+  .command(
+    "fetch_protocol_fee",
+    "Fetches the protocol fee data for the program",
+    (y) => y,
+    async ({ cluster, wallet, program_id }) => {
+      const program = initProgram(cluster, wallet, program_id);
+      const [protocolFeeAccount] = await findProtocolFeeAccount(
+        program.programId
+      );
+      const pf = await program.account.protocolFee.fetch(protocolFeeAccount);
+      console.log(
+        "Protocol Fee:",
+        protocolFeeToHr(pf as unknown as IdlAccounts<Unstake>["protocolFee"])
       );
     }
   ).argv;
