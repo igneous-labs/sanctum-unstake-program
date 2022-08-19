@@ -12,6 +12,7 @@ import {
   StakeProgram,
   LAMPORTS_PER_SOL,
   SYSVAR_CLOCK_PUBKEY,
+  Transaction,
 } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { expect, use as chaiUse } from "chai";
@@ -24,6 +25,13 @@ import {
   previewUnstake,
   unstakeTx,
   unstakeWsolTx,
+  addLiquidityTx,
+  createPoolTx,
+  deactivateStakeAccountTx,
+  reclaimStakeAccountTx,
+  removeLiquidityTx,
+  setFeeTx,
+  setFeeAuthorityTx,
   Unstake,
 } from "../ts/src";
 import {
@@ -233,6 +241,302 @@ describe("ts bindings", () => {
       expect(fetched.inactive.length).to.eq(1);
       expect(fetched.activating).to.be.empty;
       expect(fetched.deactivating).to.be.empty;
+    });
+  });
+
+  describe("transaction generation", () => {
+    const stakeAccKeypair = Keypair.generate();
+    const unstakerKeypair = Keypair.generate();
+    const destinationKeypair = Keypair.generate();
+    let unstakerWSolAccount = null as PublicKey;
+    let poolProgramAccount = null as ProgramAccount<
+      IdlAccounts<Unstake>["pool"]
+    >;
+
+    before(async () => {
+      await airdrop(program.provider.connection, unstakerKeypair.publicKey);
+      await createDelegateStakeTx({
+        connection: provider.connection,
+        stakeAccount: stakeAccKeypair.publicKey,
+        payer: unstakerKeypair.publicKey,
+      }).then((tx) =>
+        sendAndConfirmTransaction(provider.connection, tx, [
+          unstakerKeypair,
+          stakeAccKeypair,
+        ])
+      );
+      unstakerWSolAccount = await createAssociatedTokenAccount(
+        provider.connection,
+        unstakerKeypair,
+        NATIVE_MINT,
+        unstakerKeypair.publicKey
+      );
+      poolProgramAccount = {
+        publicKey: poolKeypair.publicKey,
+        account: await program.account.pool.fetch(poolKeypair.publicKey),
+      };
+    });
+
+    describe("Admin facing", () => {
+      it("it generates CreatePool tx", async () => {
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "createPool"
+        ).accounts.length;
+
+        const tx = await createPoolTx(
+          program,
+          {
+            fee: {
+              flat: {
+                ratio: {
+                  num: new BN(0),
+                  denom: new BN(1000),
+                },
+              },
+            },
+          },
+          {
+            feeAuthority: payerKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            lpMint: lpMintKeypair.publicKey,
+          }
+        );
+        expect(tx instanceof Transaction).to.be.true;
+        expect(tx.instructions.length).to.eq(1);
+        expect(tx.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
+
+      it("it generates SetFee tx", async () => {
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "setFee"
+        ).accounts.length;
+
+        const tx = await setFeeTx(
+          program,
+          {
+            fee: {
+              flat: {
+                ratio: {
+                  num: new BN(0),
+                  denom: new BN(1000),
+                },
+              },
+            },
+          },
+          {
+            poolAccount: poolKeypair.publicKey,
+            feeAuthority: payerKeypair.publicKey,
+          }
+        );
+        expect(tx instanceof Transaction).to.be.true;
+        expect(tx.instructions.length).to.eq(1);
+        expect(tx.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
+
+      it("it generates SetFeeAuthority tx", async () => {
+        const newFeeAuthority = Keypair.generate().publicKey;
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "setFeeAuthority"
+        ).accounts.length;
+
+        // case 1 (trivial): poolAccount is Address type
+        const tx1 = await setFeeAuthorityTx(program, {
+          poolAccount: poolKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          newFeeAuthority,
+        });
+        expect(tx1 instanceof Transaction).to.be.true;
+        expect(tx1.instructions.length).to.eq(1);
+        expect(tx1.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx1.instructions[0].keys.length).to.eq(expectedAccountsLength);
+
+        // case 2: poolAccount is ProgramAccount type and feeAuthority is given
+        const tx2 = await setFeeAuthorityTx(program, {
+          poolAccount: poolProgramAccount,
+          feeAuthority: payerKeypair.publicKey,
+          newFeeAuthority,
+        });
+        expect(tx2 instanceof Transaction).to.be.true;
+        expect(tx2.instructions.length).to.eq(1);
+        expect(tx2.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx2.instructions[0].keys.length).to.eq(expectedAccountsLength);
+
+        // case 3: poolAccount is ProgramAccount type and feeAuthority is not given
+        const tx3 = await setFeeAuthorityTx(program, {
+          poolAccount: poolProgramAccount,
+          newFeeAuthority,
+        });
+        expect(tx3 instanceof Transaction).to.be.true;
+        expect(tx3.instructions.length).to.eq(1);
+        expect(tx3.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx3.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
+    });
+
+    describe("Crank facing", () => {
+      it("it generates DeactivateStakeAccount tx", async () => {
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "deactivateStakeAccount"
+        ).accounts.length;
+
+        const tx = await deactivateStakeAccountTx(program, {
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
+        });
+        expect(tx instanceof Transaction).to.be.true;
+        expect(tx.instructions.length).to.eq(1);
+        expect(tx.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
+
+      it("it generates ReclaimStakeAccount tx", async () => {
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "reclaimStakeAccount"
+        ).accounts.length;
+
+        const tx = await reclaimStakeAccountTx(program, {
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
+        });
+        expect(tx instanceof Transaction).to.be.true;
+        expect(tx.instructions.length).to.eq(1);
+        expect(tx.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
+    });
+
+    describe("LP facing", () => {
+      it("it generates AddLiquidity tx", async () => {
+        const amountLamports = new BN(1);
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "addLiquidity"
+        ).accounts.length;
+
+        // case 1 (trivial): poolAccount is Address type
+        const tx1 = await addLiquidityTx(program, amountLamports, {
+          from: lperKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          lpMint: lpMintKeypair.publicKey,
+          mintLpTokensTo: lperAta,
+        });
+        expect(tx1 instanceof Transaction).to.be.true;
+        expect(tx1.instructions.length).to.eq(1);
+        expect(tx1.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx1.instructions[0].keys.length).to.eq(expectedAccountsLength);
+
+        // case 2: poolAccount is ProgramAccount type lpMint is given
+        const tx2 = await addLiquidityTx(program, amountLamports, {
+          from: lperKeypair.publicKey,
+          poolAccount: poolProgramAccount,
+          lpMint: lpMintKeypair.publicKey,
+          mintLpTokensTo: lperAta,
+        });
+        expect(tx2 instanceof Transaction).to.be.true;
+        expect(tx2.instructions.length).to.eq(1);
+        expect(tx2.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx2.instructions[0].keys.length).to.eq(expectedAccountsLength);
+
+        // case 3: poolAccount is ProgramAccount type lpMint is not given
+        const tx3 = await addLiquidityTx(program, amountLamports, {
+          from: lperKeypair.publicKey,
+          poolAccount: poolProgramAccount,
+          mintLpTokensTo: lperAta,
+        });
+        expect(tx3 instanceof Transaction).to.be.true;
+        expect(tx3.instructions.length).to.eq(1);
+        expect(tx3.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx3.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
+
+      it("it generates RemoveLiquidity tx", async () => {
+        const amountLPAtomics = new BN(1);
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "removeLiquidity"
+        ).accounts.length;
+
+        // case 1 (trivial): poolAccount is Address type
+        const tx1 = await removeLiquidityTx(program, amountLPAtomics, {
+          authority: lperKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          lpMint: lpMintKeypair.publicKey,
+        });
+        expect(tx1 instanceof Transaction).to.be.true;
+        expect(tx1.instructions.length).to.eq(1);
+        expect(tx1.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx1.instructions[0].keys.length).to.eq(expectedAccountsLength);
+
+        // case 2: poolAccount is ProgramAccount type lpMint is given
+        const tx2 = await removeLiquidityTx(program, amountLPAtomics, {
+          authority: lperKeypair.publicKey,
+          poolAccount: poolProgramAccount,
+          lpMint: lpMintKeypair.publicKey,
+        });
+        expect(tx2 instanceof Transaction).to.be.true;
+        expect(tx2.instructions.length).to.eq(1);
+        expect(tx2.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx2.instructions[0].keys.length).to.eq(expectedAccountsLength);
+
+        // case 3: poolAccount is ProgramAccount type lpMint is not given
+        const tx3 = await removeLiquidityTx(program, amountLPAtomics, {
+          authority: lperKeypair.publicKey,
+          poolAccount: poolProgramAccount,
+        });
+        expect(tx3 instanceof Transaction).to.be.true;
+        expect(tx3.instructions.length).to.eq(1);
+        expect(tx3.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx3.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
+    });
+
+    describe("User facing", () => {
+      it("it generates Unstake tx", async () => {
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "unstake"
+        ).accounts.length;
+
+        const tx = await unstakeTx(program, {
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
+          unstaker: unstakerKeypair.publicKey,
+        });
+        expect(tx instanceof Transaction).to.be.true;
+        expect(tx.instructions.length).to.eq(1);
+        expect(tx.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
+
+      it("it generates UnstakeWsol tx", async () => {
+        const expectedAccountsLength = program._idl.instructions.find(
+          (ix) => ix.name === "unstakeWsol"
+        ).accounts.length;
+
+        const tx = await unstakeWsolTx(program, {
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
+          unstaker: unstakerKeypair.publicKey,
+        });
+        expect(tx instanceof Transaction).to.be.true;
+        expect(tx.instructions.length).to.eq(1);
+        expect(tx.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        expect(tx.instructions[0].keys.length).to.eq(expectedAccountsLength);
+      });
     });
   });
 
