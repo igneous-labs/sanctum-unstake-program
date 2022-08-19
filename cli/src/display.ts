@@ -16,6 +16,27 @@ export function poolToHr(pool: IdlAccounts<Unstake>["pool"]): PoolHr {
   };
 }
 
+type ProtocolFeeHr = {
+  destination: string;
+  authority: string;
+  feeRatio: string;
+  referrerFeeRatio: string;
+};
+
+export function protocolFeeToHr({
+  destination,
+  authority,
+  feeRatio,
+  referrerFeeRatio,
+}: IdlAccounts<Unstake>["protocolFee"]): ProtocolFeeHr {
+  return {
+    destination: destination.toString(),
+    authority: authority.toString(),
+    feeRatio: rationalToHr(feeRatio),
+    referrerFeeRatio: rationalToHr(referrerFeeRatio),
+  };
+}
+
 type LiqLinearFeeHr = {
   maxLiqRemaining: string;
   zeroLiqRemaining: string;
