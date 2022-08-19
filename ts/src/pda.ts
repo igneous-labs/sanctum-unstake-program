@@ -27,3 +27,12 @@ export function findStakeAccountRecordAccount(
     unstakeProg
   );
 }
+
+export function findProtocolFeeAccount(
+  unstakeProg: PublicKey
+): Promise<[PublicKey, number]> {
+  return PublicKey.findProgramAddress(
+    [Buffer.from("protocol-fee")],
+    unstakeProg
+  );
+}

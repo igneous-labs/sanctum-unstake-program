@@ -38,6 +38,15 @@ export function checkAnchorError(
   };
 }
 
+// Anchor throws ConfirmError, a simple extension of Error, for built-in instruction errors
+// e.g. 0x0 for account already exists
+export function checkSystemError(errorCode: number): (err: any) => boolean {
+  return (err) => {
+    const e = err as Error;
+    return e.message.includes(`"Custom":${errorCode}`);
+  };
+}
+
 export async function airdrop(
   connection: Connection,
   address: PublicKey,

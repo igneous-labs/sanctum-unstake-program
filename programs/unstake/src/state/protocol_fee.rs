@@ -25,9 +25,9 @@ pub struct ProtocolFee {
 mod default_destination {
     use anchor_lang::declare_id;
 
-    // devnet upgrade authority
+    // devnet upgrade authority's non-ATA wSOL account
     #[cfg(feature = "local-testing")]
-    declare_id!("2NB9TSbKzqEHY9kUuTpnjS3VrsZhEooAWADLHe3WeL3E");
+    declare_id!("J6T4Cwe5PkiRidMJMap4f8EBd5kiQ6JrrwF5XsXzFy8t");
 
     // Socean DAO's wSOL token account
     #[cfg(not(feature = "local-testing"))]
@@ -37,9 +37,9 @@ mod default_destination {
 mod default_authority {
     use anchor_lang::declare_id;
 
-    // devnet upgrade authority's non-ATA wSOL account
+    // devnet upgrade authority
     #[cfg(feature = "local-testing")]
-    declare_id!("J6T4Cwe5PkiRidMJMap4f8EBd5kiQ6JrrwF5XsXzFy8t");
+    declare_id!("2NB9TSbKzqEHY9kUuTpnjS3VrsZhEooAWADLHe3WeL3E");
 
     // LEFT CURVE DAO's unstake program upgrade authority
     #[cfg(not(feature = "local-testing"))]
