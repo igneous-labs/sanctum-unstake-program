@@ -18,6 +18,13 @@ import {
   findStakeAccountRecordAccount,
   previewUnstake,
   unstakeTx,
+  addLiquidityTx,
+  createPoolTx,
+  deactivateStakeAccountTx,
+  reclaimStakeAccountTx,
+  removeLiquidityTx,
+  setFeeTx,
+  setFeeAuthorityTx,
   Unstake,
 } from "../ts/src";
 import {
@@ -233,41 +240,149 @@ describe("ts bindings", () => {
   describe("transaction generation", () => {
     describe("Admin facing", () => {
       it("it generates createPool tx", async () => {
-        throw new Error("Not yet implemented");
+        const feeAuthority = Keypair.generate().publicKey;
+        const poolAccount = Keypair.generate().publicKey;
+        const lpMint = Keypair.generate().publicKey;
+
+        const tx = await createPoolTx(
+          program,
+          {
+            fee: {
+              flat: {
+                ratio: {
+                  num: new BN(0),
+                  denom: new BN(1000),
+                },
+              },
+            },
+          },
+          {
+            feeAuthority,
+            poolAccount,
+            lpMint,
+          }
+        );
+        console.log("createPool tx:", tx);
       });
 
       it("it generates setFee tx", async () => {
-        throw new Error("Not yet implemented");
+        const poolAccount = Keypair.generate().publicKey;
+        const feeAuthority = Keypair.generate().publicKey;
+
+        const tx = await setFeeTx(
+          program,
+          {
+            fee: {
+              flat: {
+                ratio: {
+                  num: new BN(0),
+                  denom: new BN(1000),
+                },
+              },
+            },
+          },
+          {
+            poolAccount,
+            feeAuthority,
+          }
+        );
+        console.log("setFee tx:", tx);
       });
 
       it("it generates setFeeAuthority tx", async () => {
-        throw new Error("Not yet implemented");
+        const poolAccount = Keypair.generate().publicKey;
+        const feeAuthority = Keypair.generate().publicKey;
+        const newFeeAuthority = Keypair.generate().publicKey;
+
+        // case 1 (trivial): poolAccount is Address type
+        const tx = await setFeeAuthorityTx(program, {
+          poolAccount,
+          feeAuthority,
+          newFeeAuthority,
+        });
+        console.log("setFeeAuthority tx:", tx);
+
+        // case 2: poolAccount is ProgramAccount type and feeAuthority is given
+        // case 3: poolAccount is ProgramAccount type and feeAuthority is not given
       });
     });
 
     describe("Crank facing", () => {
       it("it generates deactivateStakeAccount tx", async () => {
-        throw new Error("Not yet implemented");
+        const poolAccount = Keypair.generate().publicKey;
+        const stakeAccount = Keypair.generate().publicKey;
+
+        const tx = await deactivateStakeAccountTx(program, {
+          poolAccount,
+          stakeAccount,
+        });
+        console.log("deactivateStakeAccount tx:", tx);
       });
 
       it("it generates reclaimStakeAccount tx", async () => {
-        throw new Error("Not yet implemented");
+        const poolAccount = Keypair.generate().publicKey;
+        const stakeAccount = Keypair.generate().publicKey;
+
+        const tx = await reclaimStakeAccountTx(program, {
+          poolAccount,
+          stakeAccount,
+        });
+        console.log("reclaimStakeAccount tx:", tx);
       });
     });
 
     describe("LP facing", () => {
       it("it generates addLiquidity tx", async () => {
-        throw new Error("Not yet implemented");
+        const amountLamports = new BN(1);
+        const from = Keypair.generate().publicKey;
+        const poolAccount = Keypair.generate().publicKey;
+        const lpMint = Keypair.generate().publicKey;
+        const mintLpTokensTo = Keypair.generate().publicKey;
+
+        // case 1 (trivial): poolAccount is Address type
+        const tx = await addLiquidityTx(program, amountLamports, {
+          from,
+          poolAccount,
+          lpMint,
+          mintLpTokensTo,
+        });
+        console.log("addLiquidity tx:", tx);
+
+        // case 2: poolAccount is ProgramAccount type lpMint is given
+        // case 3: poolAccount is ProgramAccount type lpMint is not given
       });
 
       it("it generates removeLiquidity tx", async () => {
-        throw new Error("Not yet implemented");
+        const amountLPAtomics = new BN(1);
+        const authority = Keypair.generate().publicKey;
+        const poolAccount = Keypair.generate().publicKey;
+        const lpMint = Keypair.generate().publicKey;
+
+        // case 1 (trivial): poolAccount is Address type
+        const tx = await removeLiquidityTx(program, amountLPAtomics, {
+          authority,
+          poolAccount,
+          lpMint,
+        });
+        console.log("removeLiquidity tx:", tx);
+
+        // case 2: poolAccount is ProgramAccount type lpMint is given
+        // case 3: poolAccount is ProgramAccount type lpMint is not given
       });
     });
 
     describe("User facing", () => {
       it("it generates unstake tx", async () => {
-        throw new Error("Not yet implemented");
+        const poolAccount = Keypair.generate().publicKey;
+        const stakeAccount = Keypair.generate().publicKey;
+        const unstaker = Keypair.generate().publicKey;
+
+        const tx = await unstakeTx(program, {
+          poolAccount,
+          stakeAccount,
+          unstaker,
+        });
+        console.log("unstake tx:", tx);
       });
     });
   });
