@@ -249,6 +249,9 @@ describe("ts bindings", () => {
     const unstakerKeypair = Keypair.generate();
     const destinationKeypair = Keypair.generate();
     let unstakerWSolAccount = null as PublicKey;
+    let poolProgramAccount = null as ProgramAccount<
+      IdlAccounts<Unstake>["pool"]
+    >;
 
     before(async () => {
       await airdrop(program.provider.connection, unstakerKeypair.publicKey);
@@ -270,6 +273,10 @@ describe("ts bindings", () => {
       );
       console.log("awaiting epoch to pass");
       await waitForEpochToPass(program.provider.connection);
+      poolProgramAccount = {
+        publicKey: poolKeypair.publicKey,
+        account: await program.account.pool.fetch(poolKeypair.publicKey),
+      };
     });
 
     describe("Admin facing", () => {
@@ -320,15 +327,27 @@ describe("ts bindings", () => {
         const newFeeAuthority = Keypair.generate().publicKey;
 
         // case 1 (trivial): poolAccount is Address type
-        const tx = await setFeeAuthorityTx(program, {
+        const tx1 = await setFeeAuthorityTx(program, {
           poolAccount: poolKeypair.publicKey,
           feeAuthority: payerKeypair.publicKey,
           newFeeAuthority,
         });
-        expect(tx instanceof Transaction).to.be.true;
+        expect(tx1 instanceof Transaction).to.be.true;
 
         // case 2: poolAccount is ProgramAccount type and feeAuthority is given
+        const tx2 = await setFeeAuthorityTx(program, {
+          poolAccount: poolProgramAccount,
+          feeAuthority: payerKeypair.publicKey,
+          newFeeAuthority,
+        });
+        expect(tx2 instanceof Transaction).to.be.true;
+
         // case 3: poolAccount is ProgramAccount type and feeAuthority is not given
+        const tx3 = await setFeeAuthorityTx(program, {
+          poolAccount: poolProgramAccount,
+          newFeeAuthority,
+        });
+        expect(tx3 instanceof Transaction).to.be.true;
       });
     });
 
@@ -355,31 +374,57 @@ describe("ts bindings", () => {
         const amountLamports = new BN(1);
 
         // case 1 (trivial): poolAccount is Address type
-        const tx = await addLiquidityTx(program, amountLamports, {
+        const tx1 = await addLiquidityTx(program, amountLamports, {
           from: lperKeypair.publicKey,
           poolAccount: poolKeypair.publicKey,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
         });
-        expect(tx instanceof Transaction).to.be.true;
+        expect(tx1 instanceof Transaction).to.be.true;
 
         // case 2: poolAccount is ProgramAccount type lpMint is given
+        const tx2 = await addLiquidityTx(program, amountLamports, {
+          from: lperKeypair.publicKey,
+          poolAccount: poolProgramAccount,
+          lpMint: lpMintKeypair.publicKey,
+          mintLpTokensTo: lperAta,
+        });
+        expect(tx2 instanceof Transaction).to.be.true;
+
         // case 3: poolAccount is ProgramAccount type lpMint is not given
+        const tx3 = await addLiquidityTx(program, amountLamports, {
+          from: lperKeypair.publicKey,
+          poolAccount: poolProgramAccount,
+          mintLpTokensTo: lperAta,
+        });
+        expect(tx3 instanceof Transaction).to.be.true;
       });
 
       it("it generates RemoveLiquidity tx", async () => {
         const amountLPAtomics = new BN(1);
 
         // case 1 (trivial): poolAccount is Address type
-        const tx = await removeLiquidityTx(program, amountLPAtomics, {
+        const tx1 = await removeLiquidityTx(program, amountLPAtomics, {
           authority: lperKeypair.publicKey,
           poolAccount: poolKeypair.publicKey,
           lpMint: lpMintKeypair.publicKey,
         });
-        expect(tx instanceof Transaction).to.be.true;
+        expect(tx1 instanceof Transaction).to.be.true;
 
         // case 2: poolAccount is ProgramAccount type lpMint is given
+        const tx2 = await removeLiquidityTx(program, amountLPAtomics, {
+          authority: lperKeypair.publicKey,
+          poolAccount: poolProgramAccount,
+          lpMint: lpMintKeypair.publicKey,
+        });
+        expect(tx2 instanceof Transaction).to.be.true;
+
         // case 3: poolAccount is ProgramAccount type lpMint is not given
+        const tx3 = await removeLiquidityTx(program, amountLPAtomics, {
+          authority: lperKeypair.publicKey,
+          poolAccount: poolProgramAccount,
+        });
+        expect(tx3 instanceof Transaction).to.be.true;
       });
     });
 
