@@ -1,33 +1,64 @@
 import { Address, IdlAccounts, ProgramAccount } from "@project-serum/anchor";
 import { Unstake } from "../idl/idl";
 
-type DerivedPoolAccounts = {
+type PoolAccountUnion = Address | ProgramAccount<IdlAccounts<Unstake>["pool"]>;
+
+function isAddress(
+  poolAccountUnion: PoolAccountUnion
+): poolAccountUnion is Address {
+  return (
+    typeof poolAccountUnion === "string" || !("account" in poolAccountUnion)
+  );
+}
+
+type DerivedPoolLpMint = {
   lpMint: Address;
   poolAccount: Address;
 };
 
-export function derivePoolAccounts(
-  poolAccountUnion: Address | ProgramAccount<IdlAccounts<Unstake>["pool"]>,
+export function derivePoolLpMint(
+  poolAccountUnion: PoolAccountUnion,
   lpMintOption?: Address
-): DerivedPoolAccounts {
-  const isPoolAccountAddress =
-    typeof poolAccountUnion === "string" || !("account" in poolAccountUnion);
-  let lpMint: Address;
-  let poolAccount: Address;
-  if (isPoolAccountAddress) {
+): DerivedPoolLpMint {
+  if (isAddress(poolAccountUnion)) {
     if (!lpMintOption) {
       throw new Error(
         "LP mint must be provided if poolAccount is not a ProgramAccount"
       );
     }
-    lpMint = lpMintOption;
-    poolAccount = poolAccountUnion;
-  } else {
-    lpMint = poolAccountUnion.account.lpMint;
-    poolAccount = poolAccountUnion.publicKey;
+    return {
+      lpMint: lpMintOption,
+      poolAccount: poolAccountUnion,
+    };
   }
   return {
-    lpMint,
-    poolAccount,
+    lpMint: poolAccountUnion.account.lpMint,
+    poolAccount: poolAccountUnion.publicKey,
+  };
+}
+
+type DerivedPoolFeeAuthority = {
+  feeAuthority: Address;
+  poolAccount: Address;
+};
+
+export function derivePoolFeeAuthority(
+  poolAccountUnion: PoolAccountUnion,
+  feeAuthorityOption?: Address
+): DerivedPoolFeeAuthority {
+  if (isAddress(poolAccountUnion)) {
+    if (!feeAuthorityOption) {
+      throw new Error(
+        "fee authority must be provided if poolAccount is not a ProgramAccount"
+      );
+    }
+    return {
+      feeAuthority: feeAuthorityOption,
+      poolAccount: poolAccountUnion,
+    };
+  }
+  return {
+    feeAuthority: poolAccountUnion.account.feeAuthority,
+    poolAccount: poolAccountUnion.publicKey,
   };
 }

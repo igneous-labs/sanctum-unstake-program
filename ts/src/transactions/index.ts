@@ -10,3 +10,4 @@ export * from "./removeLiquidity";
 export * from "./setFee";
 export * from "./setFeeAuthority";
 export * from "./unstake";
+export * from "./unstakeWsol";
