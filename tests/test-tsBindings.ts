@@ -12,6 +12,7 @@ import {
   StakeProgram,
   LAMPORTS_PER_SOL,
   SYSVAR_CLOCK_PUBKEY,
+  Transaction,
 } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { expect, use as chaiUse } from "chai";
@@ -244,12 +245,35 @@ describe("ts bindings", () => {
   });
 
   describe("transaction generation", () => {
+    const stakeAccKeypair = Keypair.generate();
+    const unstakerKeypair = Keypair.generate();
+    const destinationKeypair = Keypair.generate();
+    let unstakerWSolAccount = null as PublicKey;
+
+    before(async () => {
+      await airdrop(program.provider.connection, unstakerKeypair.publicKey);
+      await createDelegateStakeTx({
+        connection: provider.connection,
+        stakeAccount: stakeAccKeypair.publicKey,
+        payer: unstakerKeypair.publicKey,
+      }).then((tx) =>
+        sendAndConfirmTransaction(provider.connection, tx, [
+          unstakerKeypair,
+          stakeAccKeypair,
+        ])
+      );
+      unstakerWSolAccount = await createAssociatedTokenAccount(
+        provider.connection,
+        unstakerKeypair,
+        NATIVE_MINT,
+        unstakerKeypair.publicKey
+      );
+      console.log("awaiting epoch to pass");
+      await waitForEpochToPass(program.provider.connection);
+    });
+
     describe("Admin facing", () => {
       it("it generates CreatePool tx", async () => {
-        const feeAuthority = Keypair.generate().publicKey;
-        const poolAccount = Keypair.generate().publicKey;
-        const lpMint = Keypair.generate().publicKey;
-
         const tx = await createPoolTx(
           program,
           {
@@ -263,18 +287,15 @@ describe("ts bindings", () => {
             },
           },
           {
-            feeAuthority,
-            poolAccount,
-            lpMint,
+            feeAuthority: payerKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            lpMint: lpMintKeypair.publicKey,
           }
         );
-        console.log("CreatePool tx:", JSON.stringify(tx));
+        expect(tx instanceof Transaction).to.be.true;
       });
 
       it("it generates SetFee tx", async () => {
-        const poolAccount = Keypair.generate().publicKey;
-        const feeAuthority = Keypair.generate().publicKey;
-
         const tx = await setFeeTx(
           program,
           {
@@ -288,25 +309,23 @@ describe("ts bindings", () => {
             },
           },
           {
-            poolAccount,
-            feeAuthority,
+            poolAccount: poolKeypair.publicKey,
+            feeAuthority: payerKeypair.publicKey,
           }
         );
-        console.log("SetFee tx:", tx);
+        expect(tx instanceof Transaction).to.be.true;
       });
 
       it("it generates SetFeeAuthority tx", async () => {
-        const poolAccount = Keypair.generate().publicKey;
-        const feeAuthority = Keypair.generate().publicKey;
         const newFeeAuthority = Keypair.generate().publicKey;
 
         // case 1 (trivial): poolAccount is Address type
         const tx = await setFeeAuthorityTx(program, {
-          poolAccount,
-          feeAuthority,
+          poolAccount: poolKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
           newFeeAuthority,
         });
-        console.log("SetFeeAuthority tx:", tx);
+        expect(tx instanceof Transaction).to.be.true;
 
         // case 2: poolAccount is ProgramAccount type and feeAuthority is given
         // case 3: poolAccount is ProgramAccount type and feeAuthority is not given
@@ -315,44 +334,34 @@ describe("ts bindings", () => {
 
     describe("Crank facing", () => {
       it("it generates DeactivateStakeAccount tx", async () => {
-        const poolAccount = Keypair.generate().publicKey;
-        const stakeAccount = Keypair.generate().publicKey;
-
         const tx = await deactivateStakeAccountTx(program, {
-          poolAccount,
-          stakeAccount,
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
         });
-        console.log("DeactivateStakeAccount tx:", tx);
+        expect(tx instanceof Transaction).to.be.true;
       });
 
       it("it generates ReclaimStakeAccount tx", async () => {
-        const poolAccount = Keypair.generate().publicKey;
-        const stakeAccount = Keypair.generate().publicKey;
-
         const tx = await reclaimStakeAccountTx(program, {
-          poolAccount,
-          stakeAccount,
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
         });
-        console.log("ReclaimStakeAccount tx:", tx);
+        expect(tx instanceof Transaction).to.be.true;
       });
     });
 
     describe("LP facing", () => {
       it("it generates AddLiquidity tx", async () => {
         const amountLamports = new BN(1);
-        const from = Keypair.generate().publicKey;
-        const poolAccount = Keypair.generate().publicKey;
-        const lpMint = Keypair.generate().publicKey;
-        const mintLpTokensTo = Keypair.generate().publicKey;
 
         // case 1 (trivial): poolAccount is Address type
         const tx = await addLiquidityTx(program, amountLamports, {
-          from,
-          poolAccount,
-          lpMint,
-          mintLpTokensTo,
+          from: lperKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          lpMint: lpMintKeypair.publicKey,
+          mintLpTokensTo: lperAta,
         });
-        console.log("AddLiquidity tx:", tx);
+        expect(tx instanceof Transaction).to.be.true;
 
         // case 2: poolAccount is ProgramAccount type lpMint is given
         // case 3: poolAccount is ProgramAccount type lpMint is not given
@@ -360,17 +369,14 @@ describe("ts bindings", () => {
 
       it("it generates RemoveLiquidity tx", async () => {
         const amountLPAtomics = new BN(1);
-        const authority = Keypair.generate().publicKey;
-        const poolAccount = Keypair.generate().publicKey;
-        const lpMint = Keypair.generate().publicKey;
 
         // case 1 (trivial): poolAccount is Address type
         const tx = await removeLiquidityTx(program, amountLPAtomics, {
-          authority,
-          poolAccount,
-          lpMint,
+          authority: lperKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          lpMint: lpMintKeypair.publicKey,
         });
-        console.log("RemoveLiquidity tx:", tx);
+        expect(tx instanceof Transaction).to.be.true;
 
         // case 2: poolAccount is ProgramAccount type lpMint is given
         // case 3: poolAccount is ProgramAccount type lpMint is not given
@@ -379,29 +385,21 @@ describe("ts bindings", () => {
 
     describe("User facing", () => {
       it("it generates Unstake tx", async () => {
-        const poolAccount = Keypair.generate().publicKey;
-        const stakeAccount = Keypair.generate().publicKey;
-        const unstaker = Keypair.generate().publicKey;
-
         const tx = await unstakeTx(program, {
-          poolAccount,
-          stakeAccount,
-          unstaker,
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
+          unstaker: unstakerKeypair.publicKey,
         });
-        console.log("Unstake tx:", tx);
+        expect(tx instanceof Transaction).to.be.true;
       });
 
       it("it generates UnstakeWsol tx", async () => {
-        const poolAccount = Keypair.generate().publicKey;
-        const stakeAccount = Keypair.generate().publicKey;
-        const unstaker = Keypair.generate().publicKey;
-
         const tx = await unstakeWsolTx(program, {
-          poolAccount,
-          stakeAccount,
-          unstaker,
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
+          unstaker: unstakerKeypair.publicKey,
         });
-        console.log("UnstakeWsol tx:", tx);
+        expect(tx instanceof Transaction).to.be.true;
       });
     });
   });
