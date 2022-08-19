@@ -245,7 +245,7 @@ describe("ts bindings", () => {
 
   describe("transaction generation", () => {
     describe("Admin facing", () => {
-      it("it generates createPool tx", async () => {
+      it("it generates CreatePool tx", async () => {
         const feeAuthority = Keypair.generate().publicKey;
         const poolAccount = Keypair.generate().publicKey;
         const lpMint = Keypair.generate().publicKey;
@@ -268,10 +268,10 @@ describe("ts bindings", () => {
             lpMint,
           }
         );
-        console.log("createPool tx:", tx);
+        console.log("CreatePool tx:", JSON.stringify(tx));
       });
 
-      it("it generates setFee tx", async () => {
+      it("it generates SetFee tx", async () => {
         const poolAccount = Keypair.generate().publicKey;
         const feeAuthority = Keypair.generate().publicKey;
 
@@ -292,10 +292,10 @@ describe("ts bindings", () => {
             feeAuthority,
           }
         );
-        console.log("setFee tx:", tx);
+        console.log("SetFee tx:", tx);
       });
 
-      it("it generates setFeeAuthority tx", async () => {
+      it("it generates SetFeeAuthority tx", async () => {
         const poolAccount = Keypair.generate().publicKey;
         const feeAuthority = Keypair.generate().publicKey;
         const newFeeAuthority = Keypair.generate().publicKey;
@@ -306,7 +306,7 @@ describe("ts bindings", () => {
           feeAuthority,
           newFeeAuthority,
         });
-        console.log("setFeeAuthority tx:", tx);
+        console.log("SetFeeAuthority tx:", tx);
 
         // case 2: poolAccount is ProgramAccount type and feeAuthority is given
         // case 3: poolAccount is ProgramAccount type and feeAuthority is not given
@@ -314,7 +314,7 @@ describe("ts bindings", () => {
     });
 
     describe("Crank facing", () => {
-      it("it generates deactivateStakeAccount tx", async () => {
+      it("it generates DeactivateStakeAccount tx", async () => {
         const poolAccount = Keypair.generate().publicKey;
         const stakeAccount = Keypair.generate().publicKey;
 
@@ -322,10 +322,10 @@ describe("ts bindings", () => {
           poolAccount,
           stakeAccount,
         });
-        console.log("deactivateStakeAccount tx:", tx);
+        console.log("DeactivateStakeAccount tx:", tx);
       });
 
-      it("it generates reclaimStakeAccount tx", async () => {
+      it("it generates ReclaimStakeAccount tx", async () => {
         const poolAccount = Keypair.generate().publicKey;
         const stakeAccount = Keypair.generate().publicKey;
 
@@ -333,12 +333,12 @@ describe("ts bindings", () => {
           poolAccount,
           stakeAccount,
         });
-        console.log("reclaimStakeAccount tx:", tx);
+        console.log("ReclaimStakeAccount tx:", tx);
       });
     });
 
     describe("LP facing", () => {
-      it("it generates addLiquidity tx", async () => {
+      it("it generates AddLiquidity tx", async () => {
         const amountLamports = new BN(1);
         const from = Keypair.generate().publicKey;
         const poolAccount = Keypair.generate().publicKey;
@@ -352,13 +352,13 @@ describe("ts bindings", () => {
           lpMint,
           mintLpTokensTo,
         });
-        console.log("addLiquidity tx:", tx);
+        console.log("AddLiquidity tx:", tx);
 
         // case 2: poolAccount is ProgramAccount type lpMint is given
         // case 3: poolAccount is ProgramAccount type lpMint is not given
       });
 
-      it("it generates removeLiquidity tx", async () => {
+      it("it generates RemoveLiquidity tx", async () => {
         const amountLPAtomics = new BN(1);
         const authority = Keypair.generate().publicKey;
         const poolAccount = Keypair.generate().publicKey;
@@ -370,7 +370,7 @@ describe("ts bindings", () => {
           poolAccount,
           lpMint,
         });
-        console.log("removeLiquidity tx:", tx);
+        console.log("RemoveLiquidity tx:", tx);
 
         // case 2: poolAccount is ProgramAccount type lpMint is given
         // case 3: poolAccount is ProgramAccount type lpMint is not given
@@ -378,7 +378,7 @@ describe("ts bindings", () => {
     });
 
     describe("User facing", () => {
-      it("it generates unstake tx", async () => {
+      it("it generates Unstake tx", async () => {
         const poolAccount = Keypair.generate().publicKey;
         const stakeAccount = Keypair.generate().publicKey;
         const unstaker = Keypair.generate().publicKey;
@@ -388,7 +388,20 @@ describe("ts bindings", () => {
           stakeAccount,
           unstaker,
         });
-        console.log("unstake tx:", tx);
+        console.log("Unstake tx:", tx);
+      });
+
+      it("it generates UnstakeWsol tx", async () => {
+        const poolAccount = Keypair.generate().publicKey;
+        const stakeAccount = Keypair.generate().publicKey;
+        const unstaker = Keypair.generate().publicKey;
+
+        const tx = await unstakeWsolTx(program, {
+          poolAccount,
+          stakeAccount,
+          unstaker,
+        });
+        console.log("UnstakeWsol tx:", tx);
       });
     });
   });
