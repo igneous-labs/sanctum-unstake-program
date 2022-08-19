@@ -271,8 +271,6 @@ describe("ts bindings", () => {
         NATIVE_MINT,
         unstakerKeypair.publicKey
       );
-      console.log("awaiting epoch to pass");
-      await waitForEpochToPass(program.provider.connection);
       poolProgramAccount = {
         publicKey: poolKeypair.publicKey,
         account: await program.account.pool.fetch(poolKeypair.publicKey),
