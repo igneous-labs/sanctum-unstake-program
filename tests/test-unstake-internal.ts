@@ -837,6 +837,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
           })
@@ -866,6 +868,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -896,6 +900,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
           })
@@ -925,6 +931,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -955,6 +963,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -966,6 +976,69 @@ describe("internals", () => {
           6010,
           "Destination token account is not a wrapped SOL account"
         )
+      );
+    });
+
+    it("it rejects to unstake wrong protocol fee destination", async () => {
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        flatFeeStakeAcc.publicKey
+      );
+
+      await expect(
+        program.methods
+          .unstake()
+          .accounts({
+            payer: payerKeypair.publicKey,
+            unstaker: flatFeeUnstaker.publicKey,
+            stakeAccount: flatFeeStakeAcc.publicKey,
+            destination: flatFeeUnstaker.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            feeAccount,
+            stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination: Keypair.generate().publicKey,
+            clock: SYSVAR_CLOCK_PUBKEY,
+            stakeProgram: StakeProgram.programId,
+          })
+          .signers([payerKeypair, flatFeeUnstaker])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(6011, "Wrong protocol fee destination account")
+      );
+    });
+
+    it("it rejects to unstakeWsol wrong protocol fee destination", async () => {
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        flatFeeWSolStakeAcc.publicKey
+      );
+
+      await expect(
+        program.methods
+          .unstakeWsol()
+          .accounts({
+            payer: payerKeypair.publicKey,
+            unstaker: flatFeeWSolUnstaker.publicKey,
+            stakeAccount: flatFeeWSolStakeAcc.publicKey,
+            destination: flatFeeWSolUnstakerWSolAcc,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            feeAccount,
+            stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination: Keypair.generate().publicKey,
+            clock: SYSVAR_CLOCK_PUBKEY,
+            stakeProgram: StakeProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([payerKeypair, flatFeeWSolUnstaker])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(6011, "Wrong protocol fee destination account")
       );
     });
 

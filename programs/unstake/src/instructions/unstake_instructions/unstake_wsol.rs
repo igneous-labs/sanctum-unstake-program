@@ -85,7 +85,7 @@ pub struct UnstakeWsol<'info> {
     /// destination specified in `protocol_fee_account`
     #[account(
         mut,
-        address = protocol_fee_account.destination
+        address = protocol_fee_account.destination @ UnstakeError::WrongProtocolFee,
     )]
     pub protocol_fee_destination: AccountInfo<'info>,
 
