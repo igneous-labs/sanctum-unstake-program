@@ -27,9 +27,8 @@ pub struct SetProtocolFee<'info> {
 
 impl<'info> SetProtocolFee<'info> {
     #[inline(always)]
-    pub fn validate(_protocol_fee: &ProtocolFee) -> Result<()> {
-        // TODO
-        Ok(())
+    pub fn validate(protocol_fee: &ProtocolFee) -> Result<()> {
+        protocol_fee.validate()
     }
 
     #[inline(always)]

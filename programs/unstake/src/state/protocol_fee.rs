@@ -2,7 +2,7 @@ use anchor_lang::prelude::Pubkey;
 
 use anchor_lang::prelude::*;
 
-use crate::rational::Rational;
+use crate::{errors::UnstakeError, rational::Rational};
 
 pub const PROTOCOL_FEE_SEED: &[u8] = b"protocol-fee";
 
@@ -56,5 +56,19 @@ impl Default for ProtocolFee {
             // 50%
             referrer_fee_ratio: Rational { num: 1, denom: 2 },
         }
+    }
+}
+
+impl ProtocolFee {
+    pub fn validate(&self) -> Result<()> {
+        if !self.fee_ratio.validate()
+            || !self.fee_ratio.is_lte_one()
+            || !self.referrer_fee_ratio.validate()
+            || !self.referrer_fee_ratio.is_lte_one()
+        {
+            return Err(UnstakeError::InvalidFee.into());
+        }
+
+        Ok(())
     }
 }
