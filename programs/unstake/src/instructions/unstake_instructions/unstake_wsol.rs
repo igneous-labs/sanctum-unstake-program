@@ -84,6 +84,7 @@ pub struct UnstakeWsol<'info> {
     /// CHECK: address-check checks that its the correct
     /// destination specified in `protocol_fee_account`
     #[account(
+        mut,
         address = protocol_fee_account.destination
     )]
     pub protocol_fee_destination: AccountInfo<'info>,
