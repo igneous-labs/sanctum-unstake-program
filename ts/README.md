@@ -105,6 +105,28 @@ const FETCHED_FEE_DATA = await UNSTAKE_PROGRAM.account.fee.fetch(
 const { fee } = FETCHED_FEE_DATA;
 ```
 
+### Fetch Protocol Fee Params
+
+The global protocol fee params for the unstake pool is stored in a singleton PDA.
+
+```ts
+import { findProtocolFeeAccount } from "@unstake-it/sol";
+
+// this address is 2hN9UhvRFVfPYKL6rZJ5YiLEPCLTpN755pgwDJHWgFbU on mainnet
+const PROTOCOL_FEE_ADDRESS = await findProtocolFeeAccount(UNSTAKE_PROGRAM);
+const FETCHED_PROTOCOL_FEE_DATA =
+  await UNSTAKE_PROGRAM.account.protocolFee.fetch(PROTOCOL_FEE_ADDRESS);
+
+const { destination, authority, feeRatio, referrerFeeRatio } =
+  FETCHED_PROTOCOL_FEE_DATA;
+
+// this account data is required for unstakeTx(), unstakeWsolTx() and previewUnstake()
+const PROTOCOL_FEE = {
+  publicKey: PROTOCOL_FEE_ADDRESS,
+  account: FETCHED_PROTOCOL_FEE_DATA,
+};
+```
+
 ### Previewing an Unstake
 
 This function simply makes a `simulateTransaction` RPC call and reports the change in lamports to the destination account the transaction results in.
@@ -118,6 +140,7 @@ const changeInLamports = await previewUnstake(UNSTAKE_PROGRAM, {
   poolAccount: UNSTAKE_POOL_ADDRESS,
   stakeAccount: stakeAccountPubkey,
   unstaker: UNSTAKE_PROGRAM.provider.wallet.publicKey,
+  protocolFee: PROTOCOL_FEE,
 });
 ```
 
@@ -170,6 +193,7 @@ const tx = await unstakeTx(UNSTAKE_PROGRAM, {
   stakeAccount: stakeAccountPubkey,
   poolAccount: UNSTAKE_POOL_ADDRESS,
   unstaker: UNSTAKE_PROGRAM.provider.wallet.publicKey,
+  protocolFee: PROTOCOL_FEE,
 });
 
 // deactivateStakeAccount is a permissionless crank instruction that allows

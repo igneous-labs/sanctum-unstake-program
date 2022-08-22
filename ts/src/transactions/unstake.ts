@@ -1,4 +1,4 @@
-import { Address, Program } from "@project-serum/anchor";
+import { Address, Program, ProgramAccount } from "@project-serum/anchor";
 import {
   PublicKey,
   StakeProgram,
@@ -11,6 +11,7 @@ import {
   findPoolSolReserves,
   findStakeAccountRecordAccount,
 } from "../pda";
+import { ProtocolFeeAccount } from "../types";
 
 export type UnstakeAccounts = {
   /**
@@ -27,6 +28,11 @@ export type UnstakeAccounts = {
    * `stakeAcc`'s withdraw authority
    */
   unstaker: Address;
+
+  /**
+   * The program's fetched protocol fee account
+   */
+  protocolFee: ProgramAccount<ProtocolFeeAccount>;
 
   /**
    * The SOL account paying for the transaction and rent.
@@ -55,6 +61,10 @@ export async function unstakeTx(
     unstaker,
     payer: payerOption,
     destination: destinationOption,
+    protocolFee: {
+      publicKey: protocolFeeAccount,
+      account: { destination: protocolFeeDestination },
+    },
   }: UnstakeAccounts
 ): Promise<Transaction> {
   const payer = payerOption ?? unstaker;
@@ -87,6 +97,8 @@ export async function unstakeTx(
       poolSolReserves,
       feeAccount,
       stakeAccountRecordAccount,
+      protocolFeeAccount,
+      protocolFeeDestination,
       clock: SYSVAR_CLOCK_PUBKEY,
       stakeProgram: StakeProgram.programId,
     })
