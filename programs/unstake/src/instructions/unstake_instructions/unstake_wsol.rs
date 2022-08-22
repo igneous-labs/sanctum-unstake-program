@@ -7,7 +7,7 @@ use anchor_spl::{
 use crate::{
     anchor_len::AnchorLen,
     errors::UnstakeError,
-    state::{Fee, Pool, StakeAccountRecord, FEE_SEED_SUFFIX},
+    state::{Fee, Pool, ProtocolFee, StakeAccountRecord, FEE_SEED_SUFFIX, PROTOCOL_FEE_SEED},
 };
 
 use super::unstake_accounts::UnstakeAccounts;
@@ -74,6 +74,19 @@ pub struct UnstakeWsol<'info> {
         bump,
     )]
     pub stake_account_record_account: Account<'info, StakeAccountRecord>,
+
+    #[account(
+        seeds = [PROTOCOL_FEE_SEED],
+        bump,
+    )]
+    pub protocol_fee_account: Account<'info, ProtocolFee>,
+
+    /// CHECK: address-check checks that its the correct
+    /// destination specified in `protocol_fee_account`
+    #[account(
+        address = protocol_fee_account.destination
+    )]
+    pub protocol_fee_destination: AccountInfo<'info>,
 
     pub clock: Sysvar<'info, Clock>,
     pub stake_program: Program<'info, Stake>,
