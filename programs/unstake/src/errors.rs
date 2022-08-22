@@ -35,4 +35,7 @@ pub enum UnstakeError {
 
     #[msg("Destination token account is not a wrapped SOL account")]
     DestinationNotWSol, // 0x1780
+
+    #[msg("The provided protocol fee authority does not have the authority over the protocol fee account")]
+    InvalidProtocolFeeAuthority, // 0x1781
 }
