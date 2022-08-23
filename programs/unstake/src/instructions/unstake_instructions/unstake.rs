@@ -92,7 +92,7 @@ impl_unstake_accounts!(Unstake, 0);
 
 impl<'info> Unstake<'info> {
     #[inline(always)]
-    pub fn run(mut ctx: Context<Self>) -> Result<()> {
+    pub fn run(mut ctx: Context<'_, '_, '_, 'info, Self>) -> Result<()> {
         let unstake_result = Self::run_unstake(&mut ctx)?;
 
         // emit analytics log

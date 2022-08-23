@@ -99,7 +99,7 @@ impl_unstake_accounts!(UnstakeWsol, 2);
 
 impl<'info> UnstakeWsol<'info> {
     #[inline(always)]
-    pub fn run(mut ctx: Context<Self>) -> Result<()> {
+    pub fn run(mut ctx: Context<'_, '_, '_, 'info, Self>) -> Result<()> {
         let unstake_result = Self::run_unstake(&mut ctx)?;
 
         // sync native

@@ -42,7 +42,11 @@ where
 
     fn protocol_fee_destination(&self) -> &AccountInfo<'info>;
 
-    fn run_unstake(ctx: &mut Context<Self>) -> Result<UnstakeResult> {
+    fn referrer(ctx: &mut Context<'_, '_, '_, 'info, Self>) -> Option<AccountInfo<'info>> {
+        ctx.remaining_accounts.first().map(|a| a.to_account_info())
+    }
+
+    fn run_unstake(ctx: &mut Context<'_, '_, '_, 'info, Self>) -> Result<UnstakeResult> {
         let stake_account_lamports = ctx.accounts.stake_account().to_account_info().lamports();
         let pool_sol_reserves_lamports = ctx.accounts.pool_sol_reserves().lamports();
 
@@ -100,11 +104,6 @@ where
             return Err(UnstakeError::NotEnoughLiquidity.into());
         }
 
-        // pay the unstaker from the pool reserves
-        let user_transfer_cpi_accs = system_program::Transfer {
-            from: ctx.accounts.pool_sol_reserves().to_account_info(),
-            to: ctx.accounts.destination_account_info(),
-        };
         let seeds: &[&[u8]] = &[
             &ctx.accounts.pool_account().key().to_bytes(),
             &[*ctx
@@ -112,6 +111,12 @@ where
                 .get("pool_sol_reserves")
                 .ok_or(UnstakeError::PdaBumpNotCached)?],
         ];
+
+        // pay the unstaker from the pool reserves
+        let user_transfer_cpi_accs = system_program::Transfer {
+            from: ctx.accounts.pool_sol_reserves().to_account_info(),
+            to: ctx.accounts.destination_account_info(),
+        };
         system_program::transfer(
             CpiContext::new_with_signer(
                 ctx.accounts.system_program().to_account_info(),
@@ -120,6 +125,37 @@ where
             ),
             lamports_to_unstaker,
         )?;
+
+        // further separate referrer fees and protocol fees
+        let lamports_to_protocol = match Self::referrer(ctx) {
+            None => protocol_fee_lamports,
+            Some(referrer) => {
+                let lamports_to_referrer = ctx
+                    .accounts
+                    .protocol_fee_account()
+                    .levy_referrer_fee(protocol_fee_lamports)
+                    .ok_or(UnstakeError::InternalError)?;
+                let lamports_to_protocol = protocol_fee_lamports
+                    .checked_sub(lamports_to_referrer)
+                    .ok_or(UnstakeError::InternalError)?;
+
+                // pay the referrer fees from the pool reserves
+                let referrer_fee_transfer_cpi_accs = system_program::Transfer {
+                    from: ctx.accounts.pool_sol_reserves().to_account_info(),
+                    to: referrer,
+                };
+                system_program::transfer(
+                    CpiContext::new_with_signer(
+                        ctx.accounts.system_program().to_account_info(),
+                        referrer_fee_transfer_cpi_accs,
+                        &[seeds],
+                    ),
+                    lamports_to_referrer,
+                )?;
+
+                lamports_to_protocol
+            }
+        };
 
         // pay the protocol fees from the pool reserves
         let protocol_fee_transfer_cpi_accs = system_program::Transfer {
@@ -132,7 +168,7 @@ where
                 protocol_fee_transfer_cpi_accs,
                 &[seeds],
             ),
-            protocol_fee_lamports,
+            lamports_to_protocol,
         )?;
 
         // populate the stake_account_record
