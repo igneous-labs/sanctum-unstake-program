@@ -638,7 +638,7 @@ describe("ts bindings", () => {
         airdrop(program.provider.connection, referrer),
       ]);
       await Promise.all(
-        stakeAccKeypairs.map((stakeAccKeypair, i) =>
+        stakeAccKeypairs.map((stakeAccKeypair) =>
           createDelegateStakeTx({
             connection: provider.connection,
             stakeAccount: stakeAccKeypair.publicKey,
