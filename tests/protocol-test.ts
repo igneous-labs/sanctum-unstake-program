@@ -173,6 +173,58 @@ describe("protocol-level", () => {
       });
   });
 
+  it("it sets protocol fee ratio and referrer fee ratio", async () => {
+    const currentProtocolFee = await program.account.protocolFee.fetch(
+      protocolFeeAccount
+    );
+    const newProtocolFee = {
+      ...currentProtocolFee,
+      feeRatio: {
+        num: new BN(20),
+        denom: new BN(100),
+      },
+      referrerFeeRatio: {
+        num: new BN(1),
+        denom: new BN(3),
+      },
+    };
+    const tx = await program.methods
+      .setProtocolFee(newProtocolFee)
+      .accounts({
+        authority: protocolFeeAuthorityKeypair.publicKey,
+        protocolFeeAccount,
+      })
+      .transaction();
+
+    await sendAndConfirmTransaction(
+      program.provider.connection,
+      tx,
+      [protocolFeeAuthorityKeypair],
+      { skipPreflight: true }
+    );
+
+    await program.account.protocolFee
+      .fetch(protocolFeeAccount)
+      .then(({ destination, authority, feeRatio, referrerFeeRatio }) => {
+        expect(destination.equals(protocolFeeDestinationKeypair.publicKey)).to
+          .be.true;
+        expect(authority.equals(protocolFeeAuthorityKeypair.publicKey)).to.be
+          .true;
+        expect(feeRatio.num.toNumber()).to.eq(
+          newProtocolFee.feeRatio.num.toNumber()
+        );
+        expect(feeRatio.denom.toNumber()).to.eq(
+          newProtocolFee.feeRatio.denom.toNumber()
+        );
+        expect(referrerFeeRatio.num.toNumber()).to.eq(
+          newProtocolFee.referrerFeeRatio.num.toNumber()
+        );
+        expect(referrerFeeRatio.denom.toNumber()).to.eq(
+          newProtocolFee.referrerFeeRatio.denom.toNumber()
+        );
+      });
+  });
+
   after(async () => {
     const { destination } = await program.account.protocolFee.fetch(
       protocolFeeAccount
