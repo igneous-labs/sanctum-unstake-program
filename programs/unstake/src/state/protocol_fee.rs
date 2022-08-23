@@ -2,7 +2,7 @@ use anchor_lang::prelude::Pubkey;
 
 use anchor_lang::prelude::*;
 
-use crate::rational::Rational;
+use crate::{errors::UnstakeError, rational::Rational};
 
 pub const PROTOCOL_FEE_SEED: &[u8] = b"protocol-fee";
 
@@ -25,9 +25,9 @@ pub struct ProtocolFee {
 mod default_destination {
     use anchor_lang::declare_id;
 
-    // devnet upgrade authority's non-ATA wSOL account
+    // the keypair used for automated testing on localnet
     #[cfg(feature = "local-testing")]
-    declare_id!("J6T4Cwe5PkiRidMJMap4f8EBd5kiQ6JrrwF5XsXzFy8t");
+    declare_id!("6h64tjnsZDcvEta2uZvf2CqoPLf2Q8h79ES74ghjNk8D");
 
     // Socean DAO's wSOL token account
     #[cfg(not(feature = "local-testing"))]
@@ -37,9 +37,9 @@ mod default_destination {
 mod default_authority {
     use anchor_lang::declare_id;
 
-    // devnet upgrade authority
+    // the keypair used for automated testing on localnet
     #[cfg(feature = "local-testing")]
-    declare_id!("2NB9TSbKzqEHY9kUuTpnjS3VrsZhEooAWADLHe3WeL3E");
+    declare_id!("Cp4BZrED56eBpv5c6zdJmoCiKMrYDURjAWU8KeQhYjM8");
 
     // LEFT CURVE DAO's unstake program upgrade authority
     #[cfg(not(feature = "local-testing"))]
@@ -60,6 +60,18 @@ impl Default for ProtocolFee {
 }
 
 impl ProtocolFee {
+    pub fn validate(&self) -> Result<()> {
+        if !self.fee_ratio.validate()
+            || !self.fee_ratio.is_lte_one()
+            || !self.referrer_fee_ratio.validate()
+            || !self.referrer_fee_ratio.is_lte_one()
+        {
+            return Err(UnstakeError::InvalidFee.into());
+        }
+
+        Ok(())
+    }
+
     /// Levies the protocol fee on a given fee amount
     ///
     /// Returns the number of lamports to be levied as the protocol fee

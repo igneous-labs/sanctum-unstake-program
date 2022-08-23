@@ -24,6 +24,11 @@ pub mod unstake {
         InitProtocolFee::run(ctx)
     }
 
+    pub fn set_protocol_fee(ctx: Context<SetProtocolFee>, protocol_fee: ProtocolFee) -> Result<()> {
+        SetProtocolFee::validate(&protocol_fee)?;
+        SetProtocolFee::run(ctx, protocol_fee)
+    }
+
     pub fn create_pool(ctx: Context<CreatePool>, fee: Fee) -> Result<()> {
         CreatePool::validate(&fee)?;
         CreatePool::run(ctx, fee)
