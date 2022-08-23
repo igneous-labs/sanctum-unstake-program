@@ -39,7 +39,7 @@ pub struct UnstakeWsol<'info> {
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
-    /// Solana native wallet pubkey to receive the unstaked amount
+    /// wSOL token account to receive the unstaked amount
     #[account(
         mut,
         constraint = destination.mint == spl_token::native_mint::id() @ UnstakeError::DestinationNotWSol
@@ -85,7 +85,7 @@ pub struct UnstakeWsol<'info> {
     /// destination specified in `protocol_fee_account`
     #[account(
         mut,
-        address = protocol_fee_account.destination @ UnstakeError::WrongProtocolFee,
+        address = protocol_fee_account.destination @ UnstakeError::WrongProtocolFeeDestination,
     )]
     pub protocol_fee_destination: AccountInfo<'info>,
 
@@ -102,7 +102,6 @@ impl<'info> UnstakeWsol<'info> {
     pub fn run(mut ctx: Context<'_, '_, '_, 'info, Self>) -> Result<()> {
         let unstake_result = Self::run_unstake(&mut ctx)?;
 
-        // sync native
         token::sync_native(CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             SyncNative {

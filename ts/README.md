@@ -150,7 +150,11 @@ Estimate fees for an unstake amount manually using the fetched fee params. This 
 
 ```ts
 import BN from "bn.js";
-import { applyFee, findPoolSolReserves } from "@unstake-it/sol";
+import {
+  applyFee,
+  applyProtocolFee,
+  findPoolSolReserves,
+} from "@unstake-it/sol";
 
 const plannedUnstakeAmountLamports = new BN(1_000_000_000);
 
@@ -170,6 +174,12 @@ const estFeeDeductedLamports = applyFee(FETCHED_FEE_DATA, {
   solReservesLamports: new BN(availableLiquidityLamports),
   stakeAccountLamports: plannedUnstakeAmountLamports,
 });
+
+// calculate the part of the fees that is levied as protocol and referral fees
+const { protocolLamports, referrerLamports } = applyProtocolFee(
+  FETCHED_PROTOCOL_FEE_DATA,
+  estFeeDeductedLamports
+);
 ```
 
 ### Unstake
@@ -194,6 +204,13 @@ const tx = await unstakeTx(UNSTAKE_PROGRAM, {
   poolAccount: UNSTAKE_POOL_ADDRESS,
   unstaker: UNSTAKE_PROGRAM.provider.wallet.publicKey,
   protocolFee: PROTOCOL_FEE,
+
+  // You can optionally add a `referrer` pubkey
+  // to receive referral bonuses in SOL.
+  // You can use `applyProtocolFee()` to calculate how much
+  // this amount will be for a given unstake fees amount.
+  // (see example in #estimate-fees above)
+  referrer: MY_SOL_ACC_PUBKEY,
 });
 
 // deactivateStakeAccount is a permissionless crank instruction that allows

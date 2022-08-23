@@ -1,7 +1,12 @@
 import { Program } from "@project-serum/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import { Unstake } from "./idl/idl";
-import { UnstakeAccounts, unstakeTx } from "./transactions";
+import {
+  UnstakeAccounts,
+  unstakeTx,
+  UnstakeWSolAccounts,
+  unstakeWsolTx,
+} from "./transactions";
 
 /**
  * Previews the amount of SOL to be received from unstaking a given stake account
@@ -12,14 +17,32 @@ import { UnstakeAccounts, unstakeTx } from "./transactions";
  * @throws the `TransactionError` thrown by the simulated tx if it fails
  * @throws generic `Error` if unable to retrieve simulation results but no `TransactionError` thrown
  */
-export async function previewUnstake(
+export function previewUnstake(
   program: Program<Unstake>,
   accounts: UnstakeAccounts
+): Promise<number> {
+  return previewUnstakeInner(program, accounts, unstakeTx);
+}
+
+export async function previewUnstakeWsol(
+  program: Program<Unstake>,
+  accounts: UnstakeWSolAccounts
+): Promise<number> {
+  return previewUnstakeInner(program, accounts, unstakeWsolTx);
+}
+
+async function previewUnstakeInner(
+  program: Program<Unstake>,
+  accounts: UnstakeAccounts | UnstakeWSolAccounts,
+  unstakeTxGen: (
+    program: Program<Unstake>,
+    accounts: UnstakeAccounts | UnstakeWSolAccounts
+  ) => Promise<Transaction>
 ): Promise<number> {
   const payer = accounts.payer ?? accounts.unstaker;
   const destination = accounts.destination ?? accounts.unstaker;
   const destinationPk = new PublicKey(destination);
-  const tx = await unstakeTx(program, accounts);
+  const tx = await unstakeTxGen(program, accounts);
   tx.feePayer = new PublicKey(payer);
   const [
     destinationPreLamports,

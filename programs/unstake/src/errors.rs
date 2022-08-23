@@ -37,5 +37,5 @@ pub enum UnstakeError {
     DestinationNotWSol, // 0x177a
 
     #[msg("Wrong protocol fee destination account")]
-    WrongProtocolFee, // 0x177b
+    WrongProtocolFeeDestination, // 0x177b
 }

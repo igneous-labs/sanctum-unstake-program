@@ -79,7 +79,7 @@ pub struct Unstake<'info> {
     /// destination specified in `protocol_fee_account`
     #[account(
         mut,
-        address = protocol_fee_account.destination @ UnstakeError::WrongProtocolFee,
+        address = protocol_fee_account.destination @ UnstakeError::WrongProtocolFeeDestination,
     )]
     pub protocol_fee_destination: AccountInfo<'info>,
 

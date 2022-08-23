@@ -42,6 +42,7 @@ where
 
     fn protocol_fee_destination(&self) -> &AccountInfo<'info>;
 
+    /// referrer account to pay referrer fees to
     fn referrer(ctx: &mut Context<'_, '_, '_, 'info, Self>) -> Option<AccountInfo<'info>> {
         ctx.remaining_accounts.first().map(|a| a.to_account_info())
     }
