@@ -36,6 +36,8 @@ import {
   Unstake,
   ProtocolFeeAccount,
   findProtocolFeeAccount,
+  applyProtocolFee,
+  previewUnstakeWsol,
 } from "../ts/src";
 import {
   airdrop,
@@ -63,7 +65,8 @@ describe("ts bindings", () => {
   let protocolFeeAddr = null as PublicKey;
   let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
 
-  const liquidityAmount = new BN(0.1 * LAMPORTS_PER_SOL);
+  const liquidityAmountSol = 0.1;
+  const liquidityAmountLamports = new BN(liquidityAmountSol * LAMPORTS_PER_SOL);
 
   before(async () => {
     console.log("airdropping to payer and lper");
@@ -84,7 +87,7 @@ describe("ts bindings", () => {
       publicKey: protocolFeeAddr,
       account: await program.account.protocolFee.fetch(protocolFeeAddr),
     };
-    console.log("setting up pool");
+    console.log("setting up zero-fee pool");
     await program.methods
       .createPool({
         fee: {
@@ -116,7 +119,7 @@ describe("ts bindings", () => {
       )
     ).address;
     await program.methods
-      .addLiquidity(liquidityAmount)
+      .addLiquidity(liquidityAmountLamports)
       .accounts({
         from: lperKeypair.publicKey,
         poolAccount: poolKeypair.publicKey,
@@ -167,10 +170,12 @@ describe("ts bindings", () => {
           stakePubkey: stakeAccNoRecordKeypair.publicKey,
         })
       );
-      await sendAndConfirmTransaction(provider.connection, tx, [
-        payerKeypair,
-        stakeAccNoRecordKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        provider.connection,
+        tx,
+        [payerKeypair, stakeAccNoRecordKeypair],
+        { skipPreflight: true }
+      );
       const fetched = await fetchLiquidityPoolStakeAccounts(
         program,
         poolKeypair.publicKey
@@ -187,10 +192,12 @@ describe("ts bindings", () => {
         stakeAccount: stakeAccKeypair.publicKey,
         payer: payerKeypair.publicKey,
       });
-      await sendAndConfirmTransaction(provider.connection, tx, [
-        payerKeypair,
-        stakeAccKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        provider.connection,
+        tx,
+        [payerKeypair, stakeAccKeypair],
+        { skipPreflight: true }
+      );
       console.log("awaiting epoch to pass");
       await waitForEpochToPass(provider.connection);
       await program.methods
@@ -272,10 +279,12 @@ describe("ts bindings", () => {
         stakeAccount: stakeAccKeypair.publicKey,
         payer: unstakerKeypair.publicKey,
       }).then((tx) =>
-        sendAndConfirmTransaction(provider.connection, tx, [
-          unstakerKeypair,
-          stakeAccKeypair,
-        ])
+        sendAndConfirmTransaction(
+          provider.connection,
+          tx,
+          [unstakerKeypair, stakeAccKeypair],
+          { skipPreflight: true }
+        )
       );
       unstakerWSolAccount = await createAssociatedTokenAccount(
         provider.connection,
@@ -534,6 +543,33 @@ describe("ts bindings", () => {
         expect(tx.instructions[0].keys.length).to.eq(expectedAccountsLength);
       });
 
+      it("it generates Unstake tx with referrer", async () => {
+        const expectedReferrer = Keypair.generate().publicKey;
+        const expectedAccountsLength =
+          program.idl.instructions.find((ix) => ix.name === "unstake").accounts
+            .length + 1;
+
+        const tx = await unstakeTx(program, {
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
+          unstaker: unstakerKeypair.publicKey,
+          protocolFee,
+          referrer: expectedReferrer,
+        });
+        expect(tx instanceof Transaction).to.be.true;
+        expect(tx.instructions.length).to.eq(1);
+        expect(tx.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        const keys = tx.instructions[0].keys;
+        expect(keys.length).to.eq(expectedAccountsLength);
+        const referrerMeta = keys[keys.length - 1];
+        expect(referrerMeta.pubkey.toString()).to.eq(
+          expectedReferrer.toString()
+        );
+        expect(referrerMeta.isSigner).to.be.false;
+        expect(referrerMeta.isWritable).to.be.true;
+      });
+
       it("it generates UnstakeWsol tx", async () => {
         const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "unstakeWsol"
@@ -551,16 +587,44 @@ describe("ts bindings", () => {
           .true;
         expect(tx.instructions[0].keys.length).to.eq(expectedAccountsLength);
       });
+
+      it("it generates UnstakeWsol tx with referrer", async () => {
+        const expectedReferrer = Keypair.generate().publicKey;
+        const expectedAccountsLength =
+          program.idl.instructions.find((ix) => ix.name === "unstakeWsol")
+            .accounts.length + 1;
+
+        const tx = await unstakeWsolTx(program, {
+          poolAccount: poolKeypair.publicKey,
+          stakeAccount: stakeAccKeypair.publicKey,
+          unstaker: unstakerKeypair.publicKey,
+          protocolFee,
+          referrer: expectedReferrer,
+        });
+        expect(tx instanceof Transaction).to.be.true;
+        expect(tx.instructions.length).to.eq(1);
+        expect(tx.instructions[0].programId.equals(program.programId)).to.be
+          .true;
+        const keys = tx.instructions[0].keys;
+        expect(keys.length).to.eq(expectedAccountsLength);
+        const referrerMeta = keys[keys.length - 1];
+        expect(referrerMeta.pubkey.toString()).to.eq(
+          expectedReferrer.toString()
+        );
+        expect(referrerMeta.isSigner).to.be.false;
+        expect(referrerMeta.isWritable).to.be.true;
+      });
     });
   });
 
   describe("previewUnstake, unstakeTx, unstakeWsolTx", () => {
-    const testCases = 5;
+    const testCases = 7;
     const stakeAccKeypairs = [...Array(testCases).keys()].map(() =>
       Keypair.generate()
     );
     const unstakerKeypair = Keypair.generate();
     const destinationKeypair = Keypair.generate();
+    const referrer = Keypair.generate().publicKey;
     let unstakerWSol = null as PublicKey;
 
     let unstakerPayerDestination: number = 0;
@@ -569,7 +633,10 @@ describe("ts bindings", () => {
     let unstakerNotPayerNotDestination: number = 0;
 
     before(async () => {
-      await airdrop(program.provider.connection, unstakerKeypair.publicKey);
+      await Promise.all([
+        airdrop(program.provider.connection, unstakerKeypair.publicKey),
+        airdrop(program.provider.connection, referrer),
+      ]);
       await Promise.all(
         stakeAccKeypairs.map((stakeAccKeypair) =>
           createDelegateStakeTx({
@@ -577,10 +644,12 @@ describe("ts bindings", () => {
             stakeAccount: stakeAccKeypair.publicKey,
             payer: unstakerKeypair.publicKey,
           }).then((tx) =>
-            sendAndConfirmTransaction(provider.connection, tx, [
-              unstakerKeypair,
-              stakeAccKeypair,
-            ])
+            sendAndConfirmTransaction(
+              provider.connection,
+              tx,
+              [unstakerKeypair, stakeAccKeypair],
+              { skipPreflight: true }
+            )
           )
         )
       );
@@ -607,9 +676,12 @@ describe("ts bindings", () => {
         unstakerKeypair.publicKey
       );
       const tx = await unstakeTx(program, accounts);
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [unstakerKeypair],
+        { skipPreflight: true }
+      );
       const unstakerPost = await program.provider.connection.getBalance(
         unstakerKeypair.publicKey
       );
@@ -632,10 +704,12 @@ describe("ts bindings", () => {
       );
       const tx = await unstakeTx(program, accounts);
       tx.feePayer = payerKeypair.publicKey;
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        payerKeypair,
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [payerKeypair, unstakerKeypair],
+        { skipPreflight: true }
+      );
       const unstakerPost = await program.provider.connection.getBalance(
         unstakerKeypair.publicKey
       );
@@ -658,9 +732,12 @@ describe("ts bindings", () => {
         destinationKeypair.publicKey
       );
       const tx = await unstakeTx(program, accounts);
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [unstakerKeypair],
+        { skipPreflight: true }
+      );
       const destinationPost = await program.provider.connection.getBalance(
         destinationKeypair.publicKey
       );
@@ -687,10 +764,12 @@ describe("ts bindings", () => {
       );
       const tx = await unstakeTx(program, accounts);
       tx.feePayer = payerKeypair.publicKey;
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        payerKeypair,
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [payerKeypair, unstakerKeypair],
+        { skipPreflight: true }
+      );
       const destinationPost = await program.provider.connection.getBalance(
         destinationKeypair.publicKey
       );
@@ -717,15 +796,132 @@ describe("ts bindings", () => {
         await getAccount(provider.connection, unstakerWSol)
       ).amount;
       const tx = await unstakeWsolTx(program, accounts);
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [unstakerKeypair],
+        { skipPreflight: true }
+      );
       const destinationPost = (
         await getAccount(provider.connection, unstakerWSol)
       ).amount;
       // wSOL account doesnt pay for fees, so should be the same as unstakerNotPayerNotDestination
       expect(unstakerNotPayerNotDestination).to.be.eq(
         Number(destinationPost - destinationPre)
+      );
+    });
+
+    // ideally this + 2 referrer tests below should be separate
+    // but wanna save one epoch's worth of time
+    it("set fee to non-zero", async () => {
+      const tx = await setFeeTx(
+        program,
+        {
+          fee: {
+            flat: {
+              ratio: {
+                // 3 bps
+                num: new BN(3),
+                denom: new BN(10000),
+              },
+            },
+          },
+        },
+        {
+          poolAccount: poolKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+        }
+      );
+      await sendAndConfirmTransaction(provider.connection, tx, [payerKeypair], {
+        skipPreflight: true,
+      });
+    });
+
+    it("unstake with referrer", async () => {
+      const stakeAccKeypair = stakeAccKeypairs[5];
+      const stakeAccBalance = await provider.connection.getBalance(
+        stakeAccKeypair.publicKey
+      );
+      const accounts = {
+        poolAccount: poolKeypair.publicKey,
+        stakeAccount: stakeAccKeypair.publicKey,
+        unstaker: unstakerKeypair.publicKey,
+        payer: payerKeypair.publicKey,
+        destination: unstakerKeypair.publicKey,
+        protocolFee,
+        referrer,
+      };
+      const expectedReceive = await previewUnstake(program, accounts);
+      const expectedFee = stakeAccBalance - expectedReceive;
+      const { referrerLamports: expectedReferralBonus } = applyProtocolFee(
+        protocolFee.account,
+        new BN(expectedFee)
+      );
+      const destinationPre = await provider.connection.getBalance(
+        unstakerKeypair.publicKey
+      );
+      const referrerPre = await provider.connection.getBalance(referrer);
+      const tx = await unstakeTx(program, accounts);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [payerKeypair, unstakerKeypair],
+        { skipPreflight: true }
+      );
+      const destinationPost = await provider.connection.getBalance(
+        unstakerKeypair.publicKey
+      );
+      const referrerPost = await provider.connection.getBalance(referrer);
+      expect(expectedReceive).to.be.eq(
+        Number(destinationPost - destinationPre)
+      );
+      expect(expectedReferralBonus.toNumber()).to.be.gt(0);
+      expect(expectedReferralBonus.toNumber()).to.be.eq(
+        referrerPost - referrerPre
+      );
+    });
+
+    it("unstake wSOL with referrer", async () => {
+      const stakeAccKeypair = stakeAccKeypairs[6];
+      const stakeAccBalance = await provider.connection.getBalance(
+        stakeAccKeypair.publicKey
+      );
+      const accounts = {
+        poolAccount: poolKeypair.publicKey,
+        stakeAccount: stakeAccKeypair.publicKey,
+        unstaker: unstakerKeypair.publicKey,
+        payer: unstakerKeypair.publicKey,
+        destination: unstakerWSol,
+        protocolFee,
+        referrer,
+      };
+      const expectedReceive = await previewUnstakeWsol(program, accounts);
+      const expectedFee = stakeAccBalance - expectedReceive;
+      const { referrerLamports: expectedReferralBonus } = applyProtocolFee(
+        protocolFee.account,
+        new BN(expectedFee)
+      );
+      const destinationPre = (
+        await getAccount(provider.connection, unstakerWSol)
+      ).amount;
+      const referrerPre = await provider.connection.getBalance(referrer);
+      const tx = await unstakeWsolTx(program, accounts);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [unstakerKeypair],
+        { skipPreflight: true }
+      );
+      const destinationPost = (
+        await getAccount(provider.connection, unstakerWSol)
+      ).amount;
+      const referrerPost = await provider.connection.getBalance(referrer);
+      expect(expectedReceive).to.be.eq(
+        Number(destinationPost - destinationPre)
+      );
+      expect(expectedReferralBonus.toNumber()).to.be.gt(0);
+      expect(expectedReferralBonus.toNumber()).to.be.eq(
+        referrerPost - referrerPre
       );
     });
   });

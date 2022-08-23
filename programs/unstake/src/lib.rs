@@ -59,11 +59,11 @@ pub mod unstake {
         ReclaimStakeAccount::run(ctx)
     }
 
-    pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
+    pub fn unstake<'info>(ctx: Context<'_, '_, '_, 'info, Unstake<'info>>) -> Result<()> {
         Unstake::run(ctx)
     }
 
-    pub fn unstake_wsol(ctx: Context<UnstakeWsol>) -> Result<()> {
+    pub fn unstake_wsol<'info>(ctx: Context<'_, '_, '_, 'info, UnstakeWsol<'info>>) -> Result<()> {
         UnstakeWsol::run(ctx)
     }
 }

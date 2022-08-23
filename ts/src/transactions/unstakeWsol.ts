@@ -40,6 +40,13 @@ export type UnstakeWSolAccounts = {
   protocolFee: ProgramAccount<ProtocolFeeAccount>;
 
   /**
+   * The referrer for this unstake.
+   * SOL is transferred directly to this account. Please make sure
+   * that this is already initialized and rent-exempt
+   */
+  referrer?: Address;
+
+  /**
    * The SOL account paying for the transaction and rent.
    * Defaults to `unstaker` if unspecified
    */
@@ -70,6 +77,7 @@ export async function unstakeWsolTx(
       publicKey: protocolFeeAccount,
       account: { destination: protocolFeeDestination },
     },
+    referrer: referrerOption,
   }: UnstakeWSolAccounts
 ): Promise<Transaction> {
   const poolAccountPk = new PublicKey(poolAccount);
@@ -95,22 +103,31 @@ export async function unstakeWsolTx(
     stakeAccountPk
   );
 
-  return program.methods
-    .unstakeWsol()
-    .accounts({
-      payer,
-      unstaker,
-      stakeAccount,
-      destination,
-      poolAccount,
-      poolSolReserves,
-      feeAccount,
-      stakeAccountRecordAccount,
-      protocolFeeAccount,
-      protocolFeeDestination,
-      clock: SYSVAR_CLOCK_PUBKEY,
-      stakeProgram: StakeProgram.programId,
-      tokenProgram: TOKEN_PROGRAM_ID,
-    })
-    .transaction();
+  let builder = program.methods.unstakeWsol().accounts({
+    payer,
+    unstaker,
+    stakeAccount,
+    destination,
+    poolAccount,
+    poolSolReserves,
+    feeAccount,
+    stakeAccountRecordAccount,
+    protocolFeeAccount,
+    protocolFeeDestination,
+    clock: SYSVAR_CLOCK_PUBKEY,
+    stakeProgram: StakeProgram.programId,
+    tokenProgram: TOKEN_PROGRAM_ID,
+  });
+
+  if (referrerOption) {
+    builder = builder.remainingAccounts([
+      {
+        pubkey: new PublicKey(referrerOption),
+        isSigner: false,
+        isWritable: true,
+      },
+    ]);
+  }
+
+  return builder.transaction();
 }

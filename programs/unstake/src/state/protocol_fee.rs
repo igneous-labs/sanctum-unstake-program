@@ -82,4 +82,15 @@ impl ProtocolFee {
     pub fn levy(&self, fee_lamports: u64) -> Option<u64> {
         self.fee_ratio.floor_mul(fee_lamports)
     }
+
+    /// Levies the referrer fee on a given protocol fee amount
+    ///
+    /// Returns the number of lamports to be levied as the referrer fee
+    /// and to subtract from `protocol_fee_lamports`
+    ///
+    /// Invariants:
+    /// - return <= `protocol_fee_lamports`
+    pub fn levy_referrer_fee(&self, protocol_fee_lamports: u64) -> Option<u64> {
+        self.referrer_fee_ratio.floor_mul(protocol_fee_lamports)
+    }
 }
