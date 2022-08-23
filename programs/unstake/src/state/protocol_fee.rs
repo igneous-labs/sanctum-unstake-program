@@ -68,6 +68,6 @@ impl ProtocolFee {
     /// Invariants:
     /// - return <= `fee_lamports`
     pub fn levy(&self, fee_lamports: u64) -> Option<u64> {
-        self.fee_ratio.apply_floor(fee_lamports)
+        self.fee_ratio.floor_mul(fee_lamports)
     }
 }

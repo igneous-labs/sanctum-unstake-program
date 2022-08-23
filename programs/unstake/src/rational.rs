@@ -23,7 +23,7 @@ impl Rational {
         self.num <= self.denom
     }
 
-    pub fn apply_floor(&self, value: u64) -> Option<u64> {
+    pub fn floor_mul(&self, value: u64) -> Option<u64> {
         u128::from(value)
             .checked_mul(self.num.into())
             .and_then(|product| product.checked_div(self.denom.into()))
