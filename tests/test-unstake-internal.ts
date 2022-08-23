@@ -22,8 +22,10 @@ import {
   Fee,
   findPoolFeeAccount,
   findPoolSolReserves,
+  findProtocolFeeAccount,
   findStakeAccountRecordAccount,
   LiquidityLinearFeeInner,
+  ProtocolFeeAccount,
 } from "../ts/src";
 import { Unstake } from "../target/types/unstake";
 import {
@@ -53,9 +55,16 @@ describe("internals", () => {
   let [poolSolReserves] = [null as PublicKey, 0];
   let [feeAccount] = [null as PublicKey, 0];
   let lperAta = null as PublicKey;
+  let protocolFeeAddr = null as PublicKey;
+  let protocolFee = null as ProtocolFeeAccount;
+  let protocolFeeDestination = null as PublicKey;
 
   before(async () => {
-    console.log("airdropping to payer and lper");
+    [protocolFeeAddr] = await findProtocolFeeAccount(program.programId);
+    protocolFee = await program.account.protocolFee.fetch(protocolFeeAddr);
+    protocolFeeDestination = protocolFee.destination;
+
+    console.log("airdropping to payer, lper and protocolFeeDestination");
     await Promise.all([
       airdrop(provider.connection, payerKeypair.publicKey),
       airdrop(provider.connection, lperKeypair.publicKey),
@@ -824,6 +833,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
           })
@@ -853,6 +864,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -883,6 +896,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
           })
@@ -912,6 +927,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -942,6 +959,8 @@ describe("internals", () => {
             poolSolReserves,
             feeAccount,
             stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination,
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -953,6 +972,69 @@ describe("internals", () => {
           6010,
           "Destination token account is not a wrapped SOL account"
         )
+      );
+    });
+
+    it("it rejects to unstake wrong protocol fee destination", async () => {
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        flatFeeStakeAcc.publicKey
+      );
+
+      await expect(
+        program.methods
+          .unstake()
+          .accounts({
+            payer: payerKeypair.publicKey,
+            unstaker: flatFeeUnstaker.publicKey,
+            stakeAccount: flatFeeStakeAcc.publicKey,
+            destination: flatFeeUnstaker.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            feeAccount,
+            stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination: Keypair.generate().publicKey,
+            clock: SYSVAR_CLOCK_PUBKEY,
+            stakeProgram: StakeProgram.programId,
+          })
+          .signers([payerKeypair, flatFeeUnstaker])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(6011, "Wrong protocol fee destination account")
+      );
+    });
+
+    it("it rejects to unstakeWsol wrong protocol fee destination", async () => {
+      const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
+        program.programId,
+        poolKeypair.publicKey,
+        flatFeeWSolStakeAcc.publicKey
+      );
+
+      await expect(
+        program.methods
+          .unstakeWsol()
+          .accounts({
+            payer: payerKeypair.publicKey,
+            unstaker: flatFeeWSolUnstaker.publicKey,
+            stakeAccount: flatFeeWSolStakeAcc.publicKey,
+            destination: flatFeeWSolUnstakerWSolAcc,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            feeAccount,
+            stakeAccountRecordAccount,
+            protocolFeeAccount: protocolFeeAddr,
+            protocolFeeDestination: Keypair.generate().publicKey,
+            clock: SYSVAR_CLOCK_PUBKEY,
+            stakeProgram: StakeProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([payerKeypair, flatFeeWSolUnstaker])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(6011, "Wrong protocol fee destination account")
       );
     });
 
@@ -982,6 +1064,9 @@ describe("internals", () => {
       const unstakerBalancePre = await provider.connection.getBalance(
         flatFeeUnstaker.publicKey
       );
+      const protocolFeeDestBalancePre = await provider.connection.getBalance(
+        protocolFeeDestination
+      );
 
       const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
         program.programId,
@@ -1000,6 +1085,8 @@ describe("internals", () => {
           poolSolReserves,
           feeAccount,
           stakeAccountRecordAccount,
+          protocolFeeAccount: protocolFeeAddr,
+          protocolFeeDestination,
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
         })
@@ -1008,6 +1095,9 @@ describe("internals", () => {
 
       const unstakerBalancePost = await provider.connection.getBalance(
         flatFeeUnstaker.publicKey
+      );
+      const protocolFeeDestBalancePost = await provider.connection.getBalance(
+        protocolFeeDestination
       );
 
       const flatFeeRatio = await program.account.fee.fetch(feeAccount).then(
@@ -1021,10 +1111,17 @@ describe("internals", () => {
       const feeLamportsExpected = Math.ceil(
         stakeAccountLamports * flatFeeRatio
       );
+      const protocolFeeLamportsExpected = Math.floor(
+        (protocolFee.feeRatio.num.toNumber() * feeLamportsExpected) /
+          protocolFee.feeRatio.denom.toNumber()
+      );
       const feeLamportsCharged =
         stakeAccountLamports - (unstakerBalancePost - unstakerBalancePre);
+      const protocolFeeLamportsCharged =
+        protocolFeeDestBalancePost - protocolFeeDestBalancePre;
 
       expect(feeLamportsCharged).to.eql(feeLamportsExpected);
+      expect(protocolFeeLamportsExpected).to.eql(protocolFeeLamportsCharged);
     });
 
     it("it charges Flat fee on unstakeWsol", async () => {
@@ -1053,6 +1150,9 @@ describe("internals", () => {
       const unstakerWSolBalancePre = (
         await getAccount(provider.connection, flatFeeWSolUnstakerWSolAcc)
       ).amount;
+      const protocolFeeDestBalancePre = await provider.connection.getBalance(
+        protocolFeeDestination
+      );
 
       const [stakeAccountRecordAccount] = await findStakeAccountRecordAccount(
         program.programId,
@@ -1071,6 +1171,8 @@ describe("internals", () => {
           poolSolReserves,
           feeAccount,
           stakeAccountRecordAccount,
+          protocolFeeAccount: protocolFeeAddr,
+          protocolFeeDestination,
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -1081,6 +1183,9 @@ describe("internals", () => {
       const unstakerWSolBalancePost = (
         await getAccount(provider.connection, flatFeeWSolUnstakerWSolAcc)
       ).amount;
+      const protocolFeeDestBalancePost = await provider.connection.getBalance(
+        protocolFeeDestination
+      );
 
       const flatFeeRatio = await program.account.fee.fetch(feeAccount).then(
         ({
@@ -1093,11 +1198,18 @@ describe("internals", () => {
       const feeLamportsExpected = Math.ceil(
         stakeAccountLamports * flatFeeRatio
       );
+      const protocolFeeLamportsExpected = Math.floor(
+        (protocolFee.feeRatio.num.toNumber() * feeLamportsExpected) /
+          protocolFee.feeRatio.denom.toNumber()
+      );
       const feeLamportsCharged =
         stakeAccountLamports -
         (Number(unstakerWSolBalancePost) - Number(unstakerWSolBalancePre));
+      const protocolFeeLamportsCharged =
+        protocolFeeDestBalancePost - protocolFeeDestBalancePre;
 
       expect(feeLamportsCharged).to.eql(feeLamportsExpected);
+      expect(protocolFeeLamportsExpected).to.eql(protocolFeeLamportsCharged);
     });
 
     it("it charges LiquidityLinear fee on unstake", async () => {
@@ -1132,6 +1244,9 @@ describe("internals", () => {
       const unstakerBalancePre = await provider.connection.getBalance(
         liquidityLinearFeeUnstaker.publicKey
       );
+      const protocolFeeDestBalancePre = await provider.connection.getBalance(
+        protocolFeeDestination
+      );
       const { incomingStake: incomingStakePre } =
         await program.account.pool.fetch(poolKeypair.publicKey);
       const solReservesLamportsPre = await provider.connection.getBalance(
@@ -1155,6 +1270,8 @@ describe("internals", () => {
           poolSolReserves,
           feeAccount,
           stakeAccountRecordAccount,
+          protocolFeeAccount: protocolFeeAddr,
+          protocolFeeDestination,
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
         })
@@ -1163,6 +1280,9 @@ describe("internals", () => {
 
       const unstakerBalancePost = await provider.connection.getBalance(
         liquidityLinearFeeUnstaker.publicKey
+      );
+      const protocolFeeDestBalancePost = await provider.connection.getBalance(
+        protocolFeeDestination
       );
 
       // TODO: this depends on tsBindings (applyFee) being correct, should write less coupled tests
@@ -1196,8 +1316,14 @@ describe("internals", () => {
           ),
         ];
       });
+      const protocolFeeLamportsExpected = Math.floor(
+        (protocolFee.feeRatio.num.toNumber() * feeLamportsExpected) /
+          protocolFee.feeRatio.denom.toNumber()
+      );
       const feeLamportsCharged =
         stakeAccountLamports - (unstakerBalancePost - unstakerBalancePre);
+      const protocolFeeLamportsCharged =
+        protocolFeeDestBalancePost - protocolFeeDestBalancePre;
 
       expect(feeLamportsExpected).to.be.gt(0);
       expect(feeLamportsCharged).to.be.gt(0);
@@ -1205,6 +1331,7 @@ describe("internals", () => {
       expect(epsilon).to.be.below(EPSILON_UPPER_BOUND);
       expect(feeLamportsCharged).to.be.gt(minFeeLamportsExpected);
       expect(feeLamportsCharged).to.be.lt(maxFeeLamportsExpected);
+      expect(protocolFeeLamportsExpected).to.eql(protocolFeeLamportsCharged);
     });
 
     it("it charges LiquidityLinear fee on unstakeWsol", async () => {
@@ -1242,6 +1369,9 @@ describe("internals", () => {
           liquidityLinearFeeWSolUnstakerWSolAcc
         )
       ).amount;
+      const protocolFeeDestBalancePre = await provider.connection.getBalance(
+        protocolFeeDestination
+      );
 
       const { incomingStake: incomingStakePre } =
         await program.account.pool.fetch(poolKeypair.publicKey);
@@ -1266,6 +1396,8 @@ describe("internals", () => {
           poolSolReserves,
           feeAccount,
           stakeAccountRecordAccount,
+          protocolFeeAccount: protocolFeeAddr,
+          protocolFeeDestination,
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -1279,6 +1411,9 @@ describe("internals", () => {
           liquidityLinearFeeWSolUnstakerWSolAcc
         )
       ).amount;
+      const protocolFeeDestBalancePost = await provider.connection.getBalance(
+        protocolFeeDestination
+      );
 
       // TODO: this depends on tsBindings (applyFee) being correct, should write less coupled tests
       const [
@@ -1311,9 +1446,15 @@ describe("internals", () => {
           ),
         ];
       });
+      const protocolFeeLamportsExpected = Math.floor(
+        (protocolFee.feeRatio.num.toNumber() * feeLamportsExpected) /
+          protocolFee.feeRatio.denom.toNumber()
+      );
       const feeLamportsCharged =
         stakeAccountLamports -
         (Number(unstakerWSolBalancePost) - Number(unstakerWSolBalancePre));
+      const protocolFeeLamportsCharged =
+        protocolFeeDestBalancePost - protocolFeeDestBalancePre;
 
       expect(feeLamportsExpected).to.be.gt(0);
       expect(feeLamportsCharged).to.be.gt(0);
@@ -1321,6 +1462,7 @@ describe("internals", () => {
       expect(epsilon).to.be.below(EPSILON_UPPER_BOUND);
       expect(feeLamportsCharged).to.be.gt(minFeeLamportsExpected);
       expect(feeLamportsCharged).to.be.lt(maxFeeLamportsExpected);
+      expect(protocolFeeLamportsExpected).to.eql(protocolFeeLamportsCharged);
     });
   });
 });

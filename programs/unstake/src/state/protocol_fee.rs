@@ -71,4 +71,15 @@ impl ProtocolFee {
 
         Ok(())
     }
+
+    /// Levies the protocol fee on a given fee amount
+    ///
+    /// Returns the number of lamports to be levied as the protocol fee
+    /// and to subtract from `fee_lamports`
+    ///
+    /// Invariants:
+    /// - return <= `fee_lamports`
+    pub fn levy(&self, fee_lamports: u64) -> Option<u64> {
+        self.fee_ratio.floor_mul(fee_lamports)
+    }
 }

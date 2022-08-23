@@ -73,4 +73,16 @@ describe("protocol-level", () => {
       )
     ).to.be.eventually.rejected.and.satisfy(checkSystemError(0));
   });
+
+  after(async () => {
+    const { destination } = await program.account.protocolFee.fetch(
+      protocolFeeAccount
+    );
+    // airdrop to protocol fee destination so that we dont
+    // run into below rent-exempt-min errors
+    // when protocol fees transfers are small
+    // for the other tests
+    console.log("airdropping to protocol fee destination");
+    await airdrop(provider.connection, destination);
+  });
 });

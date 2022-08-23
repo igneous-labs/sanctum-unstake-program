@@ -20,8 +20,10 @@ import {
   Fee,
   findPoolFeeAccount,
   findPoolSolReserves,
+  findProtocolFeeAccount,
   findStakeAccountRecordAccount,
   LiquidityLinearFeeInner,
+  ProtocolFeeAccount,
 } from "../ts/src";
 import { Unstake } from "../target/types/unstake";
 import {
@@ -34,6 +36,7 @@ import {
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { getStakeAccount, stakeAccountState } from "@soceanfi/solana-stake-sdk";
+import { ProgramAccount } from "@project-serum/anchor";
 
 chaiUse(chaiAsPromised);
 
@@ -57,6 +60,8 @@ describe("integration", () => {
   let [feeAccount] = [null as PublicKey, 0];
   let lperAta = null as PublicKey;
   let unstakerWSol = null as PublicKey;
+  let protocolFeeAddr = null as PublicKey;
+  let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
 
   before(async () => {
     console.log("airdropping to payer, lper, and unstaker");
@@ -73,6 +78,11 @@ describe("integration", () => {
       program.programId,
       poolKeypair.publicKey
     );
+    [protocolFeeAddr] = await findProtocolFeeAccount(program.programId);
+    protocolFee = {
+      publicKey: protocolFeeAddr,
+      account: await program.account.protocolFee.fetch(protocolFeeAddr),
+    };
     console.log("creating a new pool");
     await program.methods
       .createPool({
@@ -181,6 +191,8 @@ describe("integration", () => {
         poolSolReserves,
         feeAccount,
         stakeAccountRecordAccount,
+        protocolFeeAccount: protocolFee.publicKey,
+        protocolFeeDestination: protocolFee.account.destination,
         clock: SYSVAR_CLOCK_PUBKEY,
         stakeProgram: StakeProgram.programId,
       })
@@ -278,6 +290,8 @@ describe("integration", () => {
         poolSolReserves,
         feeAccount,
         stakeAccountRecordAccount,
+        protocolFeeAccount: protocolFee.publicKey,
+        protocolFeeDestination: protocolFee.account.destination,
         clock: SYSVAR_CLOCK_PUBKEY,
         stakeProgram: StakeProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
