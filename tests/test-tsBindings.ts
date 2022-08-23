@@ -170,10 +170,12 @@ describe("ts bindings", () => {
           stakePubkey: stakeAccNoRecordKeypair.publicKey,
         })
       );
-      await sendAndConfirmTransaction(provider.connection, tx, [
-        payerKeypair,
-        stakeAccNoRecordKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        provider.connection,
+        tx,
+        [payerKeypair, stakeAccNoRecordKeypair],
+        { skipPreflight: true }
+      );
       const fetched = await fetchLiquidityPoolStakeAccounts(
         program,
         poolKeypair.publicKey
@@ -190,10 +192,12 @@ describe("ts bindings", () => {
         stakeAccount: stakeAccKeypair.publicKey,
         payer: payerKeypair.publicKey,
       });
-      await sendAndConfirmTransaction(provider.connection, tx, [
-        payerKeypair,
-        stakeAccKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        provider.connection,
+        tx,
+        [payerKeypair, stakeAccKeypair],
+        { skipPreflight: true }
+      );
       console.log("awaiting epoch to pass");
       await waitForEpochToPass(provider.connection);
       await program.methods
@@ -275,10 +279,12 @@ describe("ts bindings", () => {
         stakeAccount: stakeAccKeypair.publicKey,
         payer: unstakerKeypair.publicKey,
       }).then((tx) =>
-        sendAndConfirmTransaction(provider.connection, tx, [
-          unstakerKeypair,
-          stakeAccKeypair,
-        ])
+        sendAndConfirmTransaction(
+          provider.connection,
+          tx,
+          [unstakerKeypair, stakeAccKeypair],
+          { skipPreflight: true }
+        )
       );
       unstakerWSolAccount = await createAssociatedTokenAccount(
         provider.connection,
@@ -638,10 +644,12 @@ describe("ts bindings", () => {
             stakeAccount: stakeAccKeypair.publicKey,
             payer: unstakerKeypair.publicKey,
           }).then((tx) =>
-            sendAndConfirmTransaction(provider.connection, tx, [
-              unstakerKeypair,
-              stakeAccKeypair,
-            ])
+            sendAndConfirmTransaction(
+              provider.connection,
+              tx,
+              [unstakerKeypair, stakeAccKeypair],
+              { skipPreflight: true }
+            )
           )
         )
       );
@@ -668,9 +676,12 @@ describe("ts bindings", () => {
         unstakerKeypair.publicKey
       );
       const tx = await unstakeTx(program, accounts);
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [unstakerKeypair],
+        { skipPreflight: true }
+      );
       const unstakerPost = await program.provider.connection.getBalance(
         unstakerKeypair.publicKey
       );
@@ -693,10 +704,12 @@ describe("ts bindings", () => {
       );
       const tx = await unstakeTx(program, accounts);
       tx.feePayer = payerKeypair.publicKey;
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        payerKeypair,
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [payerKeypair, unstakerKeypair],
+        { skipPreflight: true }
+      );
       const unstakerPost = await program.provider.connection.getBalance(
         unstakerKeypair.publicKey
       );
@@ -719,9 +732,12 @@ describe("ts bindings", () => {
         destinationKeypair.publicKey
       );
       const tx = await unstakeTx(program, accounts);
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [unstakerKeypair],
+        { skipPreflight: true }
+      );
       const destinationPost = await program.provider.connection.getBalance(
         destinationKeypair.publicKey
       );
@@ -748,10 +764,12 @@ describe("ts bindings", () => {
       );
       const tx = await unstakeTx(program, accounts);
       tx.feePayer = payerKeypair.publicKey;
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        payerKeypair,
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [payerKeypair, unstakerKeypair],
+        { skipPreflight: true }
+      );
       const destinationPost = await program.provider.connection.getBalance(
         destinationKeypair.publicKey
       );
@@ -778,9 +796,12 @@ describe("ts bindings", () => {
         await getAccount(provider.connection, unstakerWSol)
       ).amount;
       const tx = await unstakeWsolTx(program, accounts);
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [unstakerKeypair],
+        { skipPreflight: true }
+      );
       const destinationPost = (
         await getAccount(provider.connection, unstakerWSol)
       ).amount;
@@ -811,7 +832,9 @@ describe("ts bindings", () => {
           feeAuthority: payerKeypair.publicKey,
         }
       );
-      await sendAndConfirmTransaction(provider.connection, tx, [payerKeypair]);
+      await sendAndConfirmTransaction(provider.connection, tx, [payerKeypair], {
+        skipPreflight: true,
+      });
     });
 
     it("unstake with referrer", async () => {
@@ -839,10 +862,12 @@ describe("ts bindings", () => {
       );
       const referrerPre = await provider.connection.getBalance(referrer);
       const tx = await unstakeTx(program, accounts);
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        payerKeypair,
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [payerKeypair, unstakerKeypair],
+        { skipPreflight: true }
+      );
       const destinationPost = await provider.connection.getBalance(
         unstakerKeypair.publicKey
       );
@@ -881,9 +906,12 @@ describe("ts bindings", () => {
       ).amount;
       const referrerPre = await provider.connection.getBalance(referrer);
       const tx = await unstakeWsolTx(program, accounts);
-      await sendAndConfirmTransaction(program.provider.connection, tx, [
-        unstakerKeypair,
-      ]);
+      await sendAndConfirmTransaction(
+        program.provider.connection,
+        tx,
+        [unstakerKeypair],
+        { skipPreflight: true }
+      );
       const destinationPost = (
         await getAccount(provider.connection, unstakerWSol)
       ).amount;
