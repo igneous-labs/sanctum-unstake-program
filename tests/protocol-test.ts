@@ -11,8 +11,15 @@ import chaiAsPromised from "chai-as-promised";
 import { findProtocolFeeAccount } from "../ts/src";
 import { Unstake } from "../target/types/unstake";
 import { airdrop, checkSystemError } from "./utils";
+import { readFileSync } from "fs";
+import { BN } from "bn.js";
 
 chaiUse(chaiAsPromised);
+
+const readKeypairFromFile = (path: string): Keypair =>
+  Keypair.fromSecretKey(
+    Buffer.from(JSON.parse(readFileSync(path, { encoding: "utf-8" })))
+  );
 
 describe("protocol-level", () => {
   // Configure the client to use the local cluster.
@@ -21,6 +28,12 @@ describe("protocol-level", () => {
   const provider = anchor.getProvider();
 
   const payerKeypair = Keypair.generate();
+  const protocolFeeAuthorityKeypair = readKeypairFromFile(
+    "./tests/local-testing-protocol-fee-authority.json"
+  );
+  const protocolFeeDestinationKeypair = readKeypairFromFile(
+    "./tests/local-testing-protocol-fee-destination.json"
+  );
 
   let protocolFeeAccount = null as PublicKey;
 
@@ -28,6 +41,9 @@ describe("protocol-level", () => {
     console.log("airdropping to payer");
     await airdrop(provider.connection, payerKeypair.publicKey);
     [protocolFeeAccount] = await findProtocolFeeAccount(program.programId);
+
+    console.log("airdropping to authority");
+    await airdrop(provider.connection, protocolFeeAuthorityKeypair.publicKey);
   });
 
   it("it initializes protocol fee", async () => {
@@ -41,12 +57,10 @@ describe("protocol-level", () => {
       .rpc({ skipPreflight: true });
     const { destination, authority, feeRatio, referrerFeeRatio } =
       await program.account.protocolFee.fetch(protocolFeeAccount);
-    expect(destination.toString()).to.eq(
-      "J6T4Cwe5PkiRidMJMap4f8EBd5kiQ6JrrwF5XsXzFy8t"
-    );
-    expect(authority.toString()).to.eq(
-      "2NB9TSbKzqEHY9kUuTpnjS3VrsZhEooAWADLHe3WeL3E"
-    );
+
+    expect(destination.equals(protocolFeeDestinationKeypair.publicKey)).to.be
+      .true;
+    expect(authority.equals(protocolFeeAuthorityKeypair.publicKey)).to.be.true;
     expect(feeRatio.num.toNumber()).to.eq(1);
     expect(feeRatio.denom.toNumber()).to.eq(10);
     expect(referrerFeeRatio.num.toNumber()).to.eq(1);
@@ -72,6 +86,69 @@ describe("protocol-level", () => {
         { skipPreflight: true }
       )
     ).to.be.eventually.rejected.and.satisfy(checkSystemError(0));
+  });
+
+  it("it sets protocol fee destination and authority", async () => {
+    const tempDestination = Keypair.generate();
+    const tempAuthority = Keypair.generate();
+
+    const currentProtocolFee = await program.account.protocolFee.fetch(
+      protocolFeeAccount
+    );
+    const newProtocolFee = {
+      ...currentProtocolFee,
+      destination: tempDestination.publicKey,
+      authority: tempAuthority.publicKey,
+    };
+    const tx1 = await program.methods
+      .setProtocolFee(newProtocolFee)
+      .accounts({
+        authority: protocolFeeAuthorityKeypair.publicKey,
+        protocolFeeAccount,
+      })
+      .transaction();
+
+    await sendAndConfirmTransaction(
+      program.provider.connection,
+      tx1,
+      [protocolFeeAuthorityKeypair],
+      { skipPreflight: true }
+    );
+
+    await program.account.protocolFee
+      .fetch(protocolFeeAccount)
+      .then(({ destination, authority, feeRatio, referrerFeeRatio }) => {
+        expect(destination.equals(tempDestination.publicKey)).to.be.true;
+        expect(authority.equals(tempAuthority.publicKey)).to.be.true;
+        expect(feeRatio.num.toNumber()).to.eq(
+          currentProtocolFee.feeRatio.num.toNumber()
+        );
+        expect(feeRatio.denom.toNumber()).to.eq(
+          currentProtocolFee.feeRatio.denom.toNumber()
+        );
+        expect(referrerFeeRatio.num.toNumber()).to.eq(
+          currentProtocolFee.referrerFeeRatio.num.toNumber()
+        );
+        expect(referrerFeeRatio.denom.toNumber()).to.eq(
+          currentProtocolFee.referrerFeeRatio.denom.toNumber()
+        );
+      });
+
+    // revert the changes
+    const tx2 = await program.methods
+      .setProtocolFee(currentProtocolFee)
+      .accounts({
+        authority: tempAuthority.publicKey,
+        protocolFeeAccount,
+      })
+      .transaction();
+
+    await sendAndConfirmTransaction(
+      program.provider.connection,
+      tx2,
+      [tempAuthority],
+      { skipPreflight: true }
+    );
   });
 
   after(async () => {

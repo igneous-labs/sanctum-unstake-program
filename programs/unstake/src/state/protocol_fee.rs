@@ -25,9 +25,9 @@ pub struct ProtocolFee {
 mod default_destination {
     use anchor_lang::declare_id;
 
-    // devnet upgrade authority's non-ATA wSOL account
+    // the keypair used for automated testing on localnet
     #[cfg(feature = "local-testing")]
-    declare_id!("J6T4Cwe5PkiRidMJMap4f8EBd5kiQ6JrrwF5XsXzFy8t");
+    declare_id!("6h64tjnsZDcvEta2uZvf2CqoPLf2Q8h79ES74ghjNk8D");
 
     // Socean DAO's wSOL token account
     #[cfg(not(feature = "local-testing"))]
@@ -37,7 +37,7 @@ mod default_destination {
 mod default_authority {
     use anchor_lang::declare_id;
 
-    // the keypair used for automated testing on devnet/testnet
+    // the keypair used for automated testing on localnet
     #[cfg(feature = "local-testing")]
     declare_id!("Cp4BZrED56eBpv5c6zdJmoCiKMrYDURjAWU8KeQhYjM8");
 
