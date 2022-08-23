@@ -20,9 +20,6 @@ pub struct SetProtocolFee<'info> {
         bump,
     )]
     pub protocol_fee_account: Account<'info, ProtocolFee>,
-
-    pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 impl<'info> SetProtocolFee<'info> {
