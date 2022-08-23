@@ -37,9 +37,9 @@ mod default_destination {
 mod default_authority {
     use anchor_lang::declare_id;
 
-    // devnet upgrade authority
+    // the keypair used for automated testing on devnet/testnet
     #[cfg(feature = "local-testing")]
-    declare_id!("2NB9TSbKzqEHY9kUuTpnjS3VrsZhEooAWADLHe3WeL3E");
+    declare_id!("Cp4BZrED56eBpv5c6zdJmoCiKMrYDURjAWU8KeQhYjM8");
 
     // LEFT CURVE DAO's unstake program upgrade authority
     #[cfg(not(feature = "local-testing"))]
