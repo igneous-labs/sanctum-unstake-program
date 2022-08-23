@@ -65,18 +65,14 @@ describe("ts bindings", () => {
   let protocolFeeAddr = null as PublicKey;
   let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
 
-  const liquidityAmountSol = 1;
+  const liquidityAmountSol = 0.1;
   const liquidityAmountLamports = new BN(liquidityAmountSol * LAMPORTS_PER_SOL);
 
   before(async () => {
     console.log("airdropping to payer and lper");
     await Promise.all([
       airdrop(provider.connection, payerKeypair.publicKey),
-      airdrop(
-        provider.connection,
-        lperKeypair.publicKey,
-        1 + liquidityAmountSol
-      ),
+      airdrop(provider.connection, lperKeypair.publicKey),
     ]);
     [poolSolReserves, poolSolReservesBump] = await findPoolSolReserves(
       program.programId,

@@ -208,7 +208,7 @@ const tx = await unstakeTx(UNSTAKE_PROGRAM, {
   // You can optionally add a `referrer` pubkey
   // to receive referral bonuses in SOL.
   // You can use `applyProtocolFee()` to calculate how much
-  // this amount will be for a given unstake fees amount.
+  // this amount will be for a given unstake fee amount.
   // (see example in #estimate-fees above)
   referrer: MY_SOL_ACC_PUBKEY,
 });
