@@ -3,12 +3,12 @@ use anchor_spl::stake::{self, Authorize, Stake, StakeAccount};
 
 use crate::{
     errors::UnstakeError,
-    state::{Fee, Pool, StakeAccountRecord},
+    state::{Fee, Pool, ProtocolFee, StakeAccountRecord},
 };
 
 pub struct UnstakeResult {
     pub stake_account_lamports: u64,
-    pub lamports_to_transfer: u64,
+    pub lamports_to_unstaker: u64,
     pub fee_lamports: u64,
 }
 
@@ -37,6 +37,10 @@ where
     fn stake_program(&self) -> &Program<'info, Stake>;
 
     fn system_program(&self) -> &Program<'info, System>;
+
+    fn protocol_fee_account(&self) -> &Account<'info, ProtocolFee>;
+
+    fn protocol_fee_destination(&self) -> &AccountInfo<'info>;
 
     fn run_unstake(ctx: &mut Context<Self>) -> Result<UnstakeResult> {
         let stake_account_lamports = ctx.accounts.stake_account().to_account_info().lamports();
@@ -80,8 +84,16 @@ where
                 stake_account_lamports,
             )
             .ok_or(UnstakeError::InternalError)?;
-        let lamports_to_transfer = stake_account_lamports
+        let lamports_to_unstaker = stake_account_lamports
             .checked_sub(fee_lamports)
+            .ok_or(UnstakeError::InternalError)?;
+        let protocol_fee_lamports = ctx
+            .accounts
+            .protocol_fee_account()
+            .levy(fee_lamports)
+            .ok_or(UnstakeError::InternalError)?;
+        let lamports_to_transfer = lamports_to_unstaker
+            .checked_add(protocol_fee_lamports)
             .ok_or(UnstakeError::InternalError)?;
 
         if lamports_to_transfer > pool_sol_reserves_lamports {
@@ -89,8 +101,7 @@ where
         }
 
         // pay the unstaker from the pool reserves
-        // NOTE: rely on CPI call as the constraint
-        let transfer_cpi_accs = system_program::Transfer {
+        let user_transfer_cpi_accs = system_program::Transfer {
             from: ctx.accounts.pool_sol_reserves().to_account_info(),
             to: ctx.accounts.destination_account_info(),
         };
@@ -104,10 +115,24 @@ where
         system_program::transfer(
             CpiContext::new_with_signer(
                 ctx.accounts.system_program().to_account_info(),
-                transfer_cpi_accs,
+                user_transfer_cpi_accs,
                 &[seeds],
             ),
-            lamports_to_transfer,
+            lamports_to_unstaker,
+        )?;
+
+        // pay the protocol fees from the pool reserves
+        let protocol_fee_transfer_cpi_accs = system_program::Transfer {
+            from: ctx.accounts.pool_sol_reserves().to_account_info(),
+            to: ctx.accounts.protocol_fee_destination().to_account_info(),
+        };
+        system_program::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program().to_account_info(),
+                protocol_fee_transfer_cpi_accs,
+                &[seeds],
+            ),
+            protocol_fee_lamports,
         )?;
 
         // populate the stake_account_record
@@ -125,7 +150,7 @@ where
 
         Ok(UnstakeResult {
             stake_account_lamports,
-            lamports_to_transfer,
+            lamports_to_unstaker,
             fee_lamports,
         })
     }
@@ -157,7 +182,7 @@ where
             activation_epoch,
             ctx.accounts.fee_account().fee,
             unstake_result.stake_account_lamports,
-            unstake_result.lamports_to_transfer,
+            unstake_result.lamports_to_unstaker,
             unstake_result.fee_lamports,
         );
     }
@@ -219,6 +244,14 @@ macro_rules! impl_unstake_accounts {
                 &self,
             ) -> &anchor_lang::prelude::Program<'info, anchor_lang::prelude::System> {
                 &self.system_program
+            }
+
+            fn protocol_fee_account(&self) -> &Account<'info, ProtocolFee> {
+                &self.protocol_fee_account
+            }
+
+            fn protocol_fee_destination(&self) -> &AccountInfo<'info> {
+                &self.protocol_fee_destination
             }
         }
     };

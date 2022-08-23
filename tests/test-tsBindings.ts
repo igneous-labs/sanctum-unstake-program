@@ -1,4 +1,5 @@
 import * as anchor from "@project-serum/anchor";
+import { IdlAccounts, ProgramAccount } from "@project-serum/anchor";
 import {
   createAssociatedTokenAccount,
   getAccount,
@@ -33,6 +34,8 @@ import {
   setFeeTx,
   setFeeAuthorityTx,
   Unstake,
+  ProtocolFeeAccount,
+  findProtocolFeeAccount,
 } from "../ts/src";
 import {
   airdrop,
@@ -57,6 +60,8 @@ describe("ts bindings", () => {
 
   let [poolSolReserves, poolSolReservesBump] = [null as PublicKey, 0];
   let [feeAccount, feeAccountBump] = [null as PublicKey, 0];
+  let protocolFeeAddr = null as PublicKey;
+  let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
 
   const liquidityAmount = new BN(0.1 * LAMPORTS_PER_SOL);
 
@@ -74,6 +79,11 @@ describe("ts bindings", () => {
       program.programId,
       poolKeypair.publicKey
     );
+    [protocolFeeAddr] = await findProtocolFeeAccount(program.programId);
+    protocolFee = {
+      publicKey: protocolFeeAddr,
+      account: await program.account.protocolFee.fetch(protocolFeeAddr),
+    };
     console.log("setting up pool");
     await program.methods
       .createPool({
@@ -194,6 +204,8 @@ describe("ts bindings", () => {
           poolSolReserves,
           feeAccount,
           stakeAccountRecordAccount,
+          protocolFeeAccount: protocolFee.publicKey,
+          protocolFeeDestination: protocolFee.account.destination,
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
         })
@@ -279,7 +291,7 @@ describe("ts bindings", () => {
 
     describe("Admin facing", () => {
       it("it generates CreatePool tx", async () => {
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "createPool"
         ).accounts.length;
 
@@ -309,7 +321,7 @@ describe("ts bindings", () => {
       });
 
       it("it generates SetFee tx", async () => {
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "setFee"
         ).accounts.length;
 
@@ -339,7 +351,7 @@ describe("ts bindings", () => {
 
       it("it generates SetFeeAuthority tx", async () => {
         const newFeeAuthority = Keypair.generate().publicKey;
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "setFeeAuthority"
         ).accounts.length;
 
@@ -382,7 +394,7 @@ describe("ts bindings", () => {
 
     describe("Crank facing", () => {
       it("it generates DeactivateStakeAccount tx", async () => {
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "deactivateStakeAccount"
         ).accounts.length;
 
@@ -398,7 +410,7 @@ describe("ts bindings", () => {
       });
 
       it("it generates ReclaimStakeAccount tx", async () => {
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "reclaimStakeAccount"
         ).accounts.length;
 
@@ -417,7 +429,7 @@ describe("ts bindings", () => {
     describe("LP facing", () => {
       it("it generates AddLiquidity tx", async () => {
         const amountLamports = new BN(1);
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "addLiquidity"
         ).accounts.length;
 
@@ -462,7 +474,7 @@ describe("ts bindings", () => {
 
       it("it generates RemoveLiquidity tx", async () => {
         const amountLPAtomics = new BN(1);
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "removeLiquidity"
         ).accounts.length;
 
@@ -505,7 +517,7 @@ describe("ts bindings", () => {
 
     describe("User facing", () => {
       it("it generates Unstake tx", async () => {
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "unstake"
         ).accounts.length;
 
@@ -513,6 +525,7 @@ describe("ts bindings", () => {
           poolAccount: poolKeypair.publicKey,
           stakeAccount: stakeAccKeypair.publicKey,
           unstaker: unstakerKeypair.publicKey,
+          protocolFee,
         });
         expect(tx instanceof Transaction).to.be.true;
         expect(tx.instructions.length).to.eq(1);
@@ -522,7 +535,7 @@ describe("ts bindings", () => {
       });
 
       it("it generates UnstakeWsol tx", async () => {
-        const expectedAccountsLength = program._idl.instructions.find(
+        const expectedAccountsLength = program.idl.instructions.find(
           (ix) => ix.name === "unstakeWsol"
         ).accounts.length;
 
@@ -530,6 +543,7 @@ describe("ts bindings", () => {
           poolAccount: poolKeypair.publicKey,
           stakeAccount: stakeAccKeypair.publicKey,
           unstaker: unstakerKeypair.publicKey,
+          protocolFee,
         });
         expect(tx instanceof Transaction).to.be.true;
         expect(tx.instructions.length).to.eq(1);
@@ -586,6 +600,7 @@ describe("ts bindings", () => {
         poolAccount: poolKeypair.publicKey,
         stakeAccount: stakeAccKeypair.publicKey,
         unstaker: unstakerKeypair.publicKey,
+        protocolFee,
       };
       unstakerPayerDestination = await previewUnstake(program, accounts);
       const unstakerPre = await program.provider.connection.getBalance(
@@ -609,6 +624,7 @@ describe("ts bindings", () => {
         stakeAccount: stakeAccKeypair.publicKey,
         unstaker: unstakerKeypair.publicKey,
         payer: payerKeypair.publicKey,
+        protocolFee,
       };
       unstakerNotPayerDestination = await previewUnstake(program, accounts);
       const unstakerPre = await program.provider.connection.getBalance(
@@ -635,6 +651,7 @@ describe("ts bindings", () => {
         stakeAccount: stakeAccKeypair.publicKey,
         unstaker: unstakerKeypair.publicKey,
         destination: destinationKeypair.publicKey,
+        protocolFee,
       };
       unstakerPayerNotDestination = await previewUnstake(program, accounts);
       const destinationPre = await program.provider.connection.getBalance(
@@ -662,6 +679,7 @@ describe("ts bindings", () => {
         unstaker: unstakerKeypair.publicKey,
         payer: payerKeypair.publicKey,
         destination: destinationKeypair.publicKey,
+        protocolFee,
       };
       unstakerNotPayerNotDestination = await previewUnstake(program, accounts);
       const destinationPre = await program.provider.connection.getBalance(
@@ -693,6 +711,7 @@ describe("ts bindings", () => {
         unstaker: unstakerKeypair.publicKey,
         payer: unstakerKeypair.publicKey,
         destination: unstakerWSol,
+        protocolFee,
       };
       const destinationPre = (
         await getAccount(provider.connection, unstakerWSol)

@@ -1,5 +1,7 @@
+import { IdlAccounts } from "@project-serum/anchor";
 import { KeyedStakeAccountInfo, StakeState } from "@soceanfi/solana-stake-sdk";
 import BN from "bn.js";
+import { Unstake } from "./idl/idl";
 
 export type LiquidityPoolStakeAccounts = {
   [k in StakeState]: KeyedStakeAccountInfo[];
@@ -29,4 +31,13 @@ export type FlatFeeInner = {
 // probably due to anchor not handling enums properly
 export type Fee = {
   fee: LiquidityLinearFeeInner | FlatFeeInner;
+};
+
+// IdlAccounts<Unstake>["fee"] returns { feeRatio: never, referrerFeeRatio: never },
+export type ProtocolFeeAccount = Omit<
+  IdlAccounts<Unstake>["protocolFee"],
+  "feeRatio" | "referrerFeeRatio"
+> & {
+  feeRatio: Rational;
+  referrerFeeRatio: Rational;
 };
