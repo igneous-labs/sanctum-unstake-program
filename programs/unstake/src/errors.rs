@@ -38,4 +38,7 @@ pub enum UnstakeError {
 
     #[msg("Wrong protocol fee destination account")]
     WrongProtocolFee, // 0x177b
+
+    #[msg("The provided protocol fee authority does not have the authority over the protocol fee account")]
+    InvalidProtocolFeeAuthority, // 0x177c
 }
