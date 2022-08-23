@@ -38,7 +38,6 @@ import {
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { IdlAccounts } from "@project-serum/anchor";
 
 chaiUse(chaiAsPromised);
 
@@ -62,16 +61,13 @@ describe("internals", () => {
 
   before(async () => {
     [protocolFeeAddr] = await findProtocolFeeAccount(program.programId);
-    protocolFee = (await program.account.protocolFee.fetch(
-      protocolFeeAddr
-    )) as unknown as IdlAccounts<Unstake>["protocolFee"];
+    protocolFee = await program.account.protocolFee.fetch(protocolFeeAddr);
     protocolFeeDestination = protocolFee.destination;
 
     console.log("airdropping to payer, lper and protocolFeeDestination");
     await Promise.all([
       airdrop(provider.connection, payerKeypair.publicKey),
       airdrop(provider.connection, lperKeypair.publicKey),
-      airdrop(provider.connection, protocolFeeDestination),
     ]);
     [poolSolReserves] = await findPoolSolReserves(
       program.programId,
