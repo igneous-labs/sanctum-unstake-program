@@ -135,6 +135,7 @@ describe("protocol-level", () => {
       });
 
     // revert the changes
+    await airdrop(provider.connection, tempAuthority.publicKey);
     const tx2 = await program.methods
       .setProtocolFee(currentProtocolFee)
       .accounts({
@@ -149,6 +150,27 @@ describe("protocol-level", () => {
       [tempAuthority],
       { skipPreflight: true }
     );
+
+    await program.account.protocolFee
+      .fetch(protocolFeeAccount)
+      .then(({ destination, authority, feeRatio, referrerFeeRatio }) => {
+        expect(destination.equals(protocolFeeDestinationKeypair.publicKey)).to
+          .be.true;
+        expect(authority.equals(protocolFeeAuthorityKeypair.publicKey)).to.be
+          .true;
+        expect(feeRatio.num.toNumber()).to.eq(
+          currentProtocolFee.feeRatio.num.toNumber()
+        );
+        expect(feeRatio.denom.toNumber()).to.eq(
+          currentProtocolFee.feeRatio.denom.toNumber()
+        );
+        expect(referrerFeeRatio.num.toNumber()).to.eq(
+          currentProtocolFee.referrerFeeRatio.num.toNumber()
+        );
+        expect(referrerFeeRatio.denom.toNumber()).to.eq(
+          currentProtocolFee.referrerFeeRatio.denom.toNumber()
+        );
+      });
   });
 
   after(async () => {
