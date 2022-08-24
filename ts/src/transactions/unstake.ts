@@ -12,6 +12,7 @@ import {
   findStakeAccountRecordAccount,
 } from "../pda";
 import { ProtocolFeeAccount } from "../types";
+import { deriveProtocolFeeAddresses } from "./utils";
 
 export type UnstakeAccounts = {
   /**
@@ -30,9 +31,16 @@ export type UnstakeAccounts = {
   unstaker: Address;
 
   /**
-   * The program's fetched protocol fee account
+   * The program's protocol fee account
    */
-  protocolFee: ProgramAccount<ProtocolFeeAccount>;
+  protocolFee: Address | ProgramAccount<ProtocolFeeAccount>;
+
+  /**
+   * The protocol fee payment destination.
+   * Must be provided if `protocolFee` is `Address`.
+   * Otherwise, uses the one read from `protocolFee`
+   */
+  protocolFeeDestination?: Address;
 
   /**
    * The referrer for this unstake.
@@ -68,15 +76,16 @@ export async function unstakeTx(
     unstaker,
     payer: payerOption,
     destination: destinationOption,
-    protocolFee: {
-      publicKey: protocolFeeAccount,
-      account: { destination: protocolFeeDestination },
-    },
+    protocolFee: protocolFeeUnion,
+    protocolFeeDestination: protocolFeeDestinationOption,
     referrer: referrerOption,
   }: UnstakeAccounts
 ): Promise<Transaction> {
   const payer = payerOption ?? unstaker;
   const destination = destinationOption ?? unstaker;
+
+  const { protocolFeeAccount, protocolFeeDestination } =
+    deriveProtocolFeeAddresses(protocolFeeUnion, protocolFeeDestinationOption);
 
   const poolAccountPk = new PublicKey(poolAccount);
   const stakeAccountPk = new PublicKey(stakeAccount);
