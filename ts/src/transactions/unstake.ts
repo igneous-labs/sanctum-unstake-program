@@ -9,6 +9,7 @@ import { Unstake } from "../idl/idl";
 import {
   findPoolFeeAccount,
   findPoolSolReserves,
+  findProtocolFeeAccount,
   findStakeAccountRecordAccount,
 } from "../pda";
 import { ProtocolFeeAccount } from "../types";
@@ -33,11 +34,11 @@ export type UnstakeAccounts = {
   /**
    * The program's protocol fee account
    */
-  protocolFee: Address | ProgramAccount<ProtocolFeeAccount>;
+  protocolFee?: ProgramAccount<ProtocolFeeAccount>;
 
   /**
    * The protocol fee payment destination.
-   * Must be provided if `protocolFee` is `Address`.
+   * Must be provided if `protocolFee` is not provided.
    * Otherwise, uses the one read from `protocolFee`
    */
   protocolFeeDestination?: Address;
@@ -76,7 +77,7 @@ export async function unstakeTx(
     unstaker,
     payer: payerOption,
     destination: destinationOption,
-    protocolFee: protocolFeeUnion,
+    protocolFee: protocolFeeOption,
     protocolFeeDestination: protocolFeeDestinationOption,
     referrer: referrerOption,
   }: UnstakeAccounts
@@ -85,7 +86,10 @@ export async function unstakeTx(
   const destination = destinationOption ?? unstaker;
 
   const { protocolFeeAccount, protocolFeeDestination } =
-    deriveProtocolFeeAddresses(protocolFeeUnion, protocolFeeDestinationOption);
+    deriveProtocolFeeAddresses(
+      protocolFeeOption ?? (await findProtocolFeeAccount(program.programId))[0],
+      protocolFeeDestinationOption
+    );
 
   const poolAccountPk = new PublicKey(poolAccount);
   const stakeAccountPk = new PublicKey(stakeAccount);
