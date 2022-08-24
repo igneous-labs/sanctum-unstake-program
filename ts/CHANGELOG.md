@@ -15,7 +15,7 @@ incremented for features.
 
 ### Changed
 
-- `unstakeWsolTx()` and `unstakeTx()` now accepts `Address` type for the `protocolFee` arg and an additional `protocolFeeDestination` for that case
+- `unstakeWsolTx()` and `unstakeTx()`'s `protocolFee` arg is now optional. However, the correct `protocolFeeDestination` must be provided in that case. This allows consumers to be able to construct transactions without having to fetch on-chain protocol fee account data first.
 
 ## [0.1.0] - 2022-08-24
 
