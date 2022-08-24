@@ -9,14 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The minor version will be incremented upon a breaking change and the patch version will be
 incremented for features.
 
-## [0.0.3] - 2022-07-18
+## [0.1.0] - 2022-08-25
 
 ### Added
 
-- ts: README examples
-
-## [0.0.2] - 2022-07-02
+- `UnstakeWsol` instruction to unstake directly to a wrapped SOL account
+- protocol fees and referral bonuses determined by the `ProtocolFee` account
+- `InitProtocolFee` instruction to initialize global protocol fee to a default
+- `SetProtocolFee` instruction to modify protocol fee
 
 ### Changed
 
-- ts: `previewUnstake` rethrows any `TransactionError`s thrown by the transaction simulation
+- BREAKING: unstake instructions (Unstake, UnstakeWsol) now require the protocol fee account and protocol fee destination account to be passed in
+- unstake instructions now accept an optional referral account in `remaining_accounts` to receive referral bonuses
