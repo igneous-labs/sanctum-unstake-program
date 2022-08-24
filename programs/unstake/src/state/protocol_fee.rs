@@ -29,9 +29,9 @@ mod default_destination {
     #[cfg(feature = "local-testing")]
     declare_id!("6h64tjnsZDcvEta2uZvf2CqoPLf2Q8h79ES74ghjNk8D");
 
-    // Socean DAO's wSOL token account
+    // Left Curve's wSOL token account
     #[cfg(not(feature = "local-testing"))]
-    declare_id!("3Gdk8hMa76JF8p5jonMP7vYPZuXRTJDtLmysYabB6WEE");
+    declare_id!("GnRGTBrFuEwb85Zs4zeZWUzQYfTwmPxCPYmQQodDzYUK");
 }
 
 mod default_authority {
@@ -72,25 +72,25 @@ impl ProtocolFee {
         Ok(())
     }
 
-    /// Levies the protocol fee on a given fee amount
+    /// Applies the protocol fee on a given fee amount
     ///
     /// Returns the number of lamports to be levied as the protocol fee
     /// and to subtract from `fee_lamports`
     ///
     /// Invariants:
     /// - return <= `fee_lamports`
-    pub fn levy(&self, fee_lamports: u64) -> Option<u64> {
+    pub fn apply(&self, fee_lamports: u64) -> Option<u64> {
         self.fee_ratio.floor_mul(fee_lamports)
     }
 
-    /// Levies the referrer fee on a given protocol fee amount
+    /// Applies the referrer fee on a given protocol fee amount
     ///
     /// Returns the number of lamports to be levied as the referrer fee
     /// and to subtract from `protocol_fee_lamports`
     ///
     /// Invariants:
     /// - return <= `protocol_fee_lamports`
-    pub fn levy_referrer_fee(&self, protocol_fee_lamports: u64) -> Option<u64> {
+    pub fn apply_referrer_fee(&self, protocol_fee_lamports: u64) -> Option<u64> {
         self.referrer_fee_ratio.floor_mul(protocol_fee_lamports)
     }
 }
