@@ -95,7 +95,7 @@ where
         let protocol_fee_lamports = ctx
             .accounts
             .protocol_fee_account()
-            .levy(fee_lamports)
+            .apply(fee_lamports)
             .ok_or(UnstakeError::InternalError)?;
         let lamports_to_transfer = lamports_to_unstaker
             .checked_add(protocol_fee_lamports)
@@ -134,7 +134,7 @@ where
                 let lamports_to_referrer = ctx
                     .accounts
                     .protocol_fee_account()
-                    .levy_referrer_fee(protocol_fee_lamports)
+                    .apply_referrer_fee(protocol_fee_lamports)
                     .ok_or(UnstakeError::InternalError)?;
                 let lamports_to_protocol = protocol_fee_lamports
                     .checked_sub(lamports_to_referrer)
