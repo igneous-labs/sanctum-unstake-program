@@ -14,9 +14,11 @@ import { Unstake } from "../idl/idl";
 import {
   findPoolFeeAccount,
   findPoolSolReserves,
+  findProtocolFeeAccount,
   findStakeAccountRecordAccount,
 } from "../pda";
 import { ProtocolFeeAccount } from "../types";
+import { deriveProtocolFeeAddresses } from "./utils";
 
 export type UnstakeWSolAccounts = {
   /**
@@ -35,9 +37,16 @@ export type UnstakeWSolAccounts = {
   unstaker: Address;
 
   /**
-   * The program's fetched protocol fee account
+   * The program's protocol fee account
    */
-  protocolFee: ProgramAccount<ProtocolFeeAccount>;
+  protocolFee?: ProgramAccount<ProtocolFeeAccount>;
+
+  /**
+   * The protocol fee payment destination.
+   * Must be provided if `protocolFee` is not provided.
+   * Otherwise, uses the one read from `protocolFee`
+   */
+  protocolFeeDestination?: Address;
 
   /**
    * The referrer for this unstake.
@@ -73,16 +82,20 @@ export async function unstakeWsolTx(
     unstaker,
     payer: payerOption,
     destination: destinationOption,
-    protocolFee: {
-      publicKey: protocolFeeAccount,
-      account: { destination: protocolFeeDestination },
-    },
+    protocolFee: protocolFeeOption,
+    protocolFeeDestination: protocolFeeDestinationOption,
     referrer: referrerOption,
   }: UnstakeWSolAccounts
 ): Promise<Transaction> {
   const poolAccountPk = new PublicKey(poolAccount);
   const stakeAccountPk = new PublicKey(stakeAccount);
   const unstakerPk = new PublicKey(unstaker);
+
+  const { protocolFeeAccount, protocolFeeDestination } =
+    deriveProtocolFeeAddresses(
+      protocolFeeOption ?? (await findProtocolFeeAccount(program.programId))[0],
+      protocolFeeDestinationOption
+    );
 
   const payer = payerOption ?? unstaker;
   const destination =

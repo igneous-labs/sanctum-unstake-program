@@ -1,14 +1,11 @@
 import { Address, IdlAccounts, ProgramAccount } from "@project-serum/anchor";
 import { Unstake } from "../idl/idl";
+import { ProtocolFeeAccount } from "../types";
 
 type PoolAccountUnion = Address | ProgramAccount<IdlAccounts<Unstake>["pool"]>;
 
-function isAddress(
-  poolAccountUnion: PoolAccountUnion
-): poolAccountUnion is Address {
-  return (
-    typeof poolAccountUnion === "string" || !("account" in poolAccountUnion)
-  );
+function isAddress<T>(union: Address | T): union is Address {
+  return typeof union === "string" || "_bn" in union;
 }
 
 type DerivedPoolLpMint = {
@@ -60,5 +57,31 @@ export function derivePoolFeeAuthority(
   return {
     feeAuthority: poolAccountUnion.account.feeAuthority,
     poolAccount: poolAccountUnion.publicKey,
+  };
+}
+
+type DerivedProtocolFeeAddresses = {
+  protocolFeeAccount: Address;
+  protocolFeeDestination: Address;
+};
+
+export function deriveProtocolFeeAddresses(
+  protocolFeeAccountUnion: Address | ProgramAccount<ProtocolFeeAccount>,
+  protocolFeeDestinationOption?: Address
+): DerivedProtocolFeeAddresses {
+  if (isAddress(protocolFeeAccountUnion)) {
+    if (!protocolFeeDestinationOption) {
+      throw new Error(
+        "protocol fee destination must be provided if protocolFee is not a ProgramAccount"
+      );
+    }
+    return {
+      protocolFeeAccount: protocolFeeAccountUnion,
+      protocolFeeDestination: protocolFeeDestinationOption,
+    };
+  }
+  return {
+    protocolFeeAccount: protocolFeeAccountUnion.publicKey,
+    protocolFeeDestination: protocolFeeAccountUnion.account.destination,
   };
 }

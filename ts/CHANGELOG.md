@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The minor version will be incremented upon a breaking change and the patch version will be
 incremented for features.
 
+## [0.1.1] - 2022-08-25
+
+### Changed
+
+- `unstakeWsolTx()` and `unstakeTx()`'s `protocolFee` arg is now optional. However, the correct `protocolFeeDestination` must be provided in that case. This allows consumers to be able to construct transactions without having to fetch on-chain protocol fee account data first.
+
 ## [0.1.0] - 2022-08-24
 
 ### Added
