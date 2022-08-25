@@ -1,3 +1,7 @@
+// re-export anchor so that consumers have access
+// to a consistent version
+export * from "@project-serum/anchor";
+
 // The types for the JSON file and the IDL const is different
 // so we need to re-export both
 import * as IDL_JSON from "./idl/idl.json";
