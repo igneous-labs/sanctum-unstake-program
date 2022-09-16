@@ -1,6 +1,6 @@
 {
   "name": "@unstake-it/sol",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "repository": "github:igneous-labs/unstake",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
