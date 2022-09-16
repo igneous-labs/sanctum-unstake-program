@@ -38,10 +38,12 @@ import {
   findProtocolFeeAccount,
   applyProtocolFee,
   previewUnstakeWsol,
+  applyFee,
 } from "../ts/src";
 import {
   airdrop,
   createDelegateStakeTx,
+  EPSILON_FLOAT_UPPER_BOUND,
   transferStakeAuthTx,
   waitForEpochToPass,
 } from "./utils";
@@ -263,10 +265,52 @@ describe("ts bindings", () => {
     });
   });
 
+  describe("fee calculation", () => {
+    it("applyFee liquidity linear from maxLiqRemaining", () => {
+      const zeroLiqRemainingRatio = 0.01;
+      const maxLiqRemainingRatio = 0.0003;
+      const solReservesLamportsNumber = 14000_000_000_000;
+      const stakeAccountLamportsNumber = 1_000_000_000;
+      const feeLamports = applyFee(
+        {
+          fee: {
+            liquidityLinear: {
+              params: {
+                // need to round to avoid loss of precision
+                // 0.0003 * 10_000 -> 2.99999996
+                maxLiqRemaining: {
+                  num: new BN(Math.round(maxLiqRemainingRatio * 10_000)),
+                  denom: new BN(10_000),
+                },
+                zeroLiqRemaining: {
+                  num: new BN(Math.round(zeroLiqRemainingRatio * 100)),
+                  denom: new BN(100),
+                },
+              },
+            },
+          },
+        },
+        {
+          poolIncomingStake: new BN(0),
+          solReservesLamports: new BN(solReservesLamportsNumber),
+          stakeAccountLamports: new BN(stakeAccountLamportsNumber),
+        }
+      );
+      const feeRatio = feeLamports.toNumber() / stakeAccountLamportsNumber;
+      expect(feeRatio).to.be.gt(maxLiqRemainingRatio);
+      expect(feeRatio).to.be.lt(zeroLiqRemainingRatio);
+      expect(feeRatio).to.be.closeTo(
+        maxLiqRemainingRatio +
+          (stakeAccountLamportsNumber / solReservesLamportsNumber) *
+            (zeroLiqRemainingRatio - maxLiqRemainingRatio),
+        EPSILON_FLOAT_UPPER_BOUND
+      );
+    });
+  });
+
   describe("transaction generation", () => {
     const stakeAccKeypair = Keypair.generate();
     const unstakerKeypair = Keypair.generate();
-    const destinationKeypair = Keypair.generate();
     let unstakerWSolAccount = null as PublicKey;
     let poolProgramAccount = null as ProgramAccount<
       IdlAccounts<Unstake>["pool"]

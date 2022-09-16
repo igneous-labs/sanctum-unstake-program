@@ -16,6 +16,8 @@ import { Unstake } from "../target/types/unstake";
 // Upper bound for tolerable rounding error of lamport values
 export const EPSILON_UPPER_BOUND = 1; // TODO: confirm that the value is reasonable (no error)
 
+export const EPSILON_FLOAT_UPPER_BOUND = 1e-9;
+
 // Anchor at the current v0.24.2, is throwing two different shapes of object
 // for program errors. This closure returns a predicate that checks if a given
 // error object matches either type and has the correct error code and message.

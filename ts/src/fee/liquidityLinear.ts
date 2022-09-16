@@ -14,7 +14,7 @@ export function applyLiquidityLinearFee(
   const zeroLiqRemainingRatio =
     zeroLiqRemaining.num.toNumber() / zeroLiqRemaining.denom.toNumber();
   const maxLiqRemainingRatio =
-    maxLiqRemaining.num.toNumber() / zeroLiqRemaining.denom.toNumber();
+    maxLiqRemaining.num.toNumber() / maxLiqRemaining.denom.toNumber();
   const ownedLamports = poolIncomingStake.add(solReservesLamports);
   // TODO: using number means max value of ownedLamports ~= 9M SOL. Change to smth like BigNumber or
   // decimal when required
