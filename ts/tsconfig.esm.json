@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "declaration": true,
+    "strict": true,
+    // TODO: figure out the arg type for the cli functions
+    //"noImplicitAny": true /* Raise error on expressions and declarations with an implied 'any' type. */,
+    "noImplicitAny": false,
+
+    "strictNullChecks": true /* Enable strict null checks. */,
+    "strictFunctionTypes": true /* Enable strict checking of function types. */,
+    "noUnusedParameters": true /* Report errors on unused parameters. */,
+    "noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
+    "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
+
+    // temporarily disabled
+    //"noUnusedLocals": true /* Report errors on unused locals. */,
+    "noUnusedLocals": false,
+
+    /* schema */
+    "strictPropertyInitialization": false,
+
+    "importHelpers": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "outDir": "./dist/esm",
+    "rootDir": "./src",
+    "types": ["node"],
+    "lib": ["ES6", "DOM"],
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"],
+      "@": ["./index.ts"],
+      "@/tests/*": ["../tests/*"]
+    },
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests/**/*.ts"],
+  "tsc-alias": {
+    "resolveFullPaths": true
+  }
+}
