@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The minor version will be incremented upon a breaking change and the patch version will be
 incremented for features.
 
+## [0.1.4] - 2023-02-25
+
+### Fixed
+
+- cjs packaging issue due to not including `{ "type": "commonjs" }` in `package.json`
+
 ## [0.1.3] - 2022-11-22
 
 ### Changed
