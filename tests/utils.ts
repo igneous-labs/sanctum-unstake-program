@@ -52,7 +52,7 @@ export function checkSystemError(errorCode: number): (err: any) => boolean {
 export async function airdrop(
   connection: Connection,
   address: PublicKey,
-  amountSol: number = 1.0
+  amountSol: number = 50.0
 ): Promise<ReturnType<Connection["confirmTransaction"]>> {
   return connection.confirmTransaction(
     await connection.requestAirdrop(address, amountSol * LAMPORTS_PER_SOL),
@@ -136,7 +136,10 @@ export async function waitForEpochToPass(
 export async function stakeAccMinLamports(
   connection: Connection
 ): Promise<number> {
-  return (await connection.getMinimumBalanceForRentExemption(200)) + 1;
+  // stake program minimum delegation 1 SOL as of solana 1.14
+  return (
+    (await connection.getMinimumBalanceForRentExemption(200)) + 1_000_000_000
+  );
 }
 
 type CreateDelegateStakeTxArgs = {
