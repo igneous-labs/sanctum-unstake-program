@@ -4,6 +4,7 @@ use anchor_lang::prelude::*;
 
 use crate::{errors::UnstakeError, rational::Rational};
 
+#[constant]
 pub const PROTOCOL_FEE_SEED: &[u8] = b"protocol-fee";
 
 /// Global singleton containing protocol fee parameters

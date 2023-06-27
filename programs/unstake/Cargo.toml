@@ -24,11 +24,7 @@ proptest = "1.0"
 version = "0.1.0"
 features = ["no-entrypoint"]
 
-[dependencies.anchor-lang]
-git = "https://github.com/igneous-labs/anchor"
-branch = "spl/stake-prog"
-
-[dependencies.anchor-spl]
-git = "https://github.com/igneous-labs/anchor"
-branch = "spl/stake-prog"
-features = ["stake"]
+[dependencies]
+anchor-lang = "0.28.0"
+anchor-spl = { version = "0.28.0", features = ["stake", "token"] }
+spl-associated-token-account = "^1.1"
