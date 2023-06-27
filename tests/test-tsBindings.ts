@@ -67,7 +67,7 @@ describe("ts bindings", () => {
   let protocolFeeAddr = null as PublicKey;
   let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
 
-  const liquidityAmountSol = 0.1;
+  const liquidityAmountSol = 10.0;
   const liquidityAmountLamports = new BN(liquidityAmountSol * LAMPORTS_PER_SOL);
 
   before(async () => {

@@ -686,7 +686,7 @@ describe("internals", () => {
     const flatFeeWSolUnstaker = Keypair.generate();
     const liquidityLinearFeeWSolUnstaker = Keypair.generate();
 
-    const liquidityLamports = new BN(0.1 * LAMPORTS_PER_SOL);
+    const liquidityLamports = new BN(10 * LAMPORTS_PER_SOL);
 
     let lockedupUnstakerWSolAcc: PublicKey;
     let notEnoughLiquidityUnstakerWSolAcc: PublicKey;

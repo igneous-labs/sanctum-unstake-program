@@ -54,7 +54,7 @@ describe("integration", () => {
   const stakeAccountKeypair = Keypair.generate();
   const stakeAccountWSolKeypair = Keypair.generate();
 
-  const liquidityAmount = new BN(0.1 * LAMPORTS_PER_SOL);
+  const liquidityAmount = new BN(10 * LAMPORTS_PER_SOL);
 
   let [poolSolReserves] = [null as PublicKey, 0];
   let [feeAccount] = [null as PublicKey, 0];
