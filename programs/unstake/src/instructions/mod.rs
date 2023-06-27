@@ -6,6 +6,7 @@ mod reclaim_stake_account;
 mod remove_liquidity;
 mod set_fee;
 mod set_fee_authority;
+mod set_lp_token_metadata;
 mod set_protocol_fee;
 mod unstake_instructions;
 
@@ -17,5 +18,6 @@ pub use reclaim_stake_account::*;
 pub use remove_liquidity::*;
 pub use set_fee::*;
 pub use set_fee_authority::*;
+pub use set_lp_token_metadata::*;
 pub use set_protocol_fee::*;
 pub use unstake_instructions::*;

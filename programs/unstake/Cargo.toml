@@ -26,5 +26,6 @@ features = ["no-entrypoint"]
 
 [dependencies]
 anchor-lang = "0.28.0"
-anchor-spl = { version = "0.28.0", features = ["stake", "token"] }
-spl-associated-token-account = "^1.1"
+anchor-spl = { version = "0.28.0", features = ["metadata", "stake", "token"] }
+mpl-token-metadata = { version = "^1.12", features = ["no-entrypoint"] }
+spl-associated-token-account = "^1.1" # required for anchor-spl token
