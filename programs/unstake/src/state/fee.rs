@@ -5,6 +5,7 @@ use std::fmt;
 
 use crate::{errors::UnstakeError, rational::Rational};
 
+#[constant]
 pub const FEE_SEED_SUFFIX: &[u8] = b"fee";
 
 // Anchor can't derive account for enum, so wrap it in a struct
