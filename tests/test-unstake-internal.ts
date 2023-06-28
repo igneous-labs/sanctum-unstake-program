@@ -81,6 +81,11 @@ describe("internals", () => {
     metadataProgram
   );
 
+  const [flashLoanFeeAccount] = findProgramAddressSync(
+    [poolKeypair.publicKey.toBuffer(), Buffer.from("flashloanfee")],
+    program.programId
+  );
+
   before(async () => {
     [protocolFeeAddr] = await findProtocolFeeAccount(program.programId);
     protocolFee = await program.account.protocolFee.fetch(protocolFeeAddr);
@@ -778,6 +783,82 @@ describe("internals", () => {
         newMetadata.uri
       );
       expect(updatedMetadata.tokenStandard).to.eq(TokenStandard.Fungible);
+    });
+
+    it("it rejects to set flash loan fee with invalid fee authority", async () => {
+      const fakeAuthKeypair = lperKeypair;
+      await expect(
+        program.methods
+          .setFlashLoanFee({
+            feeRatio: {
+              num: new BN(1),
+              denom: new BN(1_000),
+            },
+          })
+          .accounts({
+            payer: fakeAuthKeypair.publicKey,
+            feeAuthority: fakeAuthKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            flashLoanFeeAccount,
+          })
+          .signers([fakeAuthKeypair])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6002,
+          "The provided fee authority does not have the authority over the provided pool account"
+        )
+      );
+    });
+
+    it("it creates flash loan fee", async () => {
+      const fee = {
+        feeRatio: {
+          num: new BN(1),
+          denom: new BN(1_000),
+        },
+      };
+      await program.methods
+        .setFlashLoanFee(fee)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          flashLoanFeeAccount,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+      await program.account.flashLoanFee
+        .fetch(flashLoanFeeAccount)
+        .then(({ feeRatio: { num, denom } }) => {
+          expect(num.eq(fee.feeRatio.num)).to.be.true;
+          expect(denom.eq(fee.feeRatio.denom)).to.be.true;
+        });
+    });
+
+    it("it updates flash loan fee", async () => {
+      const newFee = {
+        feeRatio: {
+          num: new BN(3),
+          denom: new BN(10_000),
+        },
+      };
+      await program.methods
+        .setFlashLoanFee(newFee)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          flashLoanFeeAccount,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+      await program.account.flashLoanFee
+        .fetch(flashLoanFeeAccount)
+        .then(({ feeRatio: { num, denom } }) => {
+          expect(num.eq(newFee.feeRatio.num)).to.be.true;
+          expect(denom.eq(newFee.feeRatio.denom)).to.be.true;
+        });
     });
   });
 

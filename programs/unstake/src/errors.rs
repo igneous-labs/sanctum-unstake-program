@@ -41,4 +41,7 @@ pub enum UnstakeError {
 
     #[msg("The provided protocol fee authority does not have the authority over the protocol fee account")]
     InvalidProtocolFeeAuthority, // 0x177c
+
+    #[msg("Invalid instructions sysvar")]
+    InvalidInstructionsSysvar, // 0x177d
 }
