@@ -52,8 +52,5 @@
   },
   "peerDependencies": {
     "@solana/spl-token": "^0.2.0"
-  },
-  "resolutions": {
-    "@solana/web3.js": "1.43.5"
   }
 }

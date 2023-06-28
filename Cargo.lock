@@ -69,7 +69,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -84,7 +84,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -95,7 +95,7 @@ checksum = "59948e7f9ef8144c2aefb3f32a40c5fce2798baeec765ba038389e82301017ef"
 dependencies = [
  "anchor-syn",
  "proc-macro2",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -107,7 +107,7 @@ dependencies = [
  "anchor-syn",
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -120,7 +120,7 @@ dependencies = [
  "anyhow",
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -133,7 +133,7 @@ dependencies = [
  "anyhow",
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -146,7 +146,7 @@ dependencies = [
  "anyhow",
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -157,7 +157,7 @@ checksum = "f495e85480bd96ddeb77b71d499247c7d4e8b501e75ecb234e9ef7ae7bd6552a"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -192,6 +192,7 @@ checksum = "78f860599da1c2354e7234c768783049eb42e2f54509ecfc942d2e0076a2da7b"
 dependencies = [
  "anchor-lang",
  "borsh 0.9.3",
+ "mpl-token-metadata",
  "solana-program",
  "spl-associated-token-account",
  "spl-token",
@@ -212,7 +213,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.7",
- "syn 1.0.96",
+ "syn 1.0.109",
  "thiserror",
 ]
 
@@ -381,7 +382,7 @@ dependencies = [
  "borsh-derive-internal 0.7.2",
  "borsh-schema-derive-internal 0.7.2",
  "proc-macro2",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -394,7 +395,7 @@ dependencies = [
  "borsh-schema-derive-internal 0.8.2",
  "proc-macro-crate 0.1.5",
  "proc-macro2",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -407,7 +408,7 @@ dependencies = [
  "borsh-schema-derive-internal 0.9.3",
  "proc-macro-crate 0.1.5",
  "proc-macro2",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -418,7 +419,7 @@ checksum = "61621b9d3cca65cc54e2583db84ef912d59ae60d2f04ba61bc0d7fc57556bda2"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -429,7 +430,7 @@ checksum = "d2104c73179359431cc98e016998f2f23bc7a05bc53e79741bcba705f30047bc"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -440,7 +441,7 @@ checksum = "5449c28a7b352f2d1e592a8a28bf139bc71afb0764a14f3c02500935d8c44065"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -451,7 +452,7 @@ checksum = "85b38abfda570837b0949c2c7ebd31417e15607861c23eacb2f668c69f6f3bf7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -462,7 +463,7 @@ checksum = "ae29eb8418fcd46f723f8691a2ac06857d31179d33d2f2d91eb13967de97c728"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -473,7 +474,7 @@ checksum = "cdbd5696d8bfa21d53d9fe39a714a18538bad11492a42d066dbbc395fb1951c0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1124,6 +1125,74 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpl-token-auth-rules"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c376f2cc7dae80e2949cd6ca8a2420b3c61c1ecb7a275c6433d9a4d2d24f994d"
+dependencies = [
+ "borsh 0.9.3",
+ "bytemuck",
+ "mpl-token-metadata-context-derive 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-derive",
+ "num-traits",
+ "rmp-serde",
+ "serde",
+ "shank",
+ "solana-program",
+ "solana-zk-token-sdk",
+ "thiserror",
+]
+
+[[package]]
+name = "mpl-token-metadata"
+version = "1.12.0"
+source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
+dependencies = [
+ "arrayref",
+ "borsh 0.9.3",
+ "mpl-token-auth-rules",
+ "mpl-token-metadata-context-derive 0.2.1 (git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut)",
+ "mpl-utils",
+ "num-derive",
+ "num-traits",
+ "shank",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+ "thiserror",
+]
+
+[[package]]
+name = "mpl-token-metadata-context-derive"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12989bc45715b0ee91944855130131479f9c772e198a910c3eb0ea327d5bffc3"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "mpl-token-metadata-context-derive"
+version = "0.2.1"
+source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "mpl-utils"
+version = "0.2.0"
+source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
+dependencies = [
+ "arrayref",
+ "borsh 0.9.3",
+ "solana-program",
+ "spl-token",
+]
+
+[[package]]
 name = "num-derive"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1131,7 +1200,7 @@ checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1171,7 +1240,7 @@ dependencies = [
  "proc-macro-crate 1.1.3",
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1208,6 +1277,12 @@ dependencies = [
  "smallvec",
  "windows-targets",
 ]
+
+[[package]]
+name = "paste"
+version = "1.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
 
 [[package]]
 name = "pbkdf2"
@@ -1485,6 +1560,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "rmp"
+version = "0.8.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44519172358fd6d58656c86ab8e7fbc9e1490c3e8f14d35ed78ca0dd07403c9f"
+dependencies = [
+ "byteorder",
+ "num-traits",
+ "paste",
+]
+
+[[package]]
+name = "rmp-serde"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5b13be192e0220b8afb7222aa5813cb62cc269ebb5cac346ca6487681d2913e"
+dependencies = [
+ "byteorder",
+ "rmp",
+ "serde",
+]
+
+[[package]]
 name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1628,6 +1725,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "shank"
+version = "0.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b63e565b5e95ad88ab38f312e89444c749360641c509ef2de0093b49f55974a5"
+dependencies = [
+ "shank_macro",
+]
+
+[[package]]
+name = "shank_macro"
+version = "0.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63927d22a1e8b74bda98cc6e151fcdf178b7abb0dc6c4f81e0bbf5ffe2fc4ec8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "shank_macro_impl",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "shank_macro_impl"
+version = "0.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40ce03403df682f80f4dc1efafa87a4d0cb89b03726d0565e6364bdca5b9a441"
+dependencies = [
+ "anyhow",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "signature"
 version = "1.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1692,7 +1823,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustc_version",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1816,7 +1947,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1937,9 +2068,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
-version = "1.0.96"
+version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0748dd251e24453cb8717f0354206b91557e4ec8703673a4b30208f2abaf1ebf"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1997,7 +2128,7 @@ checksum = "0396bc89e626244658bef819e22d0cc459e795a5ebe878e6ec336d1674a8d79a"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.96",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2098,6 +2229,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "mpl-token-metadata",
  "proptest",
  "spl-associated-token-account",
  "spl-math",

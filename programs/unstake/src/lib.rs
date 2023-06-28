@@ -53,6 +53,13 @@ pub mod unstake {
         SetFeeAuthority::run(ctx)
     }
 
+    pub fn set_lp_token_metadata(
+        ctx: Context<SetLpTokenMetadata>,
+        data: DataV2LpToken,
+    ) -> Result<()> {
+        SetLpTokenMetadata::run(ctx, data)
+    }
+
     pub fn deactivate_stake_account(ctx: Context<DeactivateStakeAccount>) -> Result<()> {
         DeactivateStakeAccount::run(ctx)
     }

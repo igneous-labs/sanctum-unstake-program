@@ -13,3 +13,7 @@ test = "./test.sh"
 
 [test.validator]
 slots_per_epoch = "32"
+url = "https://api.mainnet-beta.solana.com"
+
+[[test.validator.clone]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s" # implicitly also clones PwDiXFxQsGra4sFFTT8r1QWRMd4vfumiWC1jfWNfdYT

@@ -38,6 +38,11 @@ import {
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
+import {
+  Metadata,
+  TokenStandard,
+} from "@metaplex-foundation/mpl-token-metadata";
 
 chaiUse(chaiAsPromised);
 
@@ -58,6 +63,23 @@ describe("internals", () => {
   let protocolFeeAddr = null as PublicKey;
   let protocolFee = null as ProtocolFeeAccount;
   let protocolFeeDestination = null as PublicKey;
+
+  const metadata = {
+    name: "unstake.it LP token",
+    symbol: "UNSTAKE",
+    uri: "https://example.com",
+  };
+  const metadataProgram = new PublicKey(
+    "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+  );
+  const [metadataAccount] = findProgramAddressSync(
+    [
+      Buffer.from("metadata"),
+      metadataProgram.toBuffer(),
+      lpMintKeypair.publicKey.toBuffer(),
+    ],
+    metadataProgram
+  );
 
   before(async () => {
     [protocolFeeAddr] = await findProtocolFeeAccount(program.programId);
@@ -668,6 +690,94 @@ describe("internals", () => {
           "The provided description of fee violates the invariants"
         )
       );
+    });
+
+    it("it rejects to set token metadata with invalid fee authority", async () => {
+      const fakeAuthKeypair = lperKeypair;
+      await expect(
+        program.methods
+          .setLpTokenMetadata(metadata)
+          .accounts({
+            payer: fakeAuthKeypair.publicKey,
+            feeAuthority: fakeAuthKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            lpMint: lpMintKeypair.publicKey,
+            metadata: metadataAccount,
+            metadataProgram,
+          })
+          .signers([fakeAuthKeypair])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6002,
+          "The provided fee authority does not have the authority over the provided pool account"
+        )
+      );
+    });
+
+    it("it creates token metadata", async () => {
+      await program.methods
+        .setLpTokenMetadata(metadata)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          lpMint: lpMintKeypair.publicKey,
+          metadata: metadataAccount,
+          metadataProgram,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+      const createdMetadata = await Metadata.fromAccountAddress(
+        program.provider.connection,
+        metadataAccount
+      );
+
+      expect(createdMetadata.data.name.replace(/\0/g, "")).to.eq(metadata.name);
+      expect(createdMetadata.data.symbol.replace(/\0/g, "")).to.eq(
+        metadata.symbol
+      );
+      expect(createdMetadata.data.uri.replace(/\0/g, "")).to.eq(metadata.uri);
+      expect(createdMetadata.tokenStandard).to.eq(TokenStandard.Fungible);
+    });
+
+    it("it updates token metadata", async () => {
+      const newMetadata = {
+        name: "new name",
+        symbol: "NEWSYM",
+        uri: "new.com",
+      };
+
+      await program.methods
+        .setLpTokenMetadata(newMetadata)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          lpMint: lpMintKeypair.publicKey,
+          metadata: metadataAccount,
+          metadataProgram,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+      const updatedMetadata = await Metadata.fromAccountAddress(
+        program.provider.connection,
+        metadataAccount
+      );
+
+      expect(updatedMetadata.data.name.replace(/\0/g, "")).to.eq(
+        newMetadata.name
+      );
+      expect(updatedMetadata.data.symbol.replace(/\0/g, "")).to.eq(
+        newMetadata.symbol
+      );
+      expect(updatedMetadata.data.uri.replace(/\0/g, "")).to.eq(
+        newMetadata.uri
+      );
+      expect(updatedMetadata.tokenStandard).to.eq(TokenStandard.Fungible);
     });
   });
 
