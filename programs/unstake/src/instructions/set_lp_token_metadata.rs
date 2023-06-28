@@ -54,7 +54,7 @@ pub struct SetLpTokenMetadata<'info> {
 
 impl<'info> SetLpTokenMetadata<'info> {
     #[inline(always)]
-    pub fn run(ctx: Context<Self>, data: DataV2) -> Result<()> {
+    pub fn run(ctx: Context<Self>, data: DataV2LpToken) -> Result<()> {
         let payer = &ctx.accounts.payer;
         let pool_account = &ctx.accounts.pool_account;
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
@@ -86,7 +86,7 @@ impl<'info> SetLpTokenMetadata<'info> {
                     },
                     &[seeds],
                 ),
-                data,
+                data.into(),
                 true,
                 true,
                 None,
@@ -101,15 +101,12 @@ impl<'info> SetLpTokenMetadata<'info> {
                     &[seeds],
                 ),
                 None,
-                Some(data),
+                Some(data.into()),
                 None,
                 None,
             ),
         }?;
 
-        // TODO: if this fails with signer privilege escalated
-        // its because mpl_token_metadata::instruction::set_token_standard
-        // has update_authority set to mut
         set_token_standard(
             CpiContext::new_with_signer(
                 metadata_program.to_account_info(),
@@ -124,5 +121,33 @@ impl<'info> SetLpTokenMetadata<'info> {
         )?;
 
         Ok(())
+    }
+}
+
+/// Have to duplicate struct definition from metaplex here for IDL.
+/// At least we get to truncate some unnecessary fields because of that.
+/// Issue tracking: https://github.com/coral-xyz/anchor/issues/1972
+#[repr(C)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Eq, Debug, Clone)]
+pub struct DataV2LpToken {
+    /// The name of the asset
+    pub name: String,
+    /// The symbol for the asset
+    pub symbol: String,
+    /// URI pointing to JSON representing the asset
+    pub uri: String,
+}
+
+impl From<DataV2LpToken> for DataV2 {
+    fn from(value: DataV2LpToken) -> Self {
+        Self {
+            name: value.name,
+            symbol: value.symbol,
+            uri: value.uri,
+            seller_fee_basis_points: 0,
+            creators: None,
+            collection: None,
+            uses: None,
+        }
     }
 }

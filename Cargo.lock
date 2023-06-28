@@ -1132,7 +1132,7 @@ checksum = "c376f2cc7dae80e2949cd6ca8a2420b3c61c1ecb7a275c6433d9a4d2d24f994d"
 dependencies = [
  "borsh 0.9.3",
  "bytemuck",
- "mpl-token-metadata-context-derive",
+ "mpl-token-metadata-context-derive 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive",
  "num-traits",
  "rmp-serde",
@@ -1146,13 +1146,12 @@ dependencies = [
 [[package]]
 name = "mpl-token-metadata"
 version = "1.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f661ff8c1d64c48cf207c0d259783d411a4249058c1b861fabd8bb6ce30ae4d8"
+source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
  "mpl-token-auth-rules",
- "mpl-token-metadata-context-derive",
+ "mpl-token-metadata-context-derive 0.2.1 (git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut)",
  "mpl-utils",
  "num-derive",
  "num-traits",
@@ -1174,10 +1173,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpl-token-metadata-context-derive"
+version = "0.2.1"
+source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "mpl-utils"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "822133b6cba8f9a43e5e0e189813be63dd795858f54155c729833be472ffdb51"
+source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",

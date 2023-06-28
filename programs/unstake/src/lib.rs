@@ -55,7 +55,7 @@ pub mod unstake {
 
     pub fn set_lp_token_metadata(
         ctx: Context<SetLpTokenMetadata>,
-        data: mpl_token_metadata::state::DataV2,
+        data: DataV2LpToken,
     ) -> Result<()> {
         SetLpTokenMetadata::run(ctx, data)
     }

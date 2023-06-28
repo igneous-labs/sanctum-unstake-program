@@ -3,6 +3,7 @@
     "@project-serum/anchor": "0.24.2"
   },
   "devDependencies": {
+    "@metaplex-foundation/mpl-token-metadata": "^2.12.0",
     "@soceanfi/solana-stake-sdk": "^0.1.0",
     "@solana/spl-token": "^0.2.0",
     "@types/bn.js": "^5.1.0",
@@ -28,5 +29,8 @@
     "pre-commit-install": "wget -O pre-commit.pyz https://github.com/pre-commit/pre-commit/releases/download/v2.16.0/pre-commit-2.16.0.pyz && python3 pre-commit.pyz install && python3 pre-commit.pyz install --hook-type commit-msg && rm pre-commit.pyz",
     "deploy-local": "yarn build && solana program deploy target/deploy/*.so --program-id program.json -u localhost",
     "init-local": "./init-local.sh"
+  },
+  "resolutions": {
+    "@solana/web3.js": "1.77.3"
   }
 }
