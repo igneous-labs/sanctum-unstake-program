@@ -44,4 +44,7 @@ pub enum UnstakeError {
 
     #[msg("Invalid instructions sysvar")]
     InvalidInstructionsSysvar, // 0x177d
+
+    #[msg("No succeeding repay flash loan instruction found")]
+    NoSucceedingRepayFlashLoan, // 0x177e
 }

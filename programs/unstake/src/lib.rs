@@ -88,14 +88,12 @@ pub mod unstake {
         ctx: Context<'_, '_, '_, 'info, TakeFlashLoan<'info>>,
         lamports: u64,
     ) -> Result<()> {
-        TakeFlashLoan::validate()?;
         TakeFlashLoan::run(ctx, lamports)
     }
 
     pub fn repay_flash_loan<'info>(
         ctx: Context<'_, '_, '_, 'info, RepayFlashLoan<'info>>,
     ) -> Result<()> {
-        RepayFlashLoan::validate()?;
         RepayFlashLoan::run(ctx)
     }
 }
