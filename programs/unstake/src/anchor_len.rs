@@ -6,5 +6,6 @@ pub trait AnchorLen {
 }
 
 impl<T: AccountSerialize + AccountSerialize> AnchorLen for T {
+    /// TODO: this may overallocate space due to padding
     const LEN: usize = 8 + size_of::<Self>();
 }

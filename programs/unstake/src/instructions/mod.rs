@@ -1,6 +1,7 @@
 mod add_liquidity;
 mod create_pool;
 mod deactivate_stake_account;
+mod flash_loan;
 mod init_protocol_fee;
 mod reclaim_stake_account;
 mod remove_liquidity;
@@ -13,6 +14,7 @@ mod unstake_instructions;
 pub use add_liquidity::*;
 pub use create_pool::*;
 pub use deactivate_stake_account::*;
+pub use flash_loan::*;
 pub use init_protocol_fee::*;
 pub use reclaim_stake_account::*;
 pub use remove_liquidity::*;

@@ -29,6 +29,15 @@ impl Rational {
             .and_then(|product| product.checked_div(self.denom.into()))
             .and_then(|result| result.try_into().ok())
     }
+
+    pub fn ceil_mul(&self, value: u64) -> Option<u64> {
+        u128::from(value)
+            .checked_mul(self.num.into())
+            .and_then(|product| product.checked_add(self.denom.into()))
+            .and_then(|rounded_up| rounded_up.checked_sub(1))
+            .and_then(|rounded_up_sub_one| rounded_up_sub_one.checked_div(self.denom.into()))
+            .and_then(|result| result.try_into().ok())
+    }
 }
 
 impl fmt::Display for Rational {
