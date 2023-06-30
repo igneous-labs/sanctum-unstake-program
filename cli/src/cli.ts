@@ -22,7 +22,7 @@ import {
   findPoolFeeAccount,
   findPoolSolReserves,
   findProtocolFeeAccount,
-} from "@unstake-it/sol";
+} from "@unstake-it/sol/cjs";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { hideBin } from "yargs/helpers";
 import yargs from "yargs";

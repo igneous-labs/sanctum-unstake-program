@@ -1,4 +1,4 @@
-import { Fee } from "@unstake-it/sol";
+import { Fee } from "@unstake-it/sol/cjs";
 import { numberToPositiveRationalChecked } from "./utils";
 
 export type LiquidityLinearFeeArg = {

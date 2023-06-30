@@ -1,4 +1,4 @@
-import { Rational } from "@unstake-it/sol";
+import { Rational } from "@unstake-it/sol/cjs";
 import { Keypair } from "@solana/web3.js";
 import BN from "bn.js";
 import { readFileSync } from "fs";

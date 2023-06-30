@@ -1,5 +1,5 @@
 import { IdlAccounts } from "@project-serum/anchor";
-import { Rational, Unstake } from "@unstake-it/sol";
+import { Rational, Unstake } from "@unstake-it/sol/cjs";
 import { parseLamportsToSol } from "./utils";
 
 type PoolHr = {
