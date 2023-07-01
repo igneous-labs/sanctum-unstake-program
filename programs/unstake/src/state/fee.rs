@@ -37,7 +37,8 @@ impl Fee {
 #[repr(C)]
 pub enum FeeEnum {
     /// Charges a flat fee based on a set fee ratio
-    /// applied to the size of a given swap
+    /// applied to the size of a given swap.
+    /// E.g. num: 1, denom: 10_000 => 1bps fee
     ///
     /// Invariants:
     ///  - ratio is a valid Rational
@@ -46,7 +47,8 @@ pub enum FeeEnum {
 
     /// Charges a fee based on how much liquidity
     /// a swap leaves in the liquidity pool,
-    /// increasing linearly as less liquidity is left
+    /// increasing linearly as less liquidity is left.
+    /// See diagram in apply() below for details
     ///
     /// Invariants:
     ///  - max_liq_remaining is a valid Rational
@@ -114,8 +116,27 @@ impl FeeEnum {
                 // linear interpolation from max_liq_remaining to zero_liq_remaining where y-intercept at max_liq_remaining
                 // x-axis is liquidity consumed in lamports
                 // y-axis is fee ratio (e.g. 0.01 is 1% fees)
-                //
                 // let I = pool_incoming_stake, S = stake_account_lamports,
+                //
+                //                  fee ratio
+                //   zero_liq_remaining -^------------/
+                //                       |           /|
+                //                       |          / |
+                //         charge y here-|---------/  |
+                //                       |        /|  |
+                //                       |       / |  |
+                //                       |      /  |  |
+                //                       |     /   |  |
+                //                       |    /    |  |
+                //                       |   /     |  |
+                //                       |  /      |  |
+                //                       | /|      |  |
+                //                       |/ |      |  |
+                // c (max_liq_remaining)-|  |      |  |
+                //                       |  |      |  |
+                //         --------------|--|------|--|-------------------> liquidity consumed
+                //                          I I+(1-y)S total amount of lamports in pool
+                //
                 // m = slope, c = y-intercept at max_liq_remaining
                 // new liquidity consumed after unstake = I + (1 - y)S
                 // y = m(I + (1 - y)S) + c
