@@ -183,7 +183,6 @@ describe("integration", () => {
     await program.methods
       .unstake()
       .accounts({
-        payer: payerKeypair.publicKey,
         unstaker: unstakerKeypair.publicKey,
         stakeAccount: stakeAccountKeypair.publicKey,
         destination: unstakerKeypair.publicKey,
@@ -196,7 +195,7 @@ describe("integration", () => {
         clock: SYSVAR_CLOCK_PUBKEY,
         stakeProgram: StakeProgram.programId,
       })
-      .signers([payerKeypair, unstakerKeypair])
+      .signers([unstakerKeypair])
       .rpc({ skipPreflight: true });
 
     const [stakerPost, withdrawerPost] = await getStakeAccount(
@@ -282,7 +281,6 @@ describe("integration", () => {
     await program.methods
       .unstakeWsol()
       .accounts({
-        payer: payerKeypair.publicKey,
         unstaker: unstakerKeypair.publicKey,
         stakeAccount: stakeAccountWSolKeypair.publicKey,
         destination: unstakerWSol,
@@ -296,7 +294,7 @@ describe("integration", () => {
         stakeProgram: StakeProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
-      .signers([payerKeypair, unstakerKeypair])
+      .signers([unstakerKeypair])
       .rpc({ skipPreflight: true });
 
     const [stakerPost, withdrawerPost] = await getStakeAccount(

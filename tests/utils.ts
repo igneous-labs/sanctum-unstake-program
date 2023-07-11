@@ -18,6 +18,8 @@ export const EPSILON_UPPER_BOUND = 1; // TODO: confirm that the value is reasona
 
 export const EPSILON_FLOAT_UPPER_BOUND = 1e-9;
 
+export const LAMPORTS_PER_SIGNATURE = 5000;
+
 // Anchor at the current v0.24.2, is throwing two different shapes of object
 // for program errors. This closure returns a predicate that checks if a given
 // error object matches either type and has the correct error code and message.

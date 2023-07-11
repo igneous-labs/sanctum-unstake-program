@@ -56,12 +56,6 @@ export type UnstakeWSolAccounts = {
   referrer?: Address;
 
   /**
-   * The SOL account paying for the transaction and rent.
-   * Defaults to `unstaker` if unspecified
-   */
-  payer?: Address;
-
-  /**
    * The wSOL account to receive the unstaked wSOL.
    * Defaults to wSOL ATA of `unstaker` if unspecified
    */
@@ -80,7 +74,6 @@ export async function unstakeWsolTx(
     poolAccount,
     stakeAccount,
     unstaker,
-    payer: payerOption,
     destination: destinationOption,
     protocolFee: protocolFeeOption,
     protocolFeeDestination: protocolFeeDestinationOption,
@@ -97,7 +90,6 @@ export async function unstakeWsolTx(
       protocolFeeDestinationOption
     );
 
-  const payer = payerOption ?? unstaker;
   const destination =
     destinationOption ??
     (await getAssociatedTokenAddress(NATIVE_MINT, unstakerPk));
@@ -117,7 +109,6 @@ export async function unstakeWsolTx(
   );
 
   let builder = program.methods.unstakeWsol().accounts({
-    payer,
     unstaker,
     stakeAccount,
     destination,

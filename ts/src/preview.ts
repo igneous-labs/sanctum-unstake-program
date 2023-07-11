@@ -39,11 +39,10 @@ async function previewUnstakeInner(
     accounts: UnstakeAccounts | UnstakeWSolAccounts
   ) => Promise<Transaction>
 ): Promise<number> {
-  const payer = accounts.payer ?? accounts.unstaker;
   const destination = accounts.destination ?? accounts.unstaker;
   const destinationPk = new PublicKey(destination);
   const tx = await unstakeTxGen(program, accounts);
-  tx.feePayer = new PublicKey(payer);
+  tx.feePayer = new PublicKey(accounts.unstaker);
   const [
     destinationPreLamports,
     {

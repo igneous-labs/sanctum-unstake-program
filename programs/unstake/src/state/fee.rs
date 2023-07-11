@@ -19,6 +19,8 @@ impl Fee {
         self.fee.validate()
     }
 
+    /// Applies the contained fee model to the unstake parameters
+    /// Returns number of lamports to collect/retain as fees
     pub fn apply(
         &self,
         pool_incoming_stake: u64,
