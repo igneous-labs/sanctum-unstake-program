@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The minor version will be incremented upon a breaking change and the patch version will be
 incremented for features.
 
+## [1.0.1] - 2023-07-14
+
+### Fixed
+
+- Fixed import for `IDL_JSON` throwing `ERR_IMPORT_ASSERTION_TYPE_MISSING` for esm builds due to https://github.com/microsoft/TypeScript/issues/51783
+
 ## [1.0.0] - 2023-07-13
 
 ### Breaking
