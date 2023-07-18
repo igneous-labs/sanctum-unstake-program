@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.dependencies]
-solana-program = "^1.14"
+solana-program = "~1.14"
 borsh = "^0.9.1"
 
 [patch.crates-io]
