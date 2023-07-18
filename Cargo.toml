@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "programs/*"
+    "programs/*",
+    "cli-rust"
 ]
 
 [patch.crates-io]

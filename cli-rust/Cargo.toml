@@ -1,0 +1,31 @@
+[package]
+name = "unstake-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "unstake.it"
+path = "src/main.rs"
+
+[dependencies]
+anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }
+anchor-spl = { version = "0.28.0", features = ["metadata", "stake", "token"] }
+base64 = "0.21.2"
+borsh = "^0.9.1"
+clap = { version = "^4.0", features = ["derive"] }
+clap2 = { package = "clap", version = "^2.0" } # required for solana-clap-utils
+derive_more = "^0.99"
+itertools = "^0.10"
+serde = { version = "1.0.171", features = ["derive"] }
+serde_json = "1.0.103"
+solana-clap-utils = "^1.9"
+solana-cli-config = "^1.9"
+solana-client = "^1.9"
+solana-program = "^1.9" # ~1.10 stakedex_sdk_common requirement
+solana-remote-wallet = { version = "^1.9", features = ["hidapi"] } # else throws "hidapi crate compilation disabled in solana-remote-wallet."
+solana-sdk = "^1.9"
+solana-transaction-status = "1.16.4"
+spl-associated-token-account = "1.1.1"
+spl-governance = "2.2.4"
+spl-token = "^3.0"
+unstake = { path = "../programs/unstake" }
