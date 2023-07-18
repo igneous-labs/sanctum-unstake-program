@@ -8,8 +8,8 @@ name = "unstake.it"
 path = "src/main.rs"
 
 [dependencies]
-anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }
-anchor-spl = { version = "0.28.0", features = ["metadata", "stake", "token"] }
+anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
+anchor-spl = { version = "0.26.0", features = ["metadata", "stake", "token"] }
 base64 = "0.21.2"
 borsh = "^0.9.1"
 clap = { version = "^4.0", features = ["derive"] }
