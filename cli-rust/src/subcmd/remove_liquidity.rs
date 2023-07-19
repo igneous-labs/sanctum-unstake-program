@@ -1,10 +1,11 @@
-use std::fs;
+use std::{fs, str::FromStr};
 
 use anchor_lang::AccountDeserialize;
 use clap::Args;
 use solana_program::{message::Message, native_token::sol_to_lamports, pubkey::Pubkey};
 use solana_sdk::{
     signature::{read_keypair_file, Keypair},
+    signer::Signer,
     transaction::Transaction,
 };
 use unstake::{
@@ -28,22 +29,22 @@ pub struct RemoveLiquidityArgs {
     to: Option<String>,
 }
 
-impl SubcmdExec for RemoveLiquidity {
+impl SubcmdExec for RemoveLiquidityArgs {
     fn process_cmd(&self, args: &crate::Args) {
         let payer = args.config.signer();
         let client = args.config.rpc_client();
 
-        let pool_key = Pubkey(self.pool_account);
+        let pool_key = Pubkey::from_str(&self.pool_account).unwrap();
         let pool_account = client.get_account(&pool_key).unwrap();
-        let pool = Pool::try_deserialize(&pool_account.data).unwrap();
+        let pool = Pool::try_deserialize(&mut pool_account.data.as_slice()).unwrap();
 
         let amount_lp = self.amount_lp;
         let amount_lp_atomics = sol_to_lamports(amount_lp);
 
         let mut authority = payer.pubkey();
         let signers: Vec<Keypair> = vec![];
-        if Some(self.authority) {
-            let authority_keypair = read_keypair_file(authority_path).unwrap();
+        if self.authority.is_some() {
+            let authority_keypair = read_keypair_file(&self.authority.unwrap()).unwrap();
             signers.push(authority_keypair);
             authority = authority_keypair.pubkey();
         }
@@ -51,13 +52,13 @@ impl SubcmdExec for RemoveLiquidity {
         let ix = remove_liquidity(
             RemoveLiquidityAccounts {
                 burn_lp_tokens_from_authority: authority,
-                pool_account: pool_account,
-                burn_lp_tokens_from: self.burn_from,
-                to: self.to,
+                pool_account: pool_key,
+                burn_lp_tokens_from: Pubkey::from_str(&self.burn_from.unwrap()).unwrap(),
+                to: Pubkey::from_str(&self.to.unwrap()).unwrap(),
                 lp_mint: pool.lp_mint,
-                pool_sol_reserves: !todo(),
-                system_program: !todo(),
-                token_program: !todo(),
+                pool_sol_reserves: todo!(),
+                system_program: todo!(),
+                token_program: todo!(),
             },
             amount_lp_atomics,
         )
@@ -65,7 +66,7 @@ impl SubcmdExec for RemoveLiquidity {
 
         let msg = Message::new(&[ix], Some(&payer.pubkey()));
         let blockhash = client.get_latest_blockhash().unwrap();
-        let tx = Transaction::new(&signers, msg, blockhash);
+        let tx = Transaction::new(&signers.iter().collect(), msg, blockhash);
         let sig = client.send_and_confirm_transaction(&tx).unwrap();
         println!(
             "{} LP tokens liquidity removed from pool at {}",

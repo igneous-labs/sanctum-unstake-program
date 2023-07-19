@@ -23,5 +23,7 @@ solana-cli-config = "~1.14"
 solana-client = "~1.14"
 solana-sdk = "~1.14"
 solana-program = { workspace = true }
-solana-transaction-status = "1.14"
+solana-transaction-status = "~1.14"
+spl-associated-token-account = "1.1.1"
+spl-token = "^3.0"
 unstake = { path = "../programs/unstake" }

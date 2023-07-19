@@ -1,9 +1,8 @@
+use std::str::FromStr;
+
 use clap::Args;
 use solana_program::{message::Message, pubkey::Pubkey};
-use solana_sdk::{
-    signature::{read_keypair_file, Keypair},
-    transaction::Transaction,
-};
+use solana_sdk::{signature::read_keypair_file, signer::Signer, transaction::Transaction};
 use unstake::{accounts::SetFeeAuthority as SetFeeAuthorityAccounts, unstake::set_fee_authority};
 
 use super::SubcmdExec;
@@ -19,18 +18,18 @@ pub struct SetFeeAuthorityArgs {
     fee_authority: Option<String>,
 }
 
-impl SubcmdExec for SetFeeAuthority {
+impl SubcmdExec for SetFeeAuthorityArgs {
     fn process_cmd(&self, args: &crate::Args) {
         let payer = args.config.signer();
         let client = args.config.rpc_client();
 
-        let pool_account = Pubkey(self.pool_account);
-        let new_fee_authority = Pubkey(self.new_fee_authority);
+        let pool_account = Pubkey::from_str(&self.pool_account).unwrap();
+        let new_fee_authority = Pubkey::from_str(&self.new_fee_authority).unwrap();
 
-        let signers: Vec<Signer> = vec![];
+        let signers = vec![];
         let mut fee_authority = payer.pubkey();
-        if Some(self.fee_authority) {
-            let fee_authority_keypair = read_keypair_file(self.fee_authority).unwrap();
+        if self.fee_authority.is_some() {
+            let fee_authority_keypair = read_keypair_file(self.fee_authority.unwrap()).unwrap();
             signers.push(fee_authority_keypair);
             fee_authority = fee_authority_keypair.pubkey();
         }
@@ -44,7 +43,7 @@ impl SubcmdExec for SetFeeAuthority {
 
         let msg = Message::new(&[ix], Some(&payer.pubkey()));
         let blockhash = client.get_latest_blockhash().unwrap();
-        let tx = Transaction::new(&signers, msg, blockhash);
+        let tx = Transaction::new(&signers.iter().collect(), msg, blockhash);
         let sig = client.send_and_confirm_transaction(&tx).unwrap();
         println!(
             "Liquidity pool at {} fee authority updated from {} to {}",

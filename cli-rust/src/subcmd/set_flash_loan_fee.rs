@@ -1,11 +1,11 @@
+use std::str::FromStr;
+
 use clap::Args;
 use solana_program::pubkey::Pubkey;
 use unstake::{
-    instructions::SetFlashLoanFee as SetFlashLoanFeeIx, state::FlashLoanFee,
+    accounts::SetFlashLoanFee as SetFlashLoanFeeAccounts, rational::Rational, state::FlashLoanFee,
     unstake::set_flash_loan_fee, ID,
 };
-
-use crate::tx_utils::send_or_sim_tx;
 
 use super::SubcmdExec;
 
@@ -13,37 +13,39 @@ use super::SubcmdExec;
 #[command(long_about = "Set flash loan fee")]
 pub struct SetFlashLoanFeeArgs {
     #[arg(help = "")]
-    pool_account: Pubkey,
+    pool_account: String,
     #[arg(help = "")]
-    flash_loan_fee_account: Pubkey,
+    flash_loan_fee_account: String,
 }
 
-impl SubcmdExec for SetFlashLoanFee {
+impl SubcmdExec for SetFlashLoanFeeArgs {
     fn process_cmd(&self, args: &crate::Args) {
         let payer = args.config.signer();
         let client = args.config.rpc_client();
-        let pool_account = self.pool_account;
-        let flash_loan_fee_account = self.flash_loan_fee_account;
+        let pool_account = Pubkey::from_str(&self.pool_account).unwrap();
+        let flash_loan_fee_account = Pubkey::from_str(&self.flash_loan_fee_account).unwrap();
 
         let fees = FlashLoanFee {
-            fee_ratio: (1, 1000),
+            fee_ratio: Rational {
+                num: 1,
+                denom: 1000,
+            },
         };
 
-        let accounts = SetFlashLoanFeeIx {
-            payer: payer.pubkey(),
-            fee_authority: payer.pubkey(),
-            pool_account: pool_account,
-            flash_loan_fee_account: flash_loan_fee_account,
-            system_program: ID,
-        };
+        let tx = set_flash_loan_fee(
+            SetFlashLoanFeeAccounts {
+                payer: payer.pubkey(),
+                fee_authority: payer.pubkey(),
+                pool_account,
+                flash_loan_fee_account,
+                system_program: ID,
+            },
+            fees,
+        )
+        .unwrap();
 
-        let ix = set_flash_loan_fee(accounts, fees).unwrap();
-
-        let msg = Message::new(&[ix], Some(&payer.pubkey()));
-        let blockhash = client.get_latest_blockhash().unwrap();
-        let tx = Transaction::new(&vec![payer], msg, blockhash);
-
-        println!("Setting flash loan fee to {}",);
-        send_or_sim_tx(args, &client, &tx);
+        let sig = client.send_and_confirm_transaction(&tx).unwrap();
+        println!("Flash loan fee set to {}", flash_loan_fee_account);
+        println!("TX: {}", sig);
     }
 }

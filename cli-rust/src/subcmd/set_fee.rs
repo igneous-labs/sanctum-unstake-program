@@ -1,11 +1,8 @@
-use std::fs;
+use std::{fs, str::FromStr};
 
 use clap::Args;
-use solana_program::{message::Message, pubkey::Pubkey};
-use solana_sdk::{
-    signature::{read_keypair_file, Keypair},
-    transaction::Transaction,
-};
+use solana_program::{message::Message, pubkey::Pubkey, system_program};
+use solana_sdk::{signature::read_keypair_file, signer::Signer, transaction::Transaction};
 use unstake::{accounts::SetFee as SetFeeAccounts, unstake::set_fee};
 
 use super::SubcmdExec;
@@ -25,19 +22,19 @@ pub struct SetFeeArgs {
     fee_authority: Option<String>,
 }
 
-impl SubcmdExec for SetFee {
+impl SubcmdExec for SetFeeArgs {
     fn process_cmd(&self, args: &crate::Args) {
         let payer = args.config.signer();
         let client = args.config.rpc_client();
 
-        let pool_account = Pubkey(self.pool_account);
+        let pool_account = Pubkey::from_str(&self.pool_account).unwrap();
         let fee_file = fs::File::open(self.fee_path).unwrap();
         let fee = serde_json::from_reader(fee_file).unwrap();
 
-        let signers: Vec<Signer> = vec![];
+        let signers = vec![];
         let mut fee_authority = payer.pubkey();
-        if Some(self.fee_authority) {
-            let fee_authority_keypair = read_keypair_file(self.fee_authority).unwrap();
+        if self.fee_authority.is_some() {
+            let fee_authority_keypair = read_keypair_file(self.fee_authority.unwrap()).unwrap();
             signers.push(fee_authority_keypair);
             fee_authority = fee_authority_keypair.pubkey();
         }
@@ -46,9 +43,9 @@ impl SubcmdExec for SetFee {
             SetFeeAccounts {
                 pool_account,
                 fee_authority,
+                system_program: system_program::id(),
                 fee_account: !todo(),
                 rent: !todo(),
-                system_program: !todo(),
             },
             fee,
         )
@@ -56,12 +53,12 @@ impl SubcmdExec for SetFee {
 
         let msg = Message::new(&[ix], Some(&payer.pubkey()));
         let blockhash = client.get_latest_blockhash().unwrap();
-        let tx = Transaction::new(&signers, msg, blockhash);
+        let tx = Transaction::new(&signers.iter().collect(), msg, blockhash);
         let sig = client.send_and_confirm_transaction(&tx).unwrap();
         println!(
-            "Liquidity pool at {} fees updated to {}",
+            "Liquidity pool at {} fees updated to {:?}",
             pool_account.to_string(),
-            fee
+            fee.fee
         );
         println!("TX: {}", sig);
     }
