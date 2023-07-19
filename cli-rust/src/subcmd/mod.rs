@@ -1,7 +1,7 @@
 use clap::Subcommand;
 
 mod add_liquidity;
-mod create_pool;
+// mod create_pool;
 mod fetch_protocol_fee;
 // mod init_protocol_fee;
 // mod remove_liquidity;
@@ -12,7 +12,7 @@ mod fetch_protocol_fee;
 mod view_pool;
 
 pub use add_liquidity::*;
-pub use create_pool::*;
+// pub use create_pool::*;
 pub use fetch_protocol_fee::*;
 // pub use init_protocol_fee::*;
 // pub use remove_liquidity::*;
@@ -44,7 +44,7 @@ impl SubcmdExec for Subcmd {
     fn process_cmd(&self, args: &crate::Args) {
         match self {
             Self::AddLiquidity(a) => a.process_cmd(args),
-            Self::CreatePool(a) => a.process_cmd(args),
+            // Self::CreatePool(a) => a.process_cmd(args),
             Self::FetchProtocolFee(a) => a.process_cmd(args),
             // Self::InitProtocolFee(a) => a.process_cmd(args),
             // Self::RemoveLiquidity(a) => a.process_cmd(args),
