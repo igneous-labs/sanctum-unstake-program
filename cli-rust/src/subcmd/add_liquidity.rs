@@ -91,12 +91,7 @@ impl SubcmdExec for AddLiquidityArgs {
 
             instructions.insert(
                 0,
-                create_associated_token_account(
-                    &payer_pk,
-                    &payer_pk,
-                    &pool.lp_mint,
-                    &spl_token::id(),
-                ),
+                create_associated_token_account(&payer_pk, &from, &pool.lp_mint, &spl_token::id()),
             )
         }
 
