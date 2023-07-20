@@ -25,7 +25,7 @@ pub struct AddLiquidityArgs {
     amount_sol: f64,
     #[arg(help = "Path to the SOL keypair to add liquidity from")]
     from: Option<String>,
-    #[arg(help = "LP token account to mint LP tokens to")]
+    #[arg(help = "LP token account to mint LP tokens to. Defaults to ATA of `from`")]
     mint_lp_tokens_to: Option<String>,
 }
 
