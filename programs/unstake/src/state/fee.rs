@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use serde::Deserialize;
 use spl_math::precise_number::PreciseNumber;
 use std::convert::TryFrom;
 use std::fmt;
@@ -10,6 +11,7 @@ pub const FEE_SEED_SUFFIX: &[u8] = b"fee";
 
 // Anchor can't derive account for enum, so wrap it in a struct
 #[account]
+#[derive(Debug, Deserialize)]
 pub struct Fee {
     pub fee: FeeEnum,
 }
@@ -35,7 +37,7 @@ impl Fee {
     }
 }
 
-#[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
+#[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize, Deserialize)]
 #[repr(C)]
 pub enum FeeEnum {
     /// Charges a flat fee based on a set fee ratio
@@ -61,15 +63,15 @@ pub enum FeeEnum {
     LiquidityLinear { params: LiquidityLinearParams },
 }
 
-#[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
+#[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize, Deserialize)]
 pub struct LiquidityLinearParams {
     /// The fee applied to a swap that leaves
     /// 100% of all liquidity in the SOL reserves account
-    max_liq_remaining: Rational,
+    pub max_liq_remaining: Rational,
 
     /// The fee applied to a swap that leaves
     /// no liquidity remaining in the SOL reserves account
-    zero_liq_remaining: Rational,
+    pub zero_liq_remaining: Rational,
 }
 
 impl FeeEnum {
