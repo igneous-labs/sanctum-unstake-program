@@ -1,5 +1,5 @@
 use solana_client::rpc_client::RpcClient;
-use solana_sdk::transaction::Transaction;
+use solana_sdk::{signer::Signer, transaction::Transaction};
 
 pub fn send_or_sim_tx(args: &crate::Args, rpc_client: &RpcClient, tx: &Transaction) {
     if args.dry_run {
