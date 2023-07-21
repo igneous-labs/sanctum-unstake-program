@@ -10,3 +10,8 @@ pub fn send_or_sim_tx(args: &crate::Args, rpc_client: &RpcClient, tx: &Transacti
         println!("Signature: {}", signature);
     }
 }
+
+pub fn unique_signers(vec: &mut Vec<Box<dyn Signer>>) {
+    vec.sort_by_key(|l| l.pubkey());
+    vec.dedup_by(|a, b| a.pubkey() == b.pubkey());
+}
