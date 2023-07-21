@@ -34,8 +34,8 @@ impl SubcmdExec for ViewPoolArgs {
 
         let liq_lamports = client.get_balance(&fee_account_pk.0).unwrap();
 
-        println!("Pool:{:?}", pool);
-        println!("Fee: {:?}", fee);
+        println!("Pool:\n{:#?}", pool);
+        println!("Fee:\n{:#?}", fee);
         println!("Liquidity: {} SOL", lamports_to_sol(liq_lamports));
     }
 }
