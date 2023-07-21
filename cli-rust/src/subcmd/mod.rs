@@ -4,7 +4,7 @@ mod add_liquidity;
 mod create_pool;
 mod fetch_protocol_fee;
 // mod init_protocol_fee;
-// mod remove_liquidity;
+mod remove_liquidity;
 // mod set_fee;
 // mod set_fee_authority;
 // mod set_flash_loan_fee;
@@ -15,7 +15,7 @@ pub use add_liquidity::*;
 pub use create_pool::*;
 pub use fetch_protocol_fee::*;
 // pub use init_protocol_fee::*;
-// pub use remove_liquidity::*;
+pub use remove_liquidity::*;
 // pub use set_fee::*;
 // pub use set_fee_authority::*;
 // pub use set_flash_loan_fee::*;
@@ -28,7 +28,7 @@ pub enum Subcmd {
     CreatePool(CreatePoolArgs),
     FetchProtocolFee(FetchProtocolFeeArgs),
     // InitProtocolFee(InitProtocolFeeArgs),
-    // RemoveLiquidity(RemoveLiquidityArgs),
+    RemoveLiquidity(RemoveLiquidityArgs),
     // SetFee(SetFeeArgs),
     // SetFeeAuthority(SetFeeAuthorityArgs),
     // SetFlashLoanFee(SetFlashLoanFeeArgs),
@@ -47,7 +47,7 @@ impl SubcmdExec for Subcmd {
             Self::CreatePool(a) => a.process_cmd(args),
             Self::FetchProtocolFee(a) => a.process_cmd(args),
             // Self::InitProtocolFee(a) => a.process_cmd(args),
-            // Self::RemoveLiquidity(a) => a.process_cmd(args),
+            Self::RemoveLiquidity(a) => a.process_cmd(args),
             // Self::SetFee(a) => a.process_cmd(args),
             // Self::SetFeeAuthority(a) => a.process_cmd(args),
             // Self::SetFlashLoanFee(a) => a.process_cmd(args),
