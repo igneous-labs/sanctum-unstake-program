@@ -86,17 +86,15 @@ pub mod unstake {
     }
 
     pub fn take_flash_loan<'info>(
-        _ctx: Context<'_, '_, '_, 'info, TakeFlashLoan<'info>>,
-        _lamports: u64,
+        ctx: Context<'_, '_, '_, 'info, TakeFlashLoan<'info>>,
+        lamports: u64,
     ) -> Result<()> {
-        Ok(())
-        // TakeFlashLoan::run(ctx, lamports)
+        TakeFlashLoan::run(ctx, lamports)
     }
 
     pub fn repay_flash_loan<'info>(
-        _ctx: Context<'_, '_, '_, 'info, RepayFlashLoan<'info>>,
+        ctx: Context<'_, '_, '_, 'info, RepayFlashLoan<'info>>,
     ) -> Result<()> {
-        Ok(())
-        //RepayFlashLoan::run(ctx)
+        RepayFlashLoan::run(ctx)
     }
 }

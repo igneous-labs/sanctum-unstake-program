@@ -37,6 +37,7 @@ import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { getStakeAccount, stakeAccountState } from "@soceanfi/solana-stake-sdk";
 import { ProgramAccount } from "@project-serum/anchor";
+import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
 
 chaiUse(chaiAsPromised);
 
@@ -62,6 +63,11 @@ describe("integration", () => {
   let unstakerWSol = null as PublicKey;
   let protocolFeeAddr = null as PublicKey;
   let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
+
+  const [flashAccount] = findProgramAddressSync(
+    [poolKeypair.publicKey.toBuffer(), Buffer.from("flashaccount")],
+    program.programId
+  );
 
   before(async () => {
     console.log("airdropping to payer, lper, and unstaker");
@@ -129,6 +135,7 @@ describe("integration", () => {
         poolSolReserves,
         lpMint: lpMintKeypair.publicKey,
         mintLpTokensTo: lperAta,
+        flashAccount,
       })
       .signers([lperKeypair])
       .rpc({ skipPreflight: true });
@@ -517,6 +524,7 @@ describe("integration", () => {
         poolSolReserves,
         lpMint: lpMintKeypair.publicKey,
         burnLpTokensFrom: lperAta,
+        flashAccount,
       })
       .signers([lperKeypair])
       .rpc({ skipPreflight: true });
