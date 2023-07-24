@@ -48,6 +48,7 @@ for [AccountInfo<'a>; INIT_PROTOCOL_FEE_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InitProtocolFeeIxArgs {}
 #[derive(Copy, Clone, Debug)]
 pub struct InitProtocolFeeIxData<'me>(pub &'me InitProtocolFeeIxArgs);
@@ -130,6 +131,7 @@ for [AccountInfo<'a>; SET_PROTOCOL_FEE_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetProtocolFeeIxArgs {
     pub protocol_fee: ProtocolFee,
 }
@@ -268,6 +270,7 @@ for [AccountInfo<'a>; CREATE_POOL_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreatePoolIxArgs {
     pub fee: Fee,
 }
@@ -388,6 +391,7 @@ for [AccountInfo<'a>; ADD_LIQUIDITY_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AddLiquidityIxArgs {
     pub amount: u64,
 }
@@ -518,6 +522,7 @@ for [AccountInfo<'a>; REMOVE_LIQUIDITY_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RemoveLiquidityIxArgs {
     pub amount_lp: u64,
 }
@@ -620,6 +625,7 @@ for [AccountInfo<'a>; SET_FEE_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetFeeIxArgs {
     pub fee: Fee,
 }
@@ -710,6 +716,7 @@ for [AccountInfo<'a>; SET_FEE_AUTHORITY_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetFeeAuthorityIxArgs {}
 #[derive(Copy, Clone, Debug)]
 pub struct SetFeeAuthorityIxData<'me>(pub &'me SetFeeAuthorityIxArgs);
@@ -847,6 +854,7 @@ for [AccountInfo<'a>; SET_LP_TOKEN_METADATA_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetLpTokenMetadataIxArgs {
     pub data: DataV2LpToken,
 }
@@ -967,6 +975,7 @@ for [AccountInfo<'a>; DEACTIVATE_STAKE_ACCOUNT_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DeactivateStakeAccountIxArgs {}
 #[derive(Copy, Clone, Debug)]
 pub struct DeactivateStakeAccountIxData<'me>(pub &'me DeactivateStakeAccountIxArgs);
@@ -1101,6 +1110,7 @@ for [AccountInfo<'a>; RECLAIM_STAKE_ACCOUNT_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ReclaimStakeAccountIxArgs {}
 #[derive(Copy, Clone, Debug)]
 pub struct ReclaimStakeAccountIxData<'me>(pub &'me ReclaimStakeAccountIxArgs);
@@ -1264,6 +1274,7 @@ for [AccountInfo<'a>; UNSTAKE_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct UnstakeIxArgs {}
 #[derive(Copy, Clone, Debug)]
 pub struct UnstakeIxData<'me>(pub &'me UnstakeIxArgs);
@@ -1456,6 +1467,7 @@ for [AccountInfo<'a>; UNSTAKE_WSOL_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct UnstakeWsolIxArgs {}
 #[derive(Copy, Clone, Debug)]
 pub struct UnstakeWsolIxData<'me>(pub &'me UnstakeWsolIxArgs);
@@ -1592,6 +1604,7 @@ for [AccountInfo<'a>; SET_FLASH_LOAN_FEE_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetFlashLoanFeeIxArgs {
     pub flash_loan_fee: FlashLoanFee,
 }
@@ -1708,6 +1721,7 @@ for [AccountInfo<'a>; TAKE_FLASH_LOAN_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TakeFlashLoanIxArgs {
     pub lamports: u64,
 }
@@ -1840,6 +1854,7 @@ for [AccountInfo<'a>; REPAY_FLASH_LOAN_IX_ACCOUNTS_LEN] {
     }
 }
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RepayFlashLoanIxArgs {}
 #[derive(Copy, Clone, Debug)]
 pub struct RepayFlashLoanIxData<'me>(pub &'me RepayFlashLoanIxArgs);

@@ -27,4 +27,4 @@ solana-transaction-status = "~1.14"
 spl-associated-token-account = "1.1.1"
 spl-token = "^3.0"
 unstake = { path = "../programs/unstake" }
-unstake_interface = { path = "../unstake_interface" }
+unstake_interface = { path = "../unstake_interface", features = ["serde"] }
