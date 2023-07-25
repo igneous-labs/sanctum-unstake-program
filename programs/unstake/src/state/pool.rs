@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[account]
+#[derive(Debug)]
 pub struct Pool {
     /// The authority authorized to set fees
     pub fee_authority: Pubkey,
