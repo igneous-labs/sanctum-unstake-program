@@ -4,6 +4,8 @@ use solana_sdk::transaction::Transaction;
 use unstake::{state::PROTOCOL_FEE_SEED, ID};
 use unstake_interface::{init_protocol_fee_ix, InitProtocolFeeIxArgs, InitProtocolFeeKeys};
 
+use crate::tx_utils::send_or_sim_tx;
+
 use super::SubcmdExec;
 
 #[derive(Args, Debug)]
@@ -34,8 +36,7 @@ impl SubcmdExec for InitProtocolFeeArgs {
             &[payer.as_ref()],
             blockhash,
         );
-        let sig = client.send_and_confirm_transaction(&tx).unwrap();
+        send_or_sim_tx(args, &client, &tx);
         println!("Protocol fee initialized at {}", protocol_fee_account.0);
-        println!("TX: {:?}", sig);
     }
 }
