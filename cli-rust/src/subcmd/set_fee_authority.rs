@@ -5,6 +5,8 @@ use solana_program::{message::Message, pubkey::Pubkey};
 use solana_sdk::{signature::read_keypair_file, signer::Signer, transaction::Transaction};
 use unstake_interface::{set_fee_authority_ix, SetFeeAuthorityIxArgs, SetFeeAuthorityKeys};
 
+use crate::tx_utils::send_or_sim_tx;
+
 use super::SubcmdExec;
 
 #[derive(Args, Debug)]
@@ -49,11 +51,10 @@ impl SubcmdExec for SetFeeAuthorityArgs {
         let msg = Message::new(&[ix], Some(&payer_pk));
         let blockhash = client.get_latest_blockhash().unwrap();
         let tx = Transaction::new(&signers, msg, blockhash);
-        let sig = client.send_and_confirm_transaction(&tx).unwrap();
+        send_or_sim_tx(args, &client, &tx);
         println!(
             "Liquidity pool at {} fee authority updated from {} to {}",
             pool_account, fee_authority, new_fee_authority
         );
-        println!("TX: {}", sig);
     }
 }
