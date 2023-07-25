@@ -13,6 +13,8 @@ use spl_associated_token_account::{
 use unstake::{state::Pool, ID};
 use unstake_interface::{remove_liquidity_ix, RemoveLiquidityIxArgs, RemoveLiquidityKeys};
 
+use crate::tx_utils::send_or_sim_tx;
+
 use super::SubcmdExec;
 
 #[derive(Args, Debug)]
@@ -99,11 +101,10 @@ impl SubcmdExec for RemoveLiquidityArgs {
         let msg = Message::new(&instructions, Some(&payer_pk));
         let blockhash = client.get_latest_blockhash().unwrap();
         let tx = Transaction::new(&signers, msg, blockhash);
-        let sig = client.send_and_confirm_transaction(&tx).unwrap();
+        send_or_sim_tx(args, &client, &tx);
         println!(
             "{} LP tokens liquidity removed from pool at {}",
             amount_lp, pool_key,
         );
-        println!("TX: {}", sig);
     }
 }
