@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use clap::Args;
 
 use solana_program::{message::Message, pubkey::Pubkey, system_program, sysvar};
@@ -11,7 +9,10 @@ use solana_sdk::{
 use unstake::{state::FEE_SEED_SUFFIX, ID};
 use unstake_interface::{create_pool_ix, CreatePoolIxArgs, CreatePoolKeys};
 
-use crate::utils::convert_fee;
+use crate::{
+    tx_utils::{send_or_sim_tx, unique_signers},
+    utils::convert_fee,
+};
 
 use super::SubcmdExec;
 
@@ -24,13 +25,17 @@ pub struct CreatePoolArgs {
         '{ \"flat\": 0.01 }'"
     )]
     fee_path: String,
-    #[arg(help = "Path to keypair paying for the pool's rent and tx fees")]
-    payer: Option<String>,
-    #[arg(help = "Path to keypair actings as the pool's fee authority")]
+    #[arg(
+        help = "Path to keypair actings as the pool's fee authority. Defaults to wallet in config."
+    )]
     fee_authority: Option<String>,
-    #[arg(help = "Path to keypair that will be the pool's address")]
+    #[arg(
+        help = "Path to keypair that will be the pool's address. Defaults to randomly generated keypair."
+    )]
     pool_account: Option<String>,
-    #[arg(help = "Path to keypair that will be the pool's LP mint address")]
+    #[arg(
+        help = "Path to keypair that will be the pool's LP mint address. Defaults to randomly generated keypair."
+    )]
     lp_mint: Option<String>,
 }
 
@@ -43,19 +48,19 @@ impl SubcmdExec for CreatePoolArgs {
 
         println!("Fee: {:?}", fee);
 
-        let pool_account_default = Keypair::new();
-        let pool_sol_reserves =
-            Pubkey::find_program_address(&[&pool_account_default.pubkey().to_bytes()], &ID);
-        let fee_account = Pubkey::find_program_address(
-            &[&pool_account_default.pubkey().to_bytes(), FEE_SEED_SUFFIX],
-            &ID,
-        );
-        let lp_mint_default = Keypair::new();
+        let [pool_kp, lp_mint_kp] = [&self.pool_account, &self.lp_mint].map(|opt| {
+            opt.as_ref()
+                .map_or_else(Keypair::new, |path| read_keypair_file(path).unwrap())
+        });
+        let pool_sol_reserves = Pubkey::find_program_address(&[&pool_kp.pubkey().to_bytes()], &ID);
+        let fee_account =
+            Pubkey::find_program_address(&[&pool_kp.pubkey().to_bytes(), FEE_SEED_SUFFIX], &ID);
         let payer_pk = payer.pubkey();
+
         let mut accounts = CreatePoolKeys {
-            fee_authority: payer_pk,
-            pool_account: pool_account_default.pubkey(),
-            lp_mint: lp_mint_default.pubkey(),
+            pool_account: pool_kp.pubkey(),
+            lp_mint: lp_mint_kp.pubkey(),
+            fee_authority: payer.pubkey(),
             payer: payer_pk,
             fee_account: fee_account.0,
             pool_sol_reserves: pool_sol_reserves.0,
@@ -63,56 +68,24 @@ impl SubcmdExec for CreatePoolArgs {
             token_program: spl_token::id(),
             rent: sysvar::rent::id(),
         };
-
-        let mut signers = HashMap::new();
-        signers.insert("payer", payer);
-        signers.insert("pool_account", Box::new(pool_account_default));
-        signers.insert("lp_mint", Box::new(lp_mint_default));
-
-        let mut account_key_to_keypair_path_option = HashMap::new();
-        account_key_to_keypair_path_option.insert("fee_authority", &self.fee_authority);
-        account_key_to_keypair_path_option.insert("pool_account", &self.pool_account);
-        account_key_to_keypair_path_option.insert("lp_mint", &self.lp_mint);
-        account_key_to_keypair_path_option.insert("payer", &self.payer);
-
-        for (account_key, option) in account_key_to_keypair_path_option {
-            if option.is_some() {
-                let keypair = read_keypair_file(option.clone().unwrap()).unwrap();
-                match account_key {
-                    "fee_authority" => {
-                        accounts.fee_authority = keypair.pubkey();
-                        signers.insert("fee_authority", Box::new(keypair));
-                    }
-                    "pool_account" => {
-                        accounts.pool_account = keypair.pubkey();
-                        signers.insert("pool_account", Box::new(keypair));
-                    }
-                    "lp_mint" => {
-                        accounts.lp_mint = keypair.pubkey();
-                        signers.insert("lp_mint", Box::new(keypair));
-                    }
-                    "payer" => {
-                        accounts.payer = keypair.pubkey();
-                        signers.insert("payer", Box::new(keypair));
-                    }
-                    _ => {}
-                }
-            }
+        let mut signers = vec![payer, Box::new(pool_kp), Box::new(lp_mint_kp)];
+        if let Some(path) = self.fee_authority.as_ref() {
+            let new_fee_auth = read_keypair_file(path).unwrap();
+            accounts.fee_authority = new_fee_auth.pubkey();
+            signers.push(Box::new(new_fee_auth));
         }
+        unique_signers(&mut signers);
 
         let ix = create_pool_ix(accounts, CreatePoolIxArgs { fee }).unwrap();
-        let signer_values: Vec<&dyn Signer> =
-            signers.values().map(|boxed| boxed.as_ref()).collect();
         let msg = Message::new(&[ix], Some(&payer_pk));
         let blockhash = client.get_latest_blockhash().unwrap();
-        let tx = Transaction::new(&signer_values, msg, blockhash);
-        let sig = client.send_and_confirm_transaction(&tx).unwrap();
+        let tx = Transaction::new(&signers, msg, blockhash);
         println!(
             "Liquidity pool initialized at {}\n\
-           LP mint: {}\n\
-           Fee authority: {}",
+          LP mint: {}\n\
+          Fee authority: {}",
             accounts.pool_account, accounts.lp_mint, accounts.fee_authority
         );
-        println!("TX: {:#?}", sig);
+        send_or_sim_tx(args, &client, &tx);
     }
 }

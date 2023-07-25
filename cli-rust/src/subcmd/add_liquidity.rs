@@ -79,7 +79,7 @@ impl SubcmdExec for AddLiquidityArgs {
 
         let mut instructions: Vec<Instruction> = vec![ix];
 
-        if let Err(e) = client.get_account(&mint_lp_tokens_to) {
+        if client.get_account(&mint_lp_tokens_to).is_err() {
             if !mint_lp_tokens_to.eq(&from_ata) {
                 panic!("LP token account {} does not exist", mint_lp_tokens_to);
             }
