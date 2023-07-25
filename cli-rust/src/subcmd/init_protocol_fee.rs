@@ -36,7 +36,7 @@ impl SubcmdExec for InitProtocolFeeArgs {
             &[payer.as_ref()],
             blockhash,
         );
-        send_or_sim_tx(args, &client, &tx);
         println!("Protocol fee initialized at {}", protocol_fee_account.0);
+        send_or_sim_tx(args, &client, &tx);
     }
 }
