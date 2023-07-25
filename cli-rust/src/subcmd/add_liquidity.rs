@@ -43,8 +43,8 @@ impl SubcmdExec for AddLiquidityArgs {
         let payer_pk = payer.pubkey();
         let mut from = payer_pk;
         let mut signers = vec![payer];
-        if self.from.is_some() {
-            let from_keypair = read_keypair_file(self.from.clone().unwrap()).unwrap();
+        if let Some(from_path) = self.from.as_ref() {
+            let from_keypair = read_keypair_file(from_path).unwrap();
             from = from_keypair.pubkey();
             signers.push(Box::new(from_keypair));
         }

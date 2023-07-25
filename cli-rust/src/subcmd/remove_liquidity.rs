@@ -24,11 +24,13 @@ pub struct RemoveLiquidityArgs {
     pool_account: String,
     #[arg(help = "Amount in LP tokens to remove as liquidity")]
     amount_lp: f64,
-    #[arg(help = "Path to the keypair authority over the LP token account")]
+    #[arg(
+        help = "Path to the keypair authority over the LP token account. Defaults to config wallet."
+    )]
     authority: Option<String>,
-    #[arg(help = "LP token account to burn LP tokens from")]
+    #[arg(help = "LP token account to burn LP tokens from. Defaults to ATA of authority.")]
     burn_from: Option<String>,
-    #[arg(help = "SOL account to return removed SOL liquidity to")]
+    #[arg(help = "SOL account to return removed SOL liquidity to. Defaults to config wallet.")]
     to: Option<String>,
 }
 
@@ -46,8 +48,8 @@ impl SubcmdExec for RemoveLiquidityArgs {
         let payer_pk = payer.pubkey();
         let mut authority = payer_pk;
         let mut signers = vec![payer];
-        if self.authority.is_some() {
-            let authority_keypair = read_keypair_file(self.authority.clone().unwrap()).unwrap();
+        if let Some(auth) = self.authority.as_ref() {
+            let authority_keypair = read_keypair_file(auth).unwrap();
             authority = authority_keypair.pubkey();
             signers.push(Box::new(authority_keypair));
         }
@@ -55,13 +57,14 @@ impl SubcmdExec for RemoveLiquidityArgs {
         let pool_sol_reserves = Pubkey::find_program_address(&[&pool_key.to_bytes()], &ID);
 
         let mut to = payer_pk;
-        if self.to.is_some() {
-            to = Pubkey::from_str(&self.to.clone().unwrap()).unwrap();
+        if let Some(to_pk) = self.to.as_ref() {
+            to = Pubkey::from_str(to_pk).unwrap();
         }
 
-        let from_ata = get_associated_token_address(&to, &pool.lp_mint);
-        let burn_lp_tokens_from =
-            Pubkey::from_str(&self.burn_from.clone().unwrap_or(from_ata.to_string())).unwrap();
+        let burn_lp_tokens_from = self.burn_from.as_ref().map_or_else(
+            || get_associated_token_address(&authority, &pool.lp_mint),
+            |s| Pubkey::from_str(s).unwrap(),
+        );
 
         let ix = remove_liquidity_ix(
             RemoveLiquidityKeys {
@@ -80,31 +83,17 @@ impl SubcmdExec for RemoveLiquidityArgs {
         )
         .unwrap();
 
-        let mut instructions: Vec<Instruction> = vec![ix];
-
         if let Err(e) = client.get_account(&burn_lp_tokens_from) {
-            if !burn_lp_tokens_from.eq(&from_ata) {
-                panic!("LP token account {} does not exist", burn_lp_tokens_from);
-            }
-
-            println!(
-                "LP token account {} does not exist, creating...",
-                burn_lp_tokens_from
-            );
-
-            instructions.insert(
-                0,
-                create_associated_token_account(&payer_pk, &to, &pool.lp_mint, &spl_token::id()),
-            )
+            panic!("LP token account {} does not exist", burn_lp_tokens_from);
         }
 
-        let msg = Message::new(&instructions, Some(&payer_pk));
+        let msg = Message::new(&[ix], Some(&payer_pk));
         let blockhash = client.get_latest_blockhash().unwrap();
         let tx = Transaction::new(&signers, msg, blockhash);
-        send_or_sim_tx(args, &client, &tx);
         println!(
             "{} LP tokens liquidity removed from pool at {}",
             amount_lp, pool_key,
         );
+        send_or_sim_tx(args, &client, &tx);
     }
 }
