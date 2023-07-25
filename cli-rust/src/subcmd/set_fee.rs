@@ -21,7 +21,7 @@ pub struct SetFeeArgs {
       '{ \"flat\": 0.01 }'"
     )]
     fee_path: String,
-    #[arg(help = "Path to keypair that is the pool's fee authority")]
+    #[arg(help = "Path to keypair that is the pool's fee authority. Defaults to config wallet")]
     fee_authority: Option<String>,
 }
 
@@ -62,10 +62,10 @@ impl SubcmdExec for SetFeeArgs {
         let msg = Message::new(&[ix], Some(&payer_pk));
         let blockhash = client.get_latest_blockhash().unwrap();
         let tx = Transaction::new(&signers, msg, blockhash);
-        send_or_sim_tx(args, &client, &tx);
         println!(
             "Liquidity pool at {} fees updated to {:?}",
             pool_account, fee
         );
+        send_or_sim_tx(args, &client, &tx);
     }
 }
