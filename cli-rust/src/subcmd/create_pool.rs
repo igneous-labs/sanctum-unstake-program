@@ -80,12 +80,12 @@ impl SubcmdExec for CreatePoolArgs {
         let msg = Message::new(&[ix], Some(&payer_pk));
         let blockhash = client.get_latest_blockhash().unwrap();
         let tx = Transaction::new(&signers, msg, blockhash);
-        send_or_sim_tx(args, &client, &tx);
         println!(
             "Liquidity pool initialized at {}\n\
-           LP mint: {}\n\
-           Fee authority: {}",
+          LP mint: {}\n\
+          Fee authority: {}",
             accounts.pool_account, accounts.lp_mint, accounts.fee_authority
         );
+        send_or_sim_tx(args, &client, &tx);
     }
 }
