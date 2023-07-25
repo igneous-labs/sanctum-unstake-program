@@ -14,6 +14,8 @@ use spl_associated_token_account::{
 use unstake::{state::Pool, ID};
 use unstake_interface::{add_liquidity_ix, AddLiquidityIxArgs, AddLiquidityKeys};
 
+use crate::tx_utils::send_or_sim_tx;
+
 use super::SubcmdExec;
 
 #[derive(Args, Debug)]
@@ -103,8 +105,7 @@ impl SubcmdExec for AddLiquidityArgs {
         let msg = Message::new(&instructions, Some(&payer_pk));
         let blockhash = client.get_latest_blockhash().unwrap();
         let tx = Transaction::new(&signers, msg, blockhash);
-        let sig = client.send_and_confirm_transaction(&tx).unwrap();
+        send_or_sim_tx(args, &client, &tx);
         println!("{} SOL liquidity added to pool at {}", amount_sol, pool_key);
-        println!("TX: {}", sig);
     }
 }
