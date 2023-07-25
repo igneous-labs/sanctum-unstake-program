@@ -23,9 +23,9 @@ pub struct AddLiquidityArgs {
     pool_account: String,
     #[arg(help = "Amount in SOL to add as liquidity")]
     amount_sol: f64,
-    #[arg(help = "Path to the SOL keypair to add liquidity from")]
+    #[arg(help = "Path to the SOL keypair to add liquidity from. Defaults to wallet in config")]
     from: Option<String>,
-    #[arg(help = "LP token account to mint LP tokens to")]
+    #[arg(help = "LP token account to mint LP tokens to. Defaults to ATA of `from`")]
     mint_lp_tokens_to: Option<String>,
 }
 
@@ -78,7 +78,7 @@ impl SubcmdExec for AddLiquidityArgs {
 
         let mut instructions: Vec<Instruction> = vec![ix];
 
-        if let Err(e) = client.get_account(&mint_lp_tokens_to) {
+        if client.get_account(&mint_lp_tokens_to).is_err() {
             if !mint_lp_tokens_to.eq(&from_ata) {
                 panic!("LP token account {} does not exist", mint_lp_tokens_to);
             }
