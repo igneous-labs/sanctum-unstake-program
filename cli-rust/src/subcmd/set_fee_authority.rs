@@ -33,9 +33,8 @@ impl SubcmdExec for SetFeeAuthorityArgs {
         let payer_pk = payer.pubkey();
         let mut signers = vec![payer];
         let mut fee_authority = payer_pk;
-        if self.fee_authority.is_some() {
-            let fee_authority_keypair =
-                read_keypair_file(self.fee_authority.clone().unwrap()).unwrap();
+        if let Some(auth) = self.fee_authority.as_ref() {
+            let fee_authority_keypair = read_keypair_file(auth).unwrap();
             fee_authority = fee_authority_keypair.pubkey();
             signers.push(Box::new(fee_authority_keypair));
         }
