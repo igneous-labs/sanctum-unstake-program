@@ -1,4 +1,4 @@
-import { Address, Program } from "@project-serum/anchor";
+import { Address, Program, ProgramAccount } from "@project-serum/anchor";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { Unstake } from "../idl/idl";
 import {
@@ -9,6 +9,7 @@ import {
 } from "../pda";
 import BN from "bn.js";
 import { deriveProtocolFeeAddresses } from "@/transactions/utils";
+import { ProtocolFeeAccount } from "@/types";
 
 export type TakeFlashLoan = {
   /**
@@ -20,6 +21,18 @@ export type TakeFlashLoan = {
    * The liquidity pool to take and repay flash loan fee to
    */
   poolAccount: Address;
+
+  /**
+   * The program's protocol fee account
+   */
+  protocolFee?: ProgramAccount<ProtocolFeeAccount>;
+
+  /**
+   * The protocol fee payment destination.
+   * Must be provided if `protocolFee` is not provided.
+   * Otherwise, uses the one read from `protocolFee`
+   */
+  protocolFeeDestination?: Address;
 };
 
 /**
@@ -34,7 +47,12 @@ export async function takeFlashLoanTx(
   program: Program<Unstake>,
   amountLamports: BN,
   transaction: Transaction,
-  { to, poolAccount }: TakeFlashLoan
+  {
+    to,
+    poolAccount,
+    protocolFee: protocolFeeOption,
+    protocolFeeDestination: protocolFeeDestinationOption,
+  }: TakeFlashLoan
 ): Promise<Transaction> {
   const [poolSolReserves] = await findPoolSolReserves(
     program.programId,
@@ -61,7 +79,8 @@ export async function takeFlashLoanTx(
 
   const { protocolFeeAccount, protocolFeeDestination } =
     deriveProtocolFeeAddresses(
-      await findProtocolFeeAccount(program.programId)[0]
+      protocolFeeOption ?? (await findProtocolFeeAccount(program.programId))[0],
+      protocolFeeDestinationOption
     );
 
   const repayFlashLoanIx = await program.methods

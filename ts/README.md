@@ -287,7 +287,15 @@ Imagine if you wanted a transaction that takes a flash loan of 1000 SOL, arbs th
 
 ```ts
 import { Transaction } from "@solana/web3.js";
-import { takeFlashLoanTx } from "@unstake-it/sol";
+import { takeFlashLoanTx, findProtocolFeeAccount } from "@unstake-it/sol";
+
+const [protocolFeeAddr] = await findProtocolFeeAccount(
+  UNSTAKE_PROGRAM.programId
+);
+const protocolFee = {
+  publicKey: protocolFeeAddr,
+  account: await UNSTAKE_PROGRAM.account.protocolFee.fetch(protocolFeeAddr),
+};
 
 const arbTransaction = new Transaction();
 // add your instructions to arbTransaction here
@@ -298,8 +306,9 @@ const tx = await takeFlashLoanTx(
   1_000_000_000_000,
   arbTransaction,
   {
-    from: wallet.publicKey,
+    to: wallet.publicKey,
     poolAccount: UNSTAKE_POOL_ADDRESS,
+    protocolFee,
   }
 );
 
