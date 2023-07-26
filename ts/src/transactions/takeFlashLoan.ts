@@ -8,6 +8,7 @@ import {
   findProtocolFeeAccount,
 } from "../pda";
 import BN from "bn.js";
+import { deriveProtocolFeeAddresses } from "@/transactions/utils";
 
 export type TakeFlashLoan = {
   /**
@@ -57,9 +58,11 @@ export async function takeFlashLoanTx(
     program.programId,
     new PublicKey(poolAccount)
   );
-  const [protocolFeeAccount] = await findProtocolFeeAccount(program.programId);
-  const { destination: protocolFeeDestination } =
-    await program.account.protocolFee.fetch(protocolFeeAccount);
+
+  const { protocolFeeAccount, protocolFeeDestination } =
+    deriveProtocolFeeAddresses(
+      await findProtocolFeeAccount(program.programId)[0]
+    );
 
   const repayFlashLoanIx = await program.methods
     .repayFlashLoan(amountLamports)
