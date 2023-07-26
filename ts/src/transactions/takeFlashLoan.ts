@@ -11,9 +11,9 @@ import BN from "bn.js";
 
 export type TakeFlashLoan = {
   /**
-   * The SOL account receiving and repaying flash loan lamports
+   * The SOL account receiving and repaying the flash loan lamports
    */
-  from: Address;
+  to: Address;
 
   /**
    * The liquidity pool to take and repay flash loan fee to
@@ -33,7 +33,7 @@ export async function takeFlashLoanTx(
   program: Program<Unstake>,
   amountLamports: BN,
   transaction: Transaction,
-  { from, poolAccount }: TakeFlashLoan
+  { to, poolAccount }: TakeFlashLoan
 ): Promise<Transaction> {
   const [poolSolReserves] = await findPoolSolReserves(
     program.programId,
@@ -46,7 +46,7 @@ export async function takeFlashLoanTx(
   const takeFlashLoanIx = await program.methods
     .takeFlashLoan(amountLamports)
     .accounts({
-      receiver: from,
+      receiver: to,
       poolAccount,
       poolSolReserves,
       flashAccount,
@@ -64,7 +64,7 @@ export async function takeFlashLoanTx(
   const repayFlashLoanIx = await program.methods
     .repayFlashLoan(amountLamports)
     .accounts({
-      repayer: from,
+      repayer: to,
       poolAccount,
       poolSolReserves,
       flashAccount,
@@ -75,7 +75,7 @@ export async function takeFlashLoanTx(
     .instruction();
 
   const bh = await program.provider.connection.getLatestBlockhash();
-  const feePayer = typeof from === "string" ? new PublicKey(from) : from;
+  const feePayer = typeof to === "string" ? new PublicKey(to) : to;
 
   return new Transaction({ ...bh, feePayer })
     .add(takeFlashLoanIx)
