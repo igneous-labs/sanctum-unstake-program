@@ -81,7 +81,7 @@ impl SubcmdExec for CreatePoolArgs {
         let blockhash = client.get_latest_blockhash().unwrap();
         let tx = Transaction::new(&signers, msg, blockhash);
         println!(
-            "Liquidity pool initialized at {}\n\
+            "Initializing Liquidity pool at {}\n\
           LP mint: {}\n\
           Fee authority: {}",
             accounts.pool_account, accounts.lp_mint, accounts.fee_authority
