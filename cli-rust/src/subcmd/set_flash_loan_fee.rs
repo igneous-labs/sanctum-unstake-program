@@ -3,6 +3,7 @@ use std::str::FromStr;
 use clap::Args;
 use solana_program::{message::Message, pubkey::Pubkey, system_program};
 use solana_sdk::{signature::read_keypair_file, signer::Signer, transaction::Transaction};
+use unstake::{state::FLASH_LOAN_FEE_SEED_SUFFIX, ID};
 use unstake_interface::{
     set_flash_loan_fee_ix, FlashLoanFee, Rational, SetFlashLoanFeeIxArgs, SetFlashLoanFeeKeys,
 };
@@ -17,7 +18,7 @@ pub struct SetFlashLoanFeeArgs {
     #[arg(help = "Pubkey of the pool to set the flash loan fee of")]
     pool_account: String,
     #[arg(help = "Pubkey of the flash loan account to set the fee to")]
-    flash_loan_fee_account: String,
+    flash_loan_fee_account: Option<String>,
     #[arg(help = "Path to keypair that is the pool's current fee authority")]
     fee_authority: Option<String>,
 }
@@ -27,7 +28,6 @@ impl SubcmdExec for SetFlashLoanFeeArgs {
         let payer = args.config.signer();
         let client = args.config.rpc_client();
         let pool_account = Pubkey::from_str(&self.pool_account).unwrap();
-        let flash_loan_fee_account = Pubkey::from_str(&self.flash_loan_fee_account).unwrap();
 
         let flash_loan_fee = FlashLoanFee {
             fee_ratio: Rational {
@@ -38,9 +38,21 @@ impl SubcmdExec for SetFlashLoanFeeArgs {
 
         let payer_pk = payer.pubkey();
         let mut signers = vec![payer];
+
+        let mut flash_loan_fee_account = Pubkey::find_program_address(
+            &[&pool_account.to_bytes(), FLASH_LOAN_FEE_SEED_SUFFIX],
+            &ID,
+        )
+        .0;
+        if let Some(fee_acc_path) = self.flash_loan_fee_account.as_ref() {
+            let flash_loan_fee_account_keypair = read_keypair_file(fee_acc_path).unwrap();
+            flash_loan_fee_account = flash_loan_fee_account_keypair.pubkey();
+            signers.push(Box::new(flash_loan_fee_account_keypair));
+        }
+
         let mut fee_authority = payer_pk;
-        if let Some(path) = self.fee_authority.as_ref() {
-            let fee_authority_keypair = read_keypair_file(path).unwrap();
+        if let Some(fee_auth) = self.fee_authority.as_ref() {
+            let fee_authority_keypair = read_keypair_file(fee_auth).unwrap();
             fee_authority = fee_authority_keypair.pubkey();
             signers.push(Box::new(fee_authority_keypair));
         }
