@@ -9,16 +9,12 @@ use solana_sdk::{
 use unstake::{state::FEE_SEED_SUFFIX, ID};
 use unstake_interface::{create_pool_ix, CreatePoolIxArgs, CreatePoolKeys};
 
-use crate::utils::convert_fee;
+use crate::{
+    tx_utils::{send_or_sim_tx, unique_signers},
+    utils::convert_fee,
+};
 
 use super::SubcmdExec;
-
-macro_rules! unique_signers {
-    ($vec:ident) => {
-        $vec.sort_by_key(|l| l.pubkey());
-        $vec.dedup();
-    };
-}
 
 #[derive(Args, Debug)]
 #[command(long_about = "Create a new unstake liquidity pool")]
@@ -78,19 +74,18 @@ impl SubcmdExec for CreatePoolArgs {
             accounts.fee_authority = new_fee_auth.pubkey();
             signers.push(Box::new(new_fee_auth));
         }
-        unique_signers!(signers);
+        unique_signers(&mut signers);
 
         let ix = create_pool_ix(accounts, CreatePoolIxArgs { fee }).unwrap();
         let msg = Message::new(&[ix], Some(&payer_pk));
         let blockhash = client.get_latest_blockhash().unwrap();
         let tx = Transaction::new(&signers, msg, blockhash);
-        let sig = client.send_and_confirm_transaction(&tx).unwrap();
         println!(
-            "Liquidity pool initialized at {}\n\
-           LP mint: {}\n\
-           Fee authority: {}",
+            "Initializing Liquidity pool at {}\n\
+          LP mint: {}\n\
+          Fee authority: {}",
             accounts.pool_account, accounts.lp_mint, accounts.fee_authority
         );
-        println!("TX: {}", sig);
+        send_or_sim_tx(args, &client, &tx);
     }
 }

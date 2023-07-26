@@ -23,9 +23,9 @@ pub struct AddLiquidityArgs {
     pool_account: String,
     #[arg(help = "Amount in SOL to add as liquidity")]
     amount_sol: f64,
-    #[arg(help = "Path to the SOL keypair to add liquidity from")]
+    #[arg(help = "Path to the SOL keypair to add liquidity from. Defaults to wallet in config")]
     from: Option<String>,
-    #[arg(help = "LP token account to mint LP tokens to")]
+    #[arg(help = "LP token account to mint LP tokens to. Defaults to ATA of `from`")]
     mint_lp_tokens_to: Option<String>,
 }
 
@@ -35,8 +35,7 @@ impl SubcmdExec for AddLiquidityArgs {
         let client = args.config.rpc_client();
 
         let pool_key = Pubkey::from_str(&self.pool_account).unwrap();
-        let pool_account = client.get_account(&pool_key).unwrap();
-        let pool_data = &mut &pool_account.data[..];
+        let pool_data = &mut &client.get_account_data(&pool_key).unwrap()[..];
         let pool = Pool::try_deserialize(pool_data).unwrap();
         let amount_sol = self.amount_sol;
         let amount_lamports = sol_to_lamports(amount_sol);
@@ -44,8 +43,8 @@ impl SubcmdExec for AddLiquidityArgs {
         let payer_pk = payer.pubkey();
         let mut from = payer_pk;
         let mut signers = vec![payer];
-        if self.from.is_some() {
-            let from_keypair = read_keypair_file(self.from.clone().unwrap()).unwrap();
+        if let Some(from_path) = self.from.as_ref() {
+            let from_keypair = read_keypair_file(from_path).unwrap();
             from = from_keypair.pubkey();
             signers.push(Box::new(from_keypair));
         }
@@ -79,7 +78,7 @@ impl SubcmdExec for AddLiquidityArgs {
 
         let mut instructions: Vec<Instruction> = vec![ix];
 
-        if let Err(e) = client.get_account(&mint_lp_tokens_to) {
+        if client.get_account(&mint_lp_tokens_to).is_err() {
             if !mint_lp_tokens_to.eq(&from_ata) {
                 panic!("LP token account {} does not exist", mint_lp_tokens_to);
             }

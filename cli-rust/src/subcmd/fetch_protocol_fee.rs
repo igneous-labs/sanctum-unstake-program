@@ -10,7 +10,6 @@ pub struct FetchProtocolFeeArgs {}
 
 impl SubcmdExec for FetchProtocolFeeArgs {
     fn process_cmd(&self, args: &crate::Args) {
-        let payer = args.config.signer();
         let client = args.config.rpc_client();
 
         let protocol_fee_account = Pubkey::find_program_address(&[PROTOCOL_FEE_SEED], &ID);
