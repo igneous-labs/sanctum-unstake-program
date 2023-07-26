@@ -917,18 +917,8 @@ describe("ts bindings", () => {
 
   describe("takeFlashLoanTx", () => {
     const taker = Keypair.generate();
-    let protocolFeeAddr = null as PublicKey;
-    let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
-
     before(async () => {
-      await Promise.all([
-        airdrop(program.provider.connection, taker.publicKey),
-      ]);
-      [protocolFeeAddr] = await findProtocolFeeAccount(program.programId);
-      protocolFee = {
-        publicKey: protocolFeeAddr,
-        account: await program.account.protocolFee.fetch(protocolFeeAddr),
-      };
+      airdrop(program.provider.connection, taker.publicKey);
     });
 
     it("take and repay flash loan", async () => {
