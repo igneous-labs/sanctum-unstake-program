@@ -9,6 +9,7 @@ pub const PROTOCOL_FEE_SEED: &[u8] = b"protocol-fee";
 
 /// Global singleton containing protocol fee parameters
 #[account]
+#[derive(Debug)]
 pub struct ProtocolFee {
     /// Protocol-owned account to receive the protocol fees to
     pub destination: Pubkey,

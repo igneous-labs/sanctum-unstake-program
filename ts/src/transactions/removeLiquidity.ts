@@ -7,7 +7,7 @@ import {
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { Unstake } from "../idl/idl";
-import { findPoolSolReserves } from "../pda";
+import { findFlashAccount, findPoolSolReserves } from "../pda";
 import BN from "bn.js";
 import { derivePoolLpMint } from "./utils";
 
@@ -74,6 +74,10 @@ export async function removeLiquidityTx(
     program.programId,
     new PublicKey(poolAccount)
   );
+  const [flashAccount] = await findFlashAccount(
+    program.programId,
+    new PublicKey(poolAccount)
+  );
   return program.methods
     .removeLiquidity(amountLPAtomics)
     .accounts({
@@ -83,6 +87,7 @@ export async function removeLiquidityTx(
       poolSolReserves,
       lpMint,
       burnLpTokensFrom: from,
+      flashAccount,
     })
     .transaction();
 }

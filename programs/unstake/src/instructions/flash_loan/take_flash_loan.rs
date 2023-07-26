@@ -9,7 +9,7 @@ use anchor_lang::{
             instructions::{load_current_index_checked, load_instruction_at_checked},
         },
     },
-    system_program::{allocate, assign, transfer, Allocate, Assign, Transfer},
+    system_program::{transfer, Transfer},
     Discriminator,
 };
 
@@ -17,6 +17,7 @@ use crate::{
     errors::UnstakeError,
     instruction::RepayFlashLoan,
     state::{FlashAccount, Pool, FLASH_ACCOUNT_SEED_SUFFIX},
+    utils::{allocate_assign_pda, AllocateAssignPdaArgs},
 };
 
 #[derive(Accounts)]
@@ -98,26 +99,13 @@ impl<'info> TakeFlashLoan<'info> {
                     .get("flash_account")
                     .ok_or(UnstakeError::PdaBumpNotCached)?],
             ];
-            allocate(
-                CpiContext::new_with_signer(
-                    system_program.to_account_info(),
-                    Allocate {
-                        account_to_allocate: flash_account.to_account_info(),
-                    },
-                    &[flash_account_seeds],
-                ),
-                FlashAccount::account_len(),
-            )?;
-            assign(
-                CpiContext::new_with_signer(
-                    system_program.to_account_info(),
-                    Assign {
-                        account_to_assign: flash_account.to_account_info(),
-                    },
-                    &[flash_account_seeds],
-                ),
-                &crate::ID,
-            )?;
+            allocate_assign_pda(AllocateAssignPdaArgs {
+                system_program,
+                pda_account: flash_account,
+                pda_account_owner_program: &crate::ID,
+                pda_account_len: FlashAccount::account_len(),
+                pda_account_signer_seeds: &[flash_account_seeds],
+            })?;
             if flash_account.lamports() == 0 {
                 transfer(
                     CpiContext::new_with_signer(

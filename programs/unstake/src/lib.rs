@@ -14,6 +14,7 @@ pub mod errors;
 pub mod instructions;
 pub mod rational;
 pub mod state;
+pub mod utils;
 
 use instructions::*;
 use state::*;

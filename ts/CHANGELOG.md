@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The minor version will be incremented upon a breaking change and the patch version will be
 incremented for features.
 
+## [1.0.1] - 2023-07-14
+
+### Fixed
+
+- Fixed import for `IDL_JSON` throwing `ERR_IMPORT_ASSERTION_TYPE_MISSING` for esm builds due to https://github.com/microsoft/TypeScript/issues/51783
+
+## [1.0.0] - 2023-07-13
+
+### Breaking
+
+- Removed `payer` account from `Unstake` and `UnstakeWSol` instructions, rent for stake_account_record_account is now paid from `pool_sol_reserves`
+
 ## [0.1.5] - 2023-02-25
 
 ### Fixed

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The minor version will be incremented upon a breaking change and the patch version will be
 incremented for features.
 
+## [1.0.0] - 2023-07-13
+
+### Breaking
+
+- Removed `payer` account from `Unstake` and `UnstakeWSol` instructions, rent for stake_account_record_account is now paid from `pool_sol_reserves`
+
+### Added
+
+- `SetLpTokenMetadata` instruction for `pool_authority` to set metaplex token metadata for LP token
+- flash loan feature: `SetFlashLoanFee`, `TakeFlashLoan`, `RepayFlashLoan`
+
 ## [0.1.0] - 2022-08-24
 
 ### Added

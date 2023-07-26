@@ -1,9 +1,16 @@
+use std::convert::TryInto;
+
 use anchor_lang::{prelude::*, solana_program::stake::state::StakeAuthorize, system_program};
 use anchor_spl::stake::{self, Authorize, Stake, StakeAccount};
 
 use crate::{
+    anchor_len::AnchorLen,
     errors::UnstakeError,
     state::{Fee, Pool, ProtocolFee, StakeAccountRecord},
+    utils::{
+        allocate_assign_pda, make_rent_exempt_with_pda_payer, AllocateAssignPdaArgs,
+        MakeRentExemptWithPdaPayerArgs,
+    },
 };
 
 pub struct UnstakeResult {
@@ -30,7 +37,9 @@ where
 
     fn fee_account(&self) -> &Account<'info, Fee>;
 
-    fn stake_account_record_account(&mut self) -> &mut Account<'info, StakeAccountRecord>;
+    fn stake_account_record_account_immut(&self) -> &UncheckedAccount<'info>;
+
+    fn stake_account_record_account(&mut self) -> &mut UncheckedAccount<'info>;
 
     fn clock(&self) -> &Sysvar<'info, Clock>;
 
@@ -48,6 +57,36 @@ where
     }
 
     fn run_unstake(ctx: &mut Context<'_, '_, '_, 'info, Self>) -> Result<UnstakeResult> {
+        // initialize stake_account_record_account
+        let stake_account_record_account_seeds: &[&[u8]] = &[
+            &ctx.accounts.pool_account().key().to_bytes(),
+            &ctx.accounts.stake_account().key().to_bytes(),
+            &[*ctx
+                .bumps
+                .get("stake_account_record_account")
+                .ok_or(UnstakeError::PdaBumpNotCached)?],
+        ];
+        allocate_assign_pda(AllocateAssignPdaArgs {
+            pda_account: ctx.accounts.stake_account_record_account_immut().as_ref(),
+            system_program: ctx.accounts.system_program(),
+            pda_account_len: StakeAccountRecord::LEN.try_into().unwrap(),
+            pda_account_owner_program: &crate::ID,
+            pda_account_signer_seeds: &[stake_account_record_account_seeds],
+        })?;
+        let pool_sol_reserves_seeds: &[&[u8]] = &[
+            &ctx.accounts.pool_account().key().to_bytes(),
+            &[*ctx
+                .bumps
+                .get("pool_sol_reserves")
+                .ok_or(UnstakeError::PdaBumpNotCached)?],
+        ];
+        make_rent_exempt_with_pda_payer(MakeRentExemptWithPdaPayerArgs {
+            account: ctx.accounts.stake_account_record_account_immut().as_ref(),
+            system_program: ctx.accounts.system_program(),
+            pda_payer: ctx.accounts.pool_sol_reserves(),
+            pda_payer_signer_seeds: &[pool_sol_reserves_seeds],
+        })?;
+
         let stake_account_lamports = ctx.accounts.stake_account().to_account_info().lamports();
         let pool_sol_reserves_lamports = ctx.accounts.pool_sol_reserves().lamports();
 
@@ -105,14 +144,6 @@ where
             return Err(UnstakeError::NotEnoughLiquidity.into());
         }
 
-        let seeds: &[&[u8]] = &[
-            &ctx.accounts.pool_account().key().to_bytes(),
-            &[*ctx
-                .bumps
-                .get("pool_sol_reserves")
-                .ok_or(UnstakeError::PdaBumpNotCached)?],
-        ];
-
         // pay the unstaker from the pool reserves
         let user_transfer_cpi_accs = system_program::Transfer {
             from: ctx.accounts.pool_sol_reserves().to_account_info(),
@@ -122,7 +153,7 @@ where
             CpiContext::new_with_signer(
                 ctx.accounts.system_program().to_account_info(),
                 user_transfer_cpi_accs,
-                &[seeds],
+                &[pool_sol_reserves_seeds],
             ),
             lamports_to_unstaker,
         )?;
@@ -149,7 +180,7 @@ where
                     CpiContext::new_with_signer(
                         ctx.accounts.system_program().to_account_info(),
                         referrer_fee_transfer_cpi_accs,
-                        &[seeds],
+                        &[pool_sol_reserves_seeds],
                     ),
                     lamports_to_referrer,
                 )?;
@@ -167,15 +198,23 @@ where
             CpiContext::new_with_signer(
                 ctx.accounts.system_program().to_account_info(),
                 protocol_fee_transfer_cpi_accs,
-                &[seeds],
+                &[pool_sol_reserves_seeds],
             ),
             lamports_to_protocol,
         )?;
 
-        // populate the stake_account_record
-        ctx.accounts
-            .stake_account_record_account()
-            .lamports_at_creation = stake_account_lamports;
+        // populate and save the stake_account_record
+        // NB: need to manually serialize here since we're using UncheckedAccount
+        // since we need to manually initialize from PDA
+        let new_record = StakeAccountRecord {
+            lamports_at_creation: stake_account_lamports,
+        };
+        new_record.try_serialize(
+            &mut *ctx
+                .accounts
+                .stake_account_record_account()
+                .try_borrow_mut_data()?,
+        )?;
 
         // update pool_account incoming_stake
         ctx.accounts.pool_account().incoming_stake = ctx
@@ -261,9 +300,15 @@ macro_rules! impl_unstake_accounts {
                 &self.fee_account
             }
 
+            fn stake_account_record_account_immut(
+                &self,
+            ) -> &anchor_lang::prelude::UncheckedAccount<'info> {
+                &self.stake_account_record_account
+            }
+
             fn stake_account_record_account(
                 &mut self,
-            ) -> &mut anchor_lang::prelude::Account<'info, crate::state::StakeAccountRecord> {
+            ) -> &mut anchor_lang::prelude::UncheckedAccount<'info> {
                 &mut self.stake_account_record_account
             }
 

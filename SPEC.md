@@ -220,7 +220,6 @@ Unstakes a given stake account to a pool and receive SOL in return.
 
 ##### Signers:
 
-- Payer to pay for the new StakeAccountRecord account's rent
 - Unstaker that owns the provided stake account
 
 ##### Analytics Log Emission:

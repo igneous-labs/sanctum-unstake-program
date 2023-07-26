@@ -233,6 +233,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -292,6 +293,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -348,6 +350,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           burnLpTokensFrom: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -403,6 +406,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           burnLpTokensFrom: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -917,6 +921,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -1025,7 +1030,6 @@ describe("internals", () => {
         program.methods
           .unstake()
           .accounts({
-            payer: lockedUpUnstaker.publicKey,
             unstaker: lockedUpUnstaker.publicKey,
             stakeAccount: lockedUpStakeAcc.publicKey,
             destination: lockedUpUnstaker.publicKey,
@@ -1056,7 +1060,6 @@ describe("internals", () => {
         program.methods
           .unstakeWsol()
           .accounts({
-            payer: lockedUpUnstaker.publicKey,
             unstaker: lockedUpUnstaker.publicKey,
             stakeAccount: lockedUpStakeAcc.publicKey,
             destination: lockedupUnstakerWSolAcc,
@@ -1088,7 +1091,6 @@ describe("internals", () => {
         program.methods
           .unstake()
           .accounts({
-            payer: notEnoughLiquidityUnstaker.publicKey,
             unstaker: notEnoughLiquidityUnstaker.publicKey,
             stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
             destination: notEnoughLiquidityUnstaker.publicKey,
@@ -1119,7 +1121,6 @@ describe("internals", () => {
         program.methods
           .unstakeWsol()
           .accounts({
-            payer: notEnoughLiquidityUnstaker.publicKey,
             unstaker: notEnoughLiquidityUnstaker.publicKey,
             stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
             destination: notEnoughLiquidityUnstakerWSolAcc,
@@ -1151,7 +1152,6 @@ describe("internals", () => {
         program.methods
           .unstakeWsol()
           .accounts({
-            payer: notEnoughLiquidityUnstaker.publicKey,
             unstaker: notEnoughLiquidityUnstaker.publicKey,
             stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
             destination: lperAta,
@@ -1186,7 +1186,6 @@ describe("internals", () => {
         program.methods
           .unstake()
           .accounts({
-            payer: payerKeypair.publicKey,
             unstaker: flatFeeUnstaker.publicKey,
             stakeAccount: flatFeeStakeAcc.publicKey,
             destination: flatFeeUnstaker.publicKey,
@@ -1199,7 +1198,7 @@ describe("internals", () => {
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
           })
-          .signers([payerKeypair, flatFeeUnstaker])
+          .signers([flatFeeUnstaker])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.and.satisfy(
         checkAnchorError(6011, "Wrong protocol fee destination account")
@@ -1217,7 +1216,6 @@ describe("internals", () => {
         program.methods
           .unstakeWsol()
           .accounts({
-            payer: payerKeypair.publicKey,
             unstaker: flatFeeWSolUnstaker.publicKey,
             stakeAccount: flatFeeWSolStakeAcc.publicKey,
             destination: flatFeeWSolUnstakerWSolAcc,
@@ -1231,7 +1229,7 @@ describe("internals", () => {
             stakeProgram: StakeProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
-          .signers([payerKeypair, flatFeeWSolUnstaker])
+          .signers([flatFeeWSolUnstaker])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.and.satisfy(
         checkAnchorError(6011, "Wrong protocol fee destination account")
@@ -1277,7 +1275,6 @@ describe("internals", () => {
       await program.methods
         .unstake()
         .accounts({
-          payer: payerKeypair.publicKey,
           unstaker: flatFeeUnstaker.publicKey,
           stakeAccount: flatFeeStakeAcc.publicKey,
           destination: flatFeeUnstaker.publicKey,
@@ -1290,7 +1287,7 @@ describe("internals", () => {
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
         })
-        .signers([payerKeypair, flatFeeUnstaker])
+        .signers([flatFeeUnstaker])
         .rpc({ skipPreflight: true });
 
       const unstakerBalancePost = await provider.connection.getBalance(
@@ -1363,7 +1360,6 @@ describe("internals", () => {
       await program.methods
         .unstakeWsol()
         .accounts({
-          payer: payerKeypair.publicKey,
           unstaker: flatFeeWSolUnstaker.publicKey,
           stakeAccount: flatFeeWSolStakeAcc.publicKey,
           destination: flatFeeWSolUnstakerWSolAcc,
@@ -1377,7 +1373,7 @@ describe("internals", () => {
           stakeProgram: StakeProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
-        .signers([payerKeypair, flatFeeWSolUnstaker])
+        .signers([flatFeeWSolUnstaker])
         .rpc({ skipPreflight: true });
 
       const unstakerWSolBalancePost = (
@@ -1462,7 +1458,6 @@ describe("internals", () => {
       await program.methods
         .unstake()
         .accounts({
-          payer: payerKeypair.publicKey,
           unstaker: liquidityLinearFeeUnstaker.publicKey,
           stakeAccount: liquidityLinearFeeStakeAcc.publicKey,
           destination: liquidityLinearFeeUnstaker.publicKey,
@@ -1475,7 +1470,7 @@ describe("internals", () => {
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
         })
-        .signers([payerKeypair, liquidityLinearFeeUnstaker])
+        .signers([liquidityLinearFeeUnstaker])
         .rpc({ skipPreflight: true });
 
       const unstakerBalancePost = await provider.connection.getBalance(
@@ -1588,7 +1583,6 @@ describe("internals", () => {
       await program.methods
         .unstakeWsol()
         .accounts({
-          payer: payerKeypair.publicKey,
           unstaker: liquidityLinearFeeWSolUnstaker.publicKey,
           stakeAccount: liquidityLinearFeeWSolStakeAcc.publicKey,
           destination: liquidityLinearFeeWSolUnstakerWSolAcc,
@@ -1602,7 +1596,7 @@ describe("internals", () => {
           stakeProgram: StakeProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
-        .signers([payerKeypair, liquidityLinearFeeWSolUnstaker])
+        .signers([liquidityLinearFeeWSolUnstaker])
         .rpc({ skipPreflight: true });
 
       const unstakerWSolBalancePost = (
