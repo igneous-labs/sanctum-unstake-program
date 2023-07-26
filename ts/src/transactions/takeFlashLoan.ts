@@ -1,5 +1,9 @@
 import { Address, Program, ProgramAccount } from "@project-serum/anchor";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import {
+  PublicKey,
+  Transaction,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
+} from "@solana/web3.js";
 import { Unstake } from "../idl/idl";
 import {
   findFlashAccount,
@@ -8,7 +12,7 @@ import {
   findProtocolFeeAccount,
 } from "../pda";
 import BN from "bn.js";
-import { deriveProtocolFeeAddresses } from "@/transactions/utils";
+import { deriveProtocolFeeAddresses } from "./utils";
 import { ProtocolFeeAccount } from "@/types";
 
 export type TakeFlashLoan = {
@@ -69,6 +73,7 @@ export async function takeFlashLoanTx(
       poolAccount,
       poolSolReserves,
       flashAccount,
+      instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
     })
     .instruction();
 
@@ -84,7 +89,7 @@ export async function takeFlashLoanTx(
     );
 
   const repayFlashLoanIx = await program.methods
-    .repayFlashLoan(amountLamports)
+    .repayFlashLoan()
     .accounts({
       repayer: to,
       poolAccount,

@@ -917,7 +917,6 @@ describe("ts bindings", () => {
 
   describe("takeFlashLoanTx", () => {
     const taker = Keypair.generate();
-    const poolKeypair = Keypair.generate();
     let protocolFeeAddr = null as PublicKey;
     let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
 
@@ -933,6 +932,27 @@ describe("ts bindings", () => {
     });
 
     it("take and repay flash loan", async () => {
+      const [flashLoanFeeAccount] = findProgramAddressSync(
+        [poolKeypair.publicKey.toBuffer(), Buffer.from("flashloanfee")],
+        program.programId
+      );
+      const fee = {
+        feeRatio: {
+          num: new BN(1),
+          denom: new BN(1_000),
+        },
+      };
+      await program.methods
+        .setFlashLoanFee(fee)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          flashLoanFeeAccount,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+
       const arbTransaction = new Transaction();
 
       const tx = await takeFlashLoanTx(program, new BN(1_000), arbTransaction, {
@@ -941,7 +961,7 @@ describe("ts bindings", () => {
         protocolFee,
       });
 
-      return program.provider.sendAndConfirm(tx);
+      return program.provider.sendAndConfirm(tx, [taker]);
     });
   });
 });
