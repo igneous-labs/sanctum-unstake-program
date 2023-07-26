@@ -1,0 +1,15 @@
+[package]
+name = "unstake_interface"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+borsh = { workspace = true }
+solana-program = { workspace = true }
+thiserror = "^1.0"
+num-derive = "^0.3"
+num-traits = "^0.2"
+
+[dependencies.serde]
+optional = true
+version = "^1.0"

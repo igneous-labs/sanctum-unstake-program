@@ -1,7 +1,13 @@
 [workspace]
 members = [
-    "programs/*"
+    "programs/*",
+    "cli-rust"
 ]
+
+[workspace.dependencies]
+serde = { version = "1.0.171", features = ["derive"] }
+solana-program = "~1.14"
+borsh = "^0.9.1"
 
 [patch.crates-io]
 mpl-token-metadata = { git = "https://github.com/igneous-labs/metaplex-program-library", package = "mpl-token-metadata", branch = "fix/set-token-standard-update-auth-mut" } # https://github.com/metaplex-foundation/metaplex-program-library/pull/1133
