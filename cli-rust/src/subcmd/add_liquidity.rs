@@ -35,8 +35,7 @@ impl SubcmdExec for AddLiquidityArgs {
         let client = args.config.rpc_client();
 
         let pool_key = Pubkey::from_str(&self.pool_account).unwrap();
-        let pool_account = client.get_account(&pool_key).unwrap();
-        let pool_data = &mut &pool_account.data[..];
+        let pool_data = &mut &client.get_account_data(&pool_key).unwrap()[..];
         let pool = Pool::try_deserialize(pool_data).unwrap();
         let amount_sol = self.amount_sol;
         let amount_lamports = sol_to_lamports(amount_sol);
@@ -44,8 +43,8 @@ impl SubcmdExec for AddLiquidityArgs {
         let payer_pk = payer.pubkey();
         let mut from = payer_pk;
         let mut signers = vec![payer];
-        if self.from.is_some() {
-            let from_keypair = read_keypair_file(self.from.clone().unwrap()).unwrap();
+        if let Some(from_path) = self.from.as_ref() {
+            let from_keypair = read_keypair_file(from_path).unwrap();
             from = from_keypair.pubkey();
             signers.push(Box::new(from_keypair));
         }
