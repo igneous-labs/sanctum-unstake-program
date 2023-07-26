@@ -1,6 +1,10 @@
+use anchor_lang::AccountDeserialize;
 use clap::Args;
 use solana_program::pubkey::Pubkey;
-use unstake::{state::PROTOCOL_FEE_SEED, ID};
+use unstake::{
+    state::{ProtocolFee, PROTOCOL_FEE_SEED},
+    ID,
+};
 
 use super::SubcmdExec;
 
@@ -14,7 +18,9 @@ impl SubcmdExec for FetchProtocolFeeArgs {
 
         let protocol_fee_account = Pubkey::find_program_address(&[PROTOCOL_FEE_SEED], &ID);
 
-        let pf = client.get_account_data(&protocol_fee_account.0).unwrap();
+        let account = client.get_account_data(&protocol_fee_account.0).unwrap();
+
+        let pf = ProtocolFee::try_deserialize(&mut account.as_slice()).unwrap();
 
         println!("Protocol Fee: {:?}", pf);
     }
