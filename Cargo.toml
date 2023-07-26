@@ -5,6 +5,7 @@ members = [
 ]
 
 [workspace.dependencies]
+serde = { version = "1.0.171", features = ["derive"] }
 solana-program = "~1.14"
 borsh = "^0.9.1"
 

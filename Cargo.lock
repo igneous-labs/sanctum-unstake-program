@@ -4365,6 +4365,7 @@ dependencies = [
  "anchor-spl",
  "mpl-token-metadata",
  "proptest",
+ "serde",
  "spl-associated-token-account",
  "spl-math",
 ]

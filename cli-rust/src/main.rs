@@ -3,6 +3,7 @@ use clap::{builder::ValueParser, Parser};
 mod argparse;
 mod subcmd;
 mod tx_utils;
+mod utils;
 
 use argparse::{parse_solana_cli_config_from_path, ConfigWrapper};
 use subcmd::{Subcmd, SubcmdExec};
