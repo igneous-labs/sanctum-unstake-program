@@ -74,8 +74,7 @@ export async function takeFlashLoanTx(
     })
     .instruction();
 
-  return new Transaction()
-    .add(takeFlashLoanIx)
-    .add(transaction)
-    .add(repayFlashLoanIx);
+  transaction.instructions.unshift(takeFlashLoanIx);
+  transaction.instructions.push(repayFlashLoanIx);
+  return transaction;
 }
