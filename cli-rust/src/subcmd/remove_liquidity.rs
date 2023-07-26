@@ -3,14 +3,14 @@ use std::str::FromStr;
 use anchor_lang::AccountDeserialize;
 use clap::Args;
 use solana_program::{
-    instruction::Instruction, message::Message, native_token::sol_to_lamports, pubkey::Pubkey,
-    system_program,
+    message::Message, native_token::sol_to_lamports, pubkey::Pubkey, system_program,
 };
 use solana_sdk::{signature::read_keypair_file, signer::Signer, transaction::Transaction};
-use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
+use spl_associated_token_account::get_associated_token_address;
+use unstake::{
+    state::{Pool, FLASH_ACCOUNT_SEED_SUFFIX},
+    ID,
 };
-use unstake::{state::Pool, ID};
 use unstake_interface::{remove_liquidity_ix, RemoveLiquidityIxArgs, RemoveLiquidityKeys};
 
 use crate::tx_utils::send_or_sim_tx;
@@ -55,6 +55,8 @@ impl SubcmdExec for RemoveLiquidityArgs {
         }
 
         let pool_sol_reserves = Pubkey::find_program_address(&[&pool_key.to_bytes()], &ID);
+        let flash_account =
+            Pubkey::find_program_address(&[&pool_key.to_bytes(), FLASH_ACCOUNT_SEED_SUFFIX], &ID);
 
         let mut to = payer_pk;
         if let Some(to_pk) = self.to.as_ref() {
@@ -74,6 +76,7 @@ impl SubcmdExec for RemoveLiquidityArgs {
                 to,
                 lp_mint: pool.lp_mint,
                 pool_sol_reserves: pool_sol_reserves.0,
+                flash_account: flash_account.0,
                 system_program: system_program::id(),
                 token_program: spl_token::id(),
             },
@@ -83,7 +86,7 @@ impl SubcmdExec for RemoveLiquidityArgs {
         )
         .unwrap();
 
-        if let Err(e) = client.get_account(&burn_lp_tokens_from) {
+        if client.get_account(&burn_lp_tokens_from).is_err() {
             panic!("LP token account {} does not exist", burn_lp_tokens_from);
         }
 

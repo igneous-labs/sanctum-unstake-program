@@ -317,7 +317,7 @@ pub fn create_pool_invoke_signed<'a, A: Into<CreatePoolIxArgs>>(
     let account_info: [AccountInfo<'a>; CREATE_POOL_IX_ACCOUNTS_LEN] = accounts.into();
     invoke_signed(&ix, &account_info, seeds)
 }
-pub const ADD_LIQUIDITY_IX_ACCOUNTS_LEN: usize = 7usize;
+pub const ADD_LIQUIDITY_IX_ACCOUNTS_LEN: usize = 8usize;
 #[derive(Copy, Clone, Debug)]
 pub struct AddLiquidityAccounts<
     'me,
@@ -328,14 +328,16 @@ pub struct AddLiquidityAccounts<
     'a4: 'me,
     'a5: 'me,
     'a6: 'me,
+    'a7: 'me,
 > {
     pub from: &'me AccountInfo<'a0>,
     pub pool_account: &'me AccountInfo<'a1>,
     pub pool_sol_reserves: &'me AccountInfo<'a2>,
     pub lp_mint: &'me AccountInfo<'a3>,
     pub mint_lp_tokens_to: &'me AccountInfo<'a4>,
-    pub token_program: &'me AccountInfo<'a5>,
-    pub system_program: &'me AccountInfo<'a6>,
+    pub flash_account: &'me AccountInfo<'a5>,
+    pub token_program: &'me AccountInfo<'a6>,
+    pub system_program: &'me AccountInfo<'a7>,
 }
 #[derive(Copy, Clone, Debug)]
 pub struct AddLiquidityKeys {
@@ -344,17 +346,19 @@ pub struct AddLiquidityKeys {
     pub pool_sol_reserves: Pubkey,
     pub lp_mint: Pubkey,
     pub mint_lp_tokens_to: Pubkey,
+    pub flash_account: Pubkey,
     pub token_program: Pubkey,
     pub system_program: Pubkey,
 }
-impl<'me> From<&AddLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_>> for AddLiquidityKeys {
-    fn from(accounts: &AddLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_>) -> Self {
+impl<'me> From<&AddLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_, '_>> for AddLiquidityKeys {
+    fn from(accounts: &AddLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_, '_>) -> Self {
         Self {
             from: *accounts.from.key,
             pool_account: *accounts.pool_account.key,
             pool_sol_reserves: *accounts.pool_sol_reserves.key,
             lp_mint: *accounts.lp_mint.key,
             mint_lp_tokens_to: *accounts.mint_lp_tokens_to.key,
+            flash_account: *accounts.flash_account.key,
             token_program: *accounts.token_program.key,
             system_program: *accounts.system_program.key,
         }
@@ -368,21 +372,23 @@ impl From<&AddLiquidityKeys> for [AccountMeta; ADD_LIQUIDITY_IX_ACCOUNTS_LEN] {
             AccountMeta::new(keys.pool_sol_reserves, false),
             AccountMeta::new(keys.lp_mint, false),
             AccountMeta::new(keys.mint_lp_tokens_to, false),
+            AccountMeta::new(keys.flash_account, false),
             AccountMeta::new_readonly(keys.token_program, false),
             AccountMeta::new_readonly(keys.system_program, false),
         ]
     }
 }
-impl<'a> From<&AddLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a>>
+impl<'a> From<&AddLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>>
     for [AccountInfo<'a>; ADD_LIQUIDITY_IX_ACCOUNTS_LEN]
 {
-    fn from(accounts: &AddLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a>) -> Self {
+    fn from(accounts: &AddLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>) -> Self {
         [
             accounts.from.clone(),
             accounts.pool_account.clone(),
             accounts.pool_sol_reserves.clone(),
             accounts.lp_mint.clone(),
             accounts.mint_lp_tokens_to.clone(),
+            accounts.flash_account.clone(),
             accounts.token_program.clone(),
             accounts.system_program.clone(),
         ]
@@ -422,7 +428,7 @@ pub fn add_liquidity_ix<K: Into<AddLiquidityKeys>, A: Into<AddLiquidityIxArgs>>(
     })
 }
 pub fn add_liquidity_invoke<'a, A: Into<AddLiquidityIxArgs>>(
-    accounts: &AddLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a>,
+    accounts: &AddLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>,
     args: A,
 ) -> ProgramResult {
     let ix = add_liquidity_ix(accounts, args)?;
@@ -430,7 +436,7 @@ pub fn add_liquidity_invoke<'a, A: Into<AddLiquidityIxArgs>>(
     invoke(&ix, &account_info)
 }
 pub fn add_liquidity_invoke_signed<'a, A: Into<AddLiquidityIxArgs>>(
-    accounts: &AddLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a>,
+    accounts: &AddLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>,
     args: A,
     seeds: &[&[&[u8]]],
 ) -> ProgramResult {
@@ -438,7 +444,7 @@ pub fn add_liquidity_invoke_signed<'a, A: Into<AddLiquidityIxArgs>>(
     let account_info: [AccountInfo<'a>; ADD_LIQUIDITY_IX_ACCOUNTS_LEN] = accounts.into();
     invoke_signed(&ix, &account_info, seeds)
 }
-pub const REMOVE_LIQUIDITY_IX_ACCOUNTS_LEN: usize = 8usize;
+pub const REMOVE_LIQUIDITY_IX_ACCOUNTS_LEN: usize = 9usize;
 #[derive(Copy, Clone, Debug)]
 pub struct RemoveLiquidityAccounts<
     'me,
@@ -450,6 +456,7 @@ pub struct RemoveLiquidityAccounts<
     'a5: 'me,
     'a6: 'me,
     'a7: 'me,
+    'a8: 'me,
 > {
     pub burn_lp_tokens_from_authority: &'me AccountInfo<'a0>,
     pub to: &'me AccountInfo<'a1>,
@@ -457,8 +464,9 @@ pub struct RemoveLiquidityAccounts<
     pub pool_sol_reserves: &'me AccountInfo<'a3>,
     pub lp_mint: &'me AccountInfo<'a4>,
     pub burn_lp_tokens_from: &'me AccountInfo<'a5>,
-    pub token_program: &'me AccountInfo<'a6>,
-    pub system_program: &'me AccountInfo<'a7>,
+    pub flash_account: &'me AccountInfo<'a6>,
+    pub token_program: &'me AccountInfo<'a7>,
+    pub system_program: &'me AccountInfo<'a8>,
 }
 #[derive(Copy, Clone, Debug)]
 pub struct RemoveLiquidityKeys {
@@ -468,13 +476,14 @@ pub struct RemoveLiquidityKeys {
     pub pool_sol_reserves: Pubkey,
     pub lp_mint: Pubkey,
     pub burn_lp_tokens_from: Pubkey,
+    pub flash_account: Pubkey,
     pub token_program: Pubkey,
     pub system_program: Pubkey,
 }
-impl<'me> From<&RemoveLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_, '_>>
+impl<'me> From<&RemoveLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_, '_, '_>>
     for RemoveLiquidityKeys
 {
-    fn from(accounts: &RemoveLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_, '_>) -> Self {
+    fn from(accounts: &RemoveLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_, '_, '_>) -> Self {
         Self {
             burn_lp_tokens_from_authority: *accounts.burn_lp_tokens_from_authority.key,
             to: *accounts.to.key,
@@ -482,6 +491,7 @@ impl<'me> From<&RemoveLiquidityAccounts<'me, '_, '_, '_, '_, '_, '_, '_, '_>>
             pool_sol_reserves: *accounts.pool_sol_reserves.key,
             lp_mint: *accounts.lp_mint.key,
             burn_lp_tokens_from: *accounts.burn_lp_tokens_from.key,
+            flash_account: *accounts.flash_account.key,
             token_program: *accounts.token_program.key,
             system_program: *accounts.system_program.key,
         }
@@ -496,15 +506,16 @@ impl From<&RemoveLiquidityKeys> for [AccountMeta; REMOVE_LIQUIDITY_IX_ACCOUNTS_L
             AccountMeta::new(keys.pool_sol_reserves, false),
             AccountMeta::new(keys.lp_mint, false),
             AccountMeta::new(keys.burn_lp_tokens_from, false),
+            AccountMeta::new(keys.flash_account, false),
             AccountMeta::new_readonly(keys.token_program, false),
             AccountMeta::new_readonly(keys.system_program, false),
         ]
     }
 }
-impl<'a> From<&RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>>
+impl<'a> From<&RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>>
     for [AccountInfo<'a>; REMOVE_LIQUIDITY_IX_ACCOUNTS_LEN]
 {
-    fn from(accounts: &RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>) -> Self {
+    fn from(accounts: &RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>) -> Self {
         [
             accounts.burn_lp_tokens_from_authority.clone(),
             accounts.to.clone(),
@@ -512,6 +523,7 @@ impl<'a> From<&RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>>
             accounts.pool_sol_reserves.clone(),
             accounts.lp_mint.clone(),
             accounts.burn_lp_tokens_from.clone(),
+            accounts.flash_account.clone(),
             accounts.token_program.clone(),
             accounts.system_program.clone(),
         ]
@@ -551,7 +563,7 @@ pub fn remove_liquidity_ix<K: Into<RemoveLiquidityKeys>, A: Into<RemoveLiquidity
     })
 }
 pub fn remove_liquidity_invoke<'a, A: Into<RemoveLiquidityIxArgs>>(
-    accounts: &RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>,
+    accounts: &RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>,
     args: A,
 ) -> ProgramResult {
     let ix = remove_liquidity_ix(accounts, args)?;
@@ -559,7 +571,7 @@ pub fn remove_liquidity_invoke<'a, A: Into<RemoveLiquidityIxArgs>>(
     invoke(&ix, &account_info)
 }
 pub fn remove_liquidity_invoke_signed<'a, A: Into<RemoveLiquidityIxArgs>>(
-    accounts: &RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>,
+    accounts: &RemoveLiquidityAccounts<'_, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a, 'a>,
     args: A,
     seeds: &[&[&[u8]]],
 ) -> ProgramResult {
