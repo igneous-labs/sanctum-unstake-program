@@ -46,3 +46,13 @@ export function findFlashAccount(
     unstakeProg
   );
 }
+
+export function findFlashLoanFeeAccount(
+  unstakeProg: PublicKey,
+  pool: PublicKey
+): Promise<[PublicKey, number]> {
+  return PublicKey.findProgramAddress(
+    [pool.toBuffer(), Buffer.from("flashloanfee")],
+    unstakeProg
+  );
+}
