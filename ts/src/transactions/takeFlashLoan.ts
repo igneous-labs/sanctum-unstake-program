@@ -74,10 +74,7 @@ export async function takeFlashLoanTx(
     })
     .instruction();
 
-  const bh = await program.provider.connection.getLatestBlockhash();
-  const feePayer = typeof to === "string" ? new PublicKey(to) : to;
-
-  return new Transaction({ ...bh, feePayer })
+  return new Transaction()
     .add(takeFlashLoanIx)
     .add(transaction)
     .add(repayFlashLoanIx);
