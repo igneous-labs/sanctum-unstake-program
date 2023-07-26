@@ -286,9 +286,12 @@ Create a transaction that takes a flash loan, executes a passed transaction, and
 Imagine if you wanted a transaction that takes a flash loan of 1000 SOL, arbs those 1000 SOL for 1 SOL profit and returns flash loan with interest. To do that, you would create the arb 1000 SOL for 1 SOL profit transaction with the assumption that the 1000 SOL is gonna be in your SOL account and then call `takeFlashLoanTx(UNSTAKE_PROGRAM, 1000 SOL (in lamports), arbTransaction, flashLoanAccounts)` to get the modified transaction and then send it.
 
 ```ts
+import { Transaction } from "@solana/web3.js";
 import { takeFlashLoanTx } from "@unstake-it/sol";
 
-const arbTransaction = ...;
+const arbTransaction = new Transaction();
+// add your instructions to arbTransaction here
+// ...
 
 const tx = await takeFlashLoanTx(
   UNSTAKE_PROGRAM,
