@@ -11,6 +11,7 @@ use solana_sdk::{signature::read_keypair_file, signer::Signer, transaction::Tran
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
+use unstake::state::FLASH_ACCOUNT_SEED_SUFFIX;
 use unstake::{state::Pool, ID};
 use unstake_interface::{add_liquidity_ix, AddLiquidityIxArgs, AddLiquidityKeys};
 
@@ -61,6 +62,8 @@ impl SubcmdExec for AddLiquidityArgs {
         .unwrap();
 
         let pool_sol_reserves = Pubkey::find_program_address(&[&pool_key.to_bytes()], &ID);
+        let flash_account =
+            Pubkey::find_program_address(&[&pool_key.to_bytes(), FLASH_ACCOUNT_SEED_SUFFIX], &ID);
 
         let ix = add_liquidity_ix(
             AddLiquidityKeys {
@@ -71,6 +74,7 @@ impl SubcmdExec for AddLiquidityArgs {
                 system_program: system_program::id(),
                 token_program: spl_token::id(),
                 pool_sol_reserves: pool_sol_reserves.0,
+                flash_account: flash_account.0,
             },
             AddLiquidityIxArgs {
                 amount: amount_lamports,

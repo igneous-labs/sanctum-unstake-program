@@ -20,3 +20,7 @@
 ## CI
 
 Current CI pipline is a manually triggered github action to generate the typescript library at a new github semver tag. To trigger, go to `Actions > CI > Run workflow` and specify the semver for the new typescript release.
+
+## unstake_interface
+
+Regenerate `unstake_interface` after `anchor build` with `solores -s "~1.14" -b "^0.9.1" target/idl/unstake.json` and replace `program_id`.
