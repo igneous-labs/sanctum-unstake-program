@@ -1,6 +1,14 @@
 use anchor_lang::{
-    prelude::{AccountInfo, CpiContext, Pubkey, Rent, SolanaSysvar},
+    prelude::{
+        Account, AccountInfo, CpiContext, Pubkey, Rent, Result, SolanaSysvar, SystemAccount,
+        UncheckedAccount,
+    },
     system_program::{allocate, assign, transfer, Allocate, Assign, Transfer},
+};
+
+use crate::{
+    errors::UnstakeError,
+    state::{FlashAccount, Pool},
 };
 
 pub struct AllocateAssignPdaArgs<'a, 'info: 'a, 's1: 'a, 's2: 'a> {
@@ -11,7 +19,7 @@ pub struct AllocateAssignPdaArgs<'a, 'info: 'a, 's1: 'a, 's2: 'a> {
     pub pda_account_signer_seeds: &'a [&'s1 [&'s2 [u8]]],
 }
 
-pub fn allocate_assign_pda(args: AllocateAssignPdaArgs) -> Result<(), anchor_lang::error::Error> {
+pub fn allocate_assign_pda(args: AllocateAssignPdaArgs) -> Result<()> {
     let AllocateAssignPdaArgs {
         system_program,
         pda_account,
@@ -50,9 +58,7 @@ pub struct MakeRentExemptWithPdaPayerArgs<'a, 'info: 'a, 's1: 'a, 's2: 'a> {
 
 /// Assumes account has already been allocated and assigned
 /// Returns amount of lamports transferred from `pda_payer` to `account`
-pub fn make_rent_exempt_with_pda_payer(
-    args: MakeRentExemptWithPdaPayerArgs,
-) -> Result<(), anchor_lang::error::Error> {
+pub fn make_rent_exempt_with_pda_payer(args: MakeRentExemptWithPdaPayerArgs) -> Result<()> {
     let MakeRentExemptWithPdaPayerArgs {
         system_program,
         account,
@@ -78,4 +84,21 @@ pub fn make_rent_exempt_with_pda_payer(
         )?;
     }
     Ok(())
+}
+
+pub fn calc_pool_owned_lamports(
+    pool_sol_reserves: &SystemAccount<'_>,
+    pool_account: &Account<'_, Pool>,
+    flash_account: &UncheckedAccount<'_>,
+) -> Result<u64> {
+    let flash_loaned_lamports = match flash_account.data_is_empty() {
+        true => 0,
+        false => FlashAccount::deserialize(flash_account)?.lamports_borrowed,
+    };
+    Ok(pool_sol_reserves
+        .lamports()
+        .checked_add(pool_account.incoming_stake)
+        .ok_or(UnstakeError::InternalError)?
+        .checked_add(flash_loaned_lamports)
+        .ok_or(UnstakeError::InternalError)?)
 }

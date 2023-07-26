@@ -48,6 +48,7 @@ import {
   transferStakeAuthTx,
   waitForEpochToPass,
 } from "./utils";
+import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
 
 chaiUse(chaiAsPromised);
 
@@ -70,6 +71,11 @@ describe("ts bindings", () => {
 
   const liquidityAmountSol = 10.0;
   const liquidityAmountLamports = new BN(liquidityAmountSol * LAMPORTS_PER_SOL);
+
+  const [flashAccount] = findProgramAddressSync(
+    [poolKeypair.publicKey.toBuffer(), Buffer.from("flashaccount")],
+    program.programId
+  );
 
   before(async () => {
     console.log("airdropping to payer and lper");
@@ -129,6 +135,7 @@ describe("ts bindings", () => {
         poolSolReserves,
         lpMint: lpMintKeypair.publicKey,
         mintLpTokensTo: lperAta,
+        flashAccount,
       })
       .signers([lperKeypair])
       .rpc({ skipPreflight: true });

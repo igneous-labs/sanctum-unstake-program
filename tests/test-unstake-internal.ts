@@ -233,6 +233,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -292,6 +293,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -348,6 +350,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           burnLpTokensFrom: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -403,6 +406,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           burnLpTokensFrom: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -917,6 +921,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });

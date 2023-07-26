@@ -7,7 +7,7 @@ import {
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { Unstake } from "../idl/idl";
-import { findPoolSolReserves } from "../pda";
+import { findFlashAccount, findPoolSolReserves } from "../pda";
 import BN from "bn.js";
 import { derivePoolLpMint } from "./utils";
 
@@ -60,6 +60,10 @@ export async function addLiquidityTx(
     program.programId,
     new PublicKey(poolAccount)
   );
+  const [flashAccount] = await findFlashAccount(
+    program.programId,
+    new PublicKey(poolAccount)
+  );
   const mintLpTokensTo =
     mintLpTokensToOption ??
     (await getAssociatedTokenAddress(
@@ -74,6 +78,7 @@ export async function addLiquidityTx(
       poolSolReserves,
       lpMint,
       mintLpTokensTo,
+      flashAccount,
     })
     .transaction();
 }

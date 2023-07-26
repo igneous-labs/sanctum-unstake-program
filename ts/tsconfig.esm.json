@@ -38,10 +38,20 @@
       "@": ["./index.ts"],
       "@/tests/*": ["../tests/*"]
     },
-    "resolveJsonModule": true
+    /**
+     * importing json modules in ts code that compiles down to both cjs and esm is known
+     * to have issues: https://github.com/microsoft/TypeScript/issues/51783
+     */
+    "resolveJsonModule": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "tests/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests/**/*.ts",
+    "unfuck-idl-json.js",
+    "src/idl/idl.json"
+  ],
   "tsc-alias": {
     "resolveFullPaths": true
   }
