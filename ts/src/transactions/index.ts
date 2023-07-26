@@ -9,5 +9,6 @@ export * from "./reclaimStakeAccount";
 export * from "./removeLiquidity";
 export * from "./setFee";
 export * from "./setFeeAuthority";
+export * from "./takeFlashLoan";
 export * from "./unstake";
 export * from "./unstakeWsol";

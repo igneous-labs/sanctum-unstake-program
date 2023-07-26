@@ -6,18 +6,22 @@ Built on anchor 0.24.2.
 
 Contents:
 
-- [Installation](#installation)
-  - [npm](#npm)
-  - [yarn](#yarn)
-- [Examples](#examples)
-  - [Initialization](#initialization)
-  - [Fetch Pool Data](#fetch-pool-data)
-  - [Fetch Available Liquidity](#fetch-available-liquidity)
-  - [Fetch Fee Params](#fetch-fee-params)
-  - [Previewing an Unstake](#previewing-an-unstake)
-  - [Estimate Fees](#estimate-fees)
-  - [Unstake](#unstake)
-  - [Reclaim Stake](#reclaim-stake)
+- [@unstake.it/sol](#unstakeitsol)
+  - [Installation](#installation)
+    - [npm](#npm)
+    - [yarn](#yarn)
+  - [Examples](#examples)
+    - [Initialization](#initialization)
+    - [Fetch Pool Data](#fetch-pool-data)
+    - [Fetch Available Liquidity](#fetch-available-liquidity)
+    - [Fetch Fee Params](#fetch-fee-params)
+    - [Fetch Protocol Fee Params](#fetch-protocol-fee-params)
+    - [Previewing an Unstake](#previewing-an-unstake)
+    - [Estimate Fees](#estimate-fees)
+    - [Unstake](#unstake)
+    - [UnstakeWsol](#unstakewsol)
+    - [Reclaim Stake](#reclaim-stake)
+    - [Take Flash Loan](#take-flash-loan)
 
 ## Installation
 
@@ -274,4 +278,40 @@ const signatures = await Promise.all(
     return UNSTAKE_PROGRAM.provider.sendAndConfirm(txToSend);
   })
 );
+```
+
+### Take Flash Loan
+
+Create a transaction that takes a flash loan, executes a passed transaction, and repays the flash loan with interest.
+Imagine if you wanted a transaction that takes a flash loan of 1000 SOL, arbs those 1000 SOL for 1 SOL profit and returns flash loan with interest. To do that, you would create the arb 1000 SOL for 1 SOL profit transaction with the assumption that the 1000 SOL is gonna be in your SOL account and then call `takeFlashLoanTx(UNSTAKE_PROGRAM, 1000 SOL (in lamports), arbTransaction, flashLoanAccounts)` to mutate the arbTransaction and then send it.
+
+```ts
+import { Transaction } from "@solana/web3.js";
+import { takeFlashLoanTx, findProtocolFeeAccount } from "@unstake-it/sol";
+import BN from "bn.js";
+
+const [protocolFeeAddr] = await findProtocolFeeAccount(
+  UNSTAKE_PROGRAM.programId
+);
+const protocolFee = {
+  publicKey: protocolFeeAddr,
+  account: await UNSTAKE_PROGRAM.account.protocolFee.fetch(protocolFeeAddr),
+};
+
+const arbTransaction = new Transaction();
+// add your instructions to arbTransaction here
+// ...
+
+const tx = await takeFlashLoanTx(
+  UNSTAKE_PROGRAM,
+  new BN(1_000_000_000_000),
+  arbTransaction,
+  {
+    to: wallet.publicKey,
+    poolAccount: UNSTAKE_POOL_ADDRESS,
+    protocolFee,
+  }
+);
+
+return UNSTAKE_PROGRAM.provider.sendAndConfirm(tx);
 ```
