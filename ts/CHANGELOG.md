@@ -17,6 +17,10 @@ incremented for features.
 
 - Added `flashAccount` to `AddLiquidity` and `RemoveLiquidity` instructions
 
+### Added
+
+- `takeFlashLoan()`
+
 ## [1.0.1] - 2023-07-14
 
 ### Fixed
