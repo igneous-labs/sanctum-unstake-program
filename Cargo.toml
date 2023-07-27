@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "programs/*",
-    "cli-rust"
+    "cli-rust",
+    "unstake_interface"
 ]
 
 [patch.crates-io]

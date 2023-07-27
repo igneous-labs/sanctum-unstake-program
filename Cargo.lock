@@ -4375,13 +4375,11 @@ name = "unstake-cli"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "anchor-spl",
  "base64 0.21.2",
  "borsh 0.9.3",
  "clap 2.34.0",
  "clap 4.0.26",
  "derive_more",
- "itertools",
  "serde",
  "serde_json",
  "solana-clap-utils",
@@ -4389,7 +4387,6 @@ dependencies = [
  "solana-client",
  "solana-program",
  "solana-sdk",
- "solana-transaction-status",
  "spl-associated-token-account",
  "spl-token",
  "unstake",
