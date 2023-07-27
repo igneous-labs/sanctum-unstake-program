@@ -2,7 +2,11 @@ use anchor_lang::{prelude::*, system_program};
 use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount};
 use std::convert::TryFrom;
 
-use crate::{errors::UnstakeError, state::Pool};
+use crate::{
+    errors::UnstakeError,
+    state::{Pool, FLASH_ACCOUNT_SEED_SUFFIX},
+    utils::calc_pool_owned_lamports,
+};
 
 #[derive(Accounts)]
 pub struct RemoveLiquidity<'info> {
@@ -39,6 +43,15 @@ pub struct RemoveLiquidity<'info> {
     )]
     pub burn_lp_tokens_from: Account<'info, TokenAccount>,
 
+    /// amount taken for all active flash loans of the pool
+    /// CHECK: PDA checked
+    #[account(
+        mut,
+        seeds = [&pool_account.key().to_bytes(), FLASH_ACCOUNT_SEED_SUFFIX],
+        bump,
+    )]
+    pub flash_account: UncheckedAccount<'info>,
+
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
@@ -52,14 +65,13 @@ impl<'info> RemoveLiquidity<'info> {
         let pool_sol_reserves = &ctx.accounts.pool_sol_reserves;
         let lp_mint = &ctx.accounts.lp_mint;
         let burn_lp_tokens_from = &ctx.accounts.burn_lp_tokens_from;
+        let flash_account = &ctx.accounts.flash_account;
         let token_program = &ctx.accounts.token_program;
         let system_program = &ctx.accounts.system_program;
 
         // order matters, must calculate first before mutation
-        let pool_owned_lamports = pool_sol_reserves
-            .lamports()
-            .checked_add(pool_account.incoming_stake)
-            .ok_or(UnstakeError::InternalError)?;
+        let pool_owned_lamports =
+            calc_pool_owned_lamports(pool_sol_reserves, pool_account, flash_account)?;
         let to_return = calc_lamports_to_return(pool_owned_lamports, lp_mint.supply, amount_lp)?;
 
         // transfer SOL

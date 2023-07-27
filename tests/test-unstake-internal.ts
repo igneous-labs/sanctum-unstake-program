@@ -7,7 +7,10 @@ import {
   Lockup,
   LAMPORTS_PER_SOL,
   StakeProgram,
+  VersionedTransaction,
+  TransactionMessage,
   SYSVAR_CLOCK_PUBKEY,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
 } from "@solana/web3.js";
 import {
   createAssociatedTokenAccount,
@@ -38,6 +41,11 @@ import {
 } from "./utils";
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
+import {
+  Metadata,
+  TokenStandard,
+} from "@metaplex-foundation/mpl-token-metadata";
 
 chaiUse(chaiAsPromised);
 
@@ -58,6 +66,38 @@ describe("internals", () => {
   let protocolFeeAddr = null as PublicKey;
   let protocolFee = null as ProtocolFeeAccount;
   let protocolFeeDestination = null as PublicKey;
+
+  const metadata = {
+    name: "unstake.it LP token",
+    symbol: "UNSTAKE",
+    uri: "https://example.com",
+  };
+  const metadataProgram = new PublicKey(
+    "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+  );
+  const [metadataAccount] = findProgramAddressSync(
+    [
+      Buffer.from("metadata"),
+      metadataProgram.toBuffer(),
+      lpMintKeypair.publicKey.toBuffer(),
+    ],
+    metadataProgram
+  );
+
+  const [flashLoanFeeAccount] = findProgramAddressSync(
+    [poolKeypair.publicKey.toBuffer(), Buffer.from("flashloanfee")],
+    program.programId
+  );
+  const finalFlashLoanFee = {
+    feeRatio: {
+      num: new BN(3),
+      denom: new BN(10_000),
+    },
+  };
+  const [flashAccount] = findProgramAddressSync(
+    [poolKeypair.publicKey.toBuffer(), Buffer.from("flashaccount")],
+    program.programId
+  );
 
   before(async () => {
     [protocolFeeAddr] = await findProtocolFeeAccount(program.programId);
@@ -193,6 +233,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -252,6 +293,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -308,6 +350,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           burnLpTokensFrom: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -363,6 +406,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           burnLpTokensFrom: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -669,6 +713,164 @@ describe("internals", () => {
         )
       );
     });
+
+    it("it rejects to set token metadata with invalid fee authority", async () => {
+      const fakeAuthKeypair = lperKeypair;
+      await expect(
+        program.methods
+          .setLpTokenMetadata(metadata)
+          .accounts({
+            payer: fakeAuthKeypair.publicKey,
+            feeAuthority: fakeAuthKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            lpMint: lpMintKeypair.publicKey,
+            metadata: metadataAccount,
+            metadataProgram,
+          })
+          .signers([fakeAuthKeypair])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6002,
+          "The provided fee authority does not have the authority over the provided pool account"
+        )
+      );
+    });
+
+    it("it creates token metadata", async () => {
+      await program.methods
+        .setLpTokenMetadata(metadata)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          lpMint: lpMintKeypair.publicKey,
+          metadata: metadataAccount,
+          metadataProgram,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+      const createdMetadata = await Metadata.fromAccountAddress(
+        program.provider.connection,
+        metadataAccount
+      );
+
+      expect(createdMetadata.data.name.replace(/\0/g, "")).to.eq(metadata.name);
+      expect(createdMetadata.data.symbol.replace(/\0/g, "")).to.eq(
+        metadata.symbol
+      );
+      expect(createdMetadata.data.uri.replace(/\0/g, "")).to.eq(metadata.uri);
+      expect(createdMetadata.tokenStandard).to.eq(TokenStandard.Fungible);
+    });
+
+    it("it updates token metadata", async () => {
+      const newMetadata = {
+        name: "new name",
+        symbol: "NEWSYM",
+        uri: "new.com",
+      };
+
+      await program.methods
+        .setLpTokenMetadata(newMetadata)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          lpMint: lpMintKeypair.publicKey,
+          metadata: metadataAccount,
+          metadataProgram,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+      const updatedMetadata = await Metadata.fromAccountAddress(
+        program.provider.connection,
+        metadataAccount
+      );
+
+      expect(updatedMetadata.data.name.replace(/\0/g, "")).to.eq(
+        newMetadata.name
+      );
+      expect(updatedMetadata.data.symbol.replace(/\0/g, "")).to.eq(
+        newMetadata.symbol
+      );
+      expect(updatedMetadata.data.uri.replace(/\0/g, "")).to.eq(
+        newMetadata.uri
+      );
+      expect(updatedMetadata.tokenStandard).to.eq(TokenStandard.Fungible);
+    });
+
+    it("it rejects to set flash loan fee with invalid fee authority", async () => {
+      const fakeAuthKeypair = lperKeypair;
+      await expect(
+        program.methods
+          .setFlashLoanFee({
+            feeRatio: {
+              num: new BN(1),
+              denom: new BN(1_000),
+            },
+          })
+          .accounts({
+            payer: fakeAuthKeypair.publicKey,
+            feeAuthority: fakeAuthKeypair.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            flashLoanFeeAccount,
+          })
+          .signers([fakeAuthKeypair])
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6002,
+          "The provided fee authority does not have the authority over the provided pool account"
+        )
+      );
+    });
+
+    it("it creates flash loan fee", async () => {
+      const fee = {
+        feeRatio: {
+          num: new BN(1),
+          denom: new BN(1_000),
+        },
+      };
+      await program.methods
+        .setFlashLoanFee(fee)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          flashLoanFeeAccount,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+      await program.account.flashLoanFee
+        .fetch(flashLoanFeeAccount)
+        .then(({ feeRatio: { num, denom } }) => {
+          expect(num.eq(fee.feeRatio.num)).to.be.true;
+          expect(denom.eq(fee.feeRatio.denom)).to.be.true;
+        });
+    });
+
+    it("it updates flash loan fee", async () => {
+      await program.methods
+        .setFlashLoanFee(finalFlashLoanFee)
+        .accounts({
+          payer: payerKeypair.publicKey,
+          feeAuthority: payerKeypair.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          flashLoanFeeAccount,
+        })
+        .signers([payerKeypair])
+        .rpc({ skipPreflight: true });
+      await program.account.flashLoanFee
+        .fetch(flashLoanFeeAccount)
+        .then(({ feeRatio: { num, denom } }) => {
+          expect(num.eq(finalFlashLoanFee.feeRatio.num)).to.be.true;
+          expect(denom.eq(finalFlashLoanFee.feeRatio.denom)).to.be.true;
+        });
+    });
   });
 
   describe("User facing", () => {
@@ -685,8 +887,9 @@ describe("internals", () => {
     const liquidityLinearFeeUnstaker = Keypair.generate();
     const flatFeeWSolUnstaker = Keypair.generate();
     const liquidityLinearFeeWSolUnstaker = Keypair.generate();
+    const flashLoaner = Keypair.generate();
 
-    const liquidityLamports = new BN(0.1 * LAMPORTS_PER_SOL);
+    const liquidityLamports = new BN(10 * LAMPORTS_PER_SOL);
 
     let lockedupUnstakerWSolAcc: PublicKey;
     let notEnoughLiquidityUnstakerWSolAcc: PublicKey;
@@ -704,6 +907,7 @@ describe("internals", () => {
           liquidityLinearFeeUnstaker,
           flatFeeWSolUnstaker,
           liquidityLinearFeeWSolUnstaker,
+          flashLoaner,
         ].map((kp) => airdrop(provider.connection, kp.publicKey))
       );
 
@@ -717,6 +921,7 @@ describe("internals", () => {
           poolSolReserves,
           lpMint: lpMintKeypair.publicKey,
           mintLpTokensTo: lperAta,
+          flashAccount,
         })
         .signers([lperKeypair])
         .rpc({ skipPreflight: true });
@@ -825,7 +1030,6 @@ describe("internals", () => {
         program.methods
           .unstake()
           .accounts({
-            payer: lockedUpUnstaker.publicKey,
             unstaker: lockedUpUnstaker.publicKey,
             stakeAccount: lockedUpStakeAcc.publicKey,
             destination: lockedUpUnstaker.publicKey,
@@ -856,7 +1060,6 @@ describe("internals", () => {
         program.methods
           .unstakeWsol()
           .accounts({
-            payer: lockedUpUnstaker.publicKey,
             unstaker: lockedUpUnstaker.publicKey,
             stakeAccount: lockedUpStakeAcc.publicKey,
             destination: lockedupUnstakerWSolAcc,
@@ -888,7 +1091,6 @@ describe("internals", () => {
         program.methods
           .unstake()
           .accounts({
-            payer: notEnoughLiquidityUnstaker.publicKey,
             unstaker: notEnoughLiquidityUnstaker.publicKey,
             stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
             destination: notEnoughLiquidityUnstaker.publicKey,
@@ -919,7 +1121,6 @@ describe("internals", () => {
         program.methods
           .unstakeWsol()
           .accounts({
-            payer: notEnoughLiquidityUnstaker.publicKey,
             unstaker: notEnoughLiquidityUnstaker.publicKey,
             stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
             destination: notEnoughLiquidityUnstakerWSolAcc,
@@ -951,7 +1152,6 @@ describe("internals", () => {
         program.methods
           .unstakeWsol()
           .accounts({
-            payer: notEnoughLiquidityUnstaker.publicKey,
             unstaker: notEnoughLiquidityUnstaker.publicKey,
             stakeAccount: notEnoughLiquidityStakeAcc.publicKey,
             destination: lperAta,
@@ -986,7 +1186,6 @@ describe("internals", () => {
         program.methods
           .unstake()
           .accounts({
-            payer: payerKeypair.publicKey,
             unstaker: flatFeeUnstaker.publicKey,
             stakeAccount: flatFeeStakeAcc.publicKey,
             destination: flatFeeUnstaker.publicKey,
@@ -999,7 +1198,7 @@ describe("internals", () => {
             clock: SYSVAR_CLOCK_PUBKEY,
             stakeProgram: StakeProgram.programId,
           })
-          .signers([payerKeypair, flatFeeUnstaker])
+          .signers([flatFeeUnstaker])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.and.satisfy(
         checkAnchorError(6011, "Wrong protocol fee destination account")
@@ -1017,7 +1216,6 @@ describe("internals", () => {
         program.methods
           .unstakeWsol()
           .accounts({
-            payer: payerKeypair.publicKey,
             unstaker: flatFeeWSolUnstaker.publicKey,
             stakeAccount: flatFeeWSolStakeAcc.publicKey,
             destination: flatFeeWSolUnstakerWSolAcc,
@@ -1031,7 +1229,7 @@ describe("internals", () => {
             stakeProgram: StakeProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
-          .signers([payerKeypair, flatFeeWSolUnstaker])
+          .signers([flatFeeWSolUnstaker])
           .rpc({ skipPreflight: true })
       ).to.be.eventually.rejected.and.satisfy(
         checkAnchorError(6011, "Wrong protocol fee destination account")
@@ -1077,7 +1275,6 @@ describe("internals", () => {
       await program.methods
         .unstake()
         .accounts({
-          payer: payerKeypair.publicKey,
           unstaker: flatFeeUnstaker.publicKey,
           stakeAccount: flatFeeStakeAcc.publicKey,
           destination: flatFeeUnstaker.publicKey,
@@ -1090,7 +1287,7 @@ describe("internals", () => {
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
         })
-        .signers([payerKeypair, flatFeeUnstaker])
+        .signers([flatFeeUnstaker])
         .rpc({ skipPreflight: true });
 
       const unstakerBalancePost = await provider.connection.getBalance(
@@ -1163,7 +1360,6 @@ describe("internals", () => {
       await program.methods
         .unstakeWsol()
         .accounts({
-          payer: payerKeypair.publicKey,
           unstaker: flatFeeWSolUnstaker.publicKey,
           stakeAccount: flatFeeWSolStakeAcc.publicKey,
           destination: flatFeeWSolUnstakerWSolAcc,
@@ -1177,7 +1373,7 @@ describe("internals", () => {
           stakeProgram: StakeProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
-        .signers([payerKeypair, flatFeeWSolUnstaker])
+        .signers([flatFeeWSolUnstaker])
         .rpc({ skipPreflight: true });
 
       const unstakerWSolBalancePost = (
@@ -1262,7 +1458,6 @@ describe("internals", () => {
       await program.methods
         .unstake()
         .accounts({
-          payer: payerKeypair.publicKey,
           unstaker: liquidityLinearFeeUnstaker.publicKey,
           stakeAccount: liquidityLinearFeeStakeAcc.publicKey,
           destination: liquidityLinearFeeUnstaker.publicKey,
@@ -1275,7 +1470,7 @@ describe("internals", () => {
           clock: SYSVAR_CLOCK_PUBKEY,
           stakeProgram: StakeProgram.programId,
         })
-        .signers([payerKeypair, liquidityLinearFeeUnstaker])
+        .signers([liquidityLinearFeeUnstaker])
         .rpc({ skipPreflight: true });
 
       const unstakerBalancePost = await provider.connection.getBalance(
@@ -1388,7 +1583,6 @@ describe("internals", () => {
       await program.methods
         .unstakeWsol()
         .accounts({
-          payer: payerKeypair.publicKey,
           unstaker: liquidityLinearFeeWSolUnstaker.publicKey,
           stakeAccount: liquidityLinearFeeWSolStakeAcc.publicKey,
           destination: liquidityLinearFeeWSolUnstakerWSolAcc,
@@ -1402,7 +1596,7 @@ describe("internals", () => {
           stakeProgram: StakeProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
-        .signers([payerKeypair, liquidityLinearFeeWSolUnstaker])
+        .signers([liquidityLinearFeeWSolUnstaker])
         .rpc({ skipPreflight: true });
 
       const unstakerWSolBalancePost = (
@@ -1463,6 +1657,152 @@ describe("internals", () => {
       expect(feeLamportsCharged).to.be.gt(minFeeLamportsExpected);
       expect(feeLamportsCharged).to.be.lt(maxFeeLamportsExpected);
       expect(protocolFeeLamportsExpected).to.eql(protocolFeeLamportsCharged);
+    });
+
+    it("it refuses to give flash loan without repay", async () => {
+      await expect(
+        program.methods
+          .takeFlashLoan(new BN(1_000_000_000))
+          .accounts({
+            receiver: flashLoaner.publicKey,
+            poolAccount: poolKeypair.publicKey,
+            poolSolReserves,
+            flashAccount,
+            instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+          })
+          .rpc({ skipPreflight: true })
+      ).to.be.eventually.rejected.and.satisfy(
+        checkAnchorError(
+          6014,
+          "No succeeding repay flash loan instruction found"
+        )
+      );
+    });
+
+    it("it basic flash loan", async () => {
+      const loanAmt = new BN(1_000_000_000);
+      const [protocolFeeDestBalancePre, poolSolReservesBalancePre] =
+        await Promise.all(
+          [protocolFeeDestination, poolSolReserves].map((pk) =>
+            program.provider.connection.getBalance(pk)
+          )
+        );
+
+      const takeIx = await program.methods
+        .takeFlashLoan(loanAmt)
+        .accounts({
+          receiver: flashLoaner.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          flashAccount,
+          instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+        })
+        .instruction();
+      const repayIx = await program.methods
+        .repayFlashLoan()
+        .accounts({
+          repayer: flashLoaner.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          flashAccount,
+          flashLoanFeeAccount,
+          protocolFeeAccount: protocolFeeAddr,
+          protocolFeeDestination,
+        })
+        .instruction();
+      const bh = await program.provider.connection.getLatestBlockhash();
+      const tx = new VersionedTransaction(
+        new TransactionMessage({
+          payerKey: flashLoaner.publicKey,
+          recentBlockhash: bh.blockhash,
+          instructions: [takeIx, repayIx],
+        }).compileToV0Message()
+      );
+      tx.sign([flashLoaner]);
+      const signature = await program.provider.connection.sendTransaction(tx, {
+        skipPreflight: true,
+      });
+      await program.provider.connection.confirmTransaction({
+        signature,
+        ...bh,
+      });
+
+      const [protocolFeeDestBalancePost, poolSolReservesBalancePost] =
+        await Promise.all(
+          [protocolFeeDestination, poolSolReserves].map((pk) =>
+            program.provider.connection.getBalance(pk)
+          )
+        );
+      const flashAccountInfo = await program.provider.connection.getAccountInfo(
+        flashAccount
+      );
+
+      expect(protocolFeeDestBalancePost).to.be.gt(protocolFeeDestBalancePre);
+      expect(poolSolReservesBalancePost).to.be.gt(poolSolReservesBalancePre);
+      expect(flashAccountInfo).to.be.null;
+    });
+
+    it("it take flash loan twice in same tx", async () => {
+      const loanAmt = new BN(1_000_000_000);
+      const [protocolFeeDestBalancePre, poolSolReservesBalancePre] =
+        await Promise.all(
+          [protocolFeeDestination, poolSolReserves].map((pk) =>
+            program.provider.connection.getBalance(pk)
+          )
+        );
+
+      const takeIx = await program.methods
+        .takeFlashLoan(loanAmt)
+        .accounts({
+          receiver: flashLoaner.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          flashAccount,
+          instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+        })
+        .instruction();
+      const repayIx = await program.methods
+        .repayFlashLoan()
+        .accounts({
+          repayer: flashLoaner.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          flashAccount,
+          flashLoanFeeAccount,
+          protocolFeeAccount: protocolFeeAddr,
+          protocolFeeDestination,
+        })
+        .instruction();
+      const bh = await program.provider.connection.getLatestBlockhash();
+      const tx = new VersionedTransaction(
+        new TransactionMessage({
+          payerKey: flashLoaner.publicKey,
+          recentBlockhash: bh.blockhash,
+          instructions: [takeIx, takeIx, repayIx],
+        }).compileToV0Message()
+      );
+      tx.sign([flashLoaner]);
+      const signature = await program.provider.connection.sendTransaction(tx, {
+        skipPreflight: true,
+      });
+      await program.provider.connection.confirmTransaction({
+        signature,
+        ...bh,
+      });
+
+      const [protocolFeeDestBalancePost, poolSolReservesBalancePost] =
+        await Promise.all(
+          [protocolFeeDestination, poolSolReserves].map((pk) =>
+            program.provider.connection.getBalance(pk)
+          )
+        );
+      const flashAccountInfo = await program.provider.connection.getAccountInfo(
+        flashAccount
+      );
+
+      expect(protocolFeeDestBalancePost).to.be.gt(protocolFeeDestBalancePre);
+      expect(poolSolReservesBalancePost).to.be.gt(poolSolReservesBalancePre);
+      expect(flashAccountInfo).to.be.null;
     });
   });
 });

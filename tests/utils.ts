@@ -18,6 +18,8 @@ export const EPSILON_UPPER_BOUND = 1; // TODO: confirm that the value is reasona
 
 export const EPSILON_FLOAT_UPPER_BOUND = 1e-9;
 
+export const LAMPORTS_PER_SIGNATURE = 5000;
+
 // Anchor at the current v0.24.2, is throwing two different shapes of object
 // for program errors. This closure returns a predicate that checks if a given
 // error object matches either type and has the correct error code and message.
@@ -52,7 +54,7 @@ export function checkSystemError(errorCode: number): (err: any) => boolean {
 export async function airdrop(
   connection: Connection,
   address: PublicKey,
-  amountSol: number = 1.0
+  amountSol: number = 50.0
 ): Promise<ReturnType<Connection["confirmTransaction"]>> {
   return connection.confirmTransaction(
     await connection.requestAirdrop(address, amountSol * LAMPORTS_PER_SOL),
@@ -136,7 +138,10 @@ export async function waitForEpochToPass(
 export async function stakeAccMinLamports(
   connection: Connection
 ): Promise<number> {
-  return (await connection.getMinimumBalanceForRentExemption(200)) + 1;
+  // stake program minimum delegation 1 SOL as of solana 1.14
+  return (
+    (await connection.getMinimumBalanceForRentExemption(200)) + 1_000_000_000
+  );
 }
 
 type CreateDelegateStakeTxArgs = {

@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 use anchor_lang::prelude::*;
 
 #[cfg(feature = "local-testing")]
@@ -12,6 +14,7 @@ pub mod errors;
 pub mod instructions;
 pub mod rational;
 pub mod state;
+pub mod utils;
 
 use instructions::*;
 use state::*;
@@ -51,6 +54,13 @@ pub mod unstake {
         SetFeeAuthority::run(ctx)
     }
 
+    pub fn set_lp_token_metadata(
+        ctx: Context<SetLpTokenMetadata>,
+        data: DataV2LpToken,
+    ) -> Result<()> {
+        SetLpTokenMetadata::run(ctx, data)
+    }
+
     pub fn deactivate_stake_account(ctx: Context<DeactivateStakeAccount>) -> Result<()> {
         DeactivateStakeAccount::run(ctx)
     }
@@ -65,5 +75,26 @@ pub mod unstake {
 
     pub fn unstake_wsol<'info>(ctx: Context<'_, '_, '_, 'info, UnstakeWsol<'info>>) -> Result<()> {
         UnstakeWsol::run(ctx)
+    }
+
+    pub fn set_flash_loan_fee<'info>(
+        ctx: Context<'_, '_, '_, 'info, SetFlashLoanFee<'info>>,
+        flash_loan_fee: FlashLoanFee,
+    ) -> Result<()> {
+        SetFlashLoanFee::validate(&flash_loan_fee)?;
+        SetFlashLoanFee::run(ctx, flash_loan_fee)
+    }
+
+    pub fn take_flash_loan<'info>(
+        ctx: Context<'_, '_, '_, 'info, TakeFlashLoan<'info>>,
+        lamports: u64,
+    ) -> Result<()> {
+        TakeFlashLoan::run(ctx, lamports)
+    }
+
+    pub fn repay_flash_loan<'info>(
+        ctx: Context<'_, '_, '_, 'info, RepayFlashLoan<'info>>,
+    ) -> Result<()> {
+        RepayFlashLoan::run(ctx)
     }
 }

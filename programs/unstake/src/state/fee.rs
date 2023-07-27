@@ -1,14 +1,17 @@
 use anchor_lang::prelude::*;
+use serde::Deserialize;
 use spl_math::precise_number::PreciseNumber;
 use std::convert::TryFrom;
 use std::fmt;
 
 use crate::{errors::UnstakeError, rational::Rational};
 
+#[constant]
 pub const FEE_SEED_SUFFIX: &[u8] = b"fee";
 
 // Anchor can't derive account for enum, so wrap it in a struct
 #[account]
+#[derive(Debug, Deserialize)]
 pub struct Fee {
     pub fee: FeeEnum,
 }
@@ -18,6 +21,8 @@ impl Fee {
         self.fee.validate()
     }
 
+    /// Applies the contained fee model to the unstake parameters
+    /// Returns number of lamports to collect/retain as fees
     pub fn apply(
         &self,
         pool_incoming_stake: u64,
@@ -32,11 +37,12 @@ impl Fee {
     }
 }
 
-#[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
+#[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize, Deserialize)]
 #[repr(C)]
 pub enum FeeEnum {
     /// Charges a flat fee based on a set fee ratio
-    /// applied to the size of a given swap
+    /// applied to the size of a given swap.
+    /// E.g. num: 1, denom: 10_000 => 1bps fee
     ///
     /// Invariants:
     ///  - ratio is a valid Rational
@@ -45,7 +51,8 @@ pub enum FeeEnum {
 
     /// Charges a fee based on how much liquidity
     /// a swap leaves in the liquidity pool,
-    /// increasing linearly as less liquidity is left
+    /// increasing linearly as less liquidity is left.
+    /// See diagram in apply() below for details
     ///
     /// Invariants:
     ///  - max_liq_remaining is a valid Rational
@@ -56,15 +63,15 @@ pub enum FeeEnum {
     LiquidityLinear { params: LiquidityLinearParams },
 }
 
-#[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
+#[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize, Deserialize)]
 pub struct LiquidityLinearParams {
     /// The fee applied to a swap that leaves
     /// 100% of all liquidity in the SOL reserves account
-    max_liq_remaining: Rational,
+    pub max_liq_remaining: Rational,
 
     /// The fee applied to a swap that leaves
     /// no liquidity remaining in the SOL reserves account
-    zero_liq_remaining: Rational,
+    pub zero_liq_remaining: Rational,
 }
 
 impl FeeEnum {
@@ -113,8 +120,27 @@ impl FeeEnum {
                 // linear interpolation from max_liq_remaining to zero_liq_remaining where y-intercept at max_liq_remaining
                 // x-axis is liquidity consumed in lamports
                 // y-axis is fee ratio (e.g. 0.01 is 1% fees)
-                //
                 // let I = pool_incoming_stake, S = stake_account_lamports,
+                //
+                //                  fee ratio
+                //   zero_liq_remaining -^------------/
+                //                       |           /|
+                //                       |          / |
+                //         charge y here-|---------/  |
+                //                       |        /|  |
+                //                       |       / |  |
+                //                       |      /  |  |
+                //                       |     /   |  |
+                //                       |    /    |  |
+                //                       |   /     |  |
+                //                       |  /      |  |
+                //                       | /|      |  |
+                //                       |/ |      |  |
+                // c (max_liq_remaining)-|  |      |  |
+                //                       |  |      |  |
+                //         --------------|--|------|--|-------------------> liquidity consumed
+                //                          I I+(1-y)S total amount of lamports in pool
+                //
                 // m = slope, c = y-intercept at max_liq_remaining
                 // new liquidity consumed after unstake = I + (1 - y)S
                 // y = m(I + (1 - y)S) + c

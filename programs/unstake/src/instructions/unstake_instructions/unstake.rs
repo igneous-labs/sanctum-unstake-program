@@ -2,19 +2,14 @@ use anchor_lang::prelude::*;
 use anchor_spl::stake::{Stake, StakeAccount};
 
 use crate::{
-    anchor_len::AnchorLen,
     errors::UnstakeError,
-    state::{Fee, Pool, ProtocolFee, StakeAccountRecord, FEE_SEED_SUFFIX, PROTOCOL_FEE_SEED},
+    state::{Fee, Pool, ProtocolFee, FEE_SEED_SUFFIX, PROTOCOL_FEE_SEED},
 };
 
 use super::unstake_accounts::UnstakeAccounts;
 
 #[derive(Accounts)]
 pub struct Unstake<'info> {
-    /// pubkey paying for a new StakeAccountRecord account's rent
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
     /// stake account owner
     pub unstaker: Signer<'info>,
 
@@ -60,14 +55,13 @@ pub struct Unstake<'info> {
     pub fee_account: Account<'info, Fee>,
 
     /// stake account record to be created
+    /// CHECK: PDA checks address. Manually initialized and serialized in processor.
     #[account(
-        init,
-        payer = payer,
-        space = StakeAccountRecord::LEN,
+        mut,
         seeds = [&pool_account.key().to_bytes(), &stake_account.key().to_bytes()],
         bump,
     )]
-    pub stake_account_record_account: Account<'info, StakeAccountRecord>,
+    pub stake_account_record_account: UncheckedAccount<'info>,
 
     #[account(
         seeds = [PROTOCOL_FEE_SEED],

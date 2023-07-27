@@ -1,6 +1,6 @@
 {
   "name": "@unstake-it/sol",
-  "version": "0.1.5",
+  "version": "2.0.0",
   "author": "",
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
   "scripts": {
     "clean": "rm -rf dist && rm -f *.tgz",
     "rebuild": "cd ../ && yarn build && cd ts && yarn build",
-    "prebuild": "readlink -f ../target/idl/*.json | xargs -I % cp % src/idl/idl.json && readlink -f ../target/types/*.ts | xargs -I % cp % src/idl/idl.ts",
+    "prebuild": "readlink -f ../target/idl/*.json | xargs -I % cp % src/idl/idl.json && readlink -f ../target/types/*.ts | xargs -I % cp % src/idl/idl.ts && node ./unfuck-idl-json.cjs",
     "build:cjs": "tsc -p tsconfig.cjs.json && tsc-alias -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json && tsc-alias -p tsconfig.esm.json",
     "build": "yarn clean && yarn build:cjs && yarn build:esm",
@@ -38,12 +38,13 @@
     "prepack": "yarn clean && yarn build"
   },
   "dependencies": {
-    "@project-serum/anchor": "0.24.2",
+    "@project-serum/anchor": "^0.24.2",
     "@soceanfi/solana-stake-sdk": "^0.1.1"
   },
   "devDependencies": {
     "@solana/spl-token": "^0.2.0",
     "@types/bn.js": "^5.1.0",
+    "@types/node": "^20.4.2",
     "@types/node-fetch": "^2.6.2",
     "bn.js": "^5.2.1",
     "superstruct": "^0.14.2",
@@ -52,8 +53,5 @@
   },
   "peerDependencies": {
     "@solana/spl-token": "^0.2.0"
-  },
-  "resolutions": {
-    "@solana/web3.js": "1.43.5"
   }
 }

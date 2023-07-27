@@ -51,12 +51,6 @@ export type UnstakeAccounts = {
   referrer?: Address;
 
   /**
-   * The SOL account paying for the transaction and rent.
-   * Defaults to `unstaker` if unspecified
-   */
-  payer?: Address;
-
-  /**
    * The SOL account to receive the unstaked SOL.
    * Defaults to `unstaker` if unspecified
    */
@@ -75,14 +69,12 @@ export async function unstakeTx(
     poolAccount,
     stakeAccount,
     unstaker,
-    payer: payerOption,
     destination: destinationOption,
     protocolFee: protocolFeeOption,
     protocolFeeDestination: protocolFeeDestinationOption,
     referrer: referrerOption,
   }: UnstakeAccounts
 ): Promise<Transaction> {
-  const payer = payerOption ?? unstaker;
   const destination = destinationOption ?? unstaker;
 
   const { protocolFeeAccount, protocolFeeDestination } =
@@ -108,7 +100,6 @@ export async function unstakeTx(
   );
 
   let builder = program.methods.unstake().accounts({
-    payer,
     unstaker,
     stakeAccount,
     destination,

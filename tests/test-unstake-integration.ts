@@ -37,6 +37,7 @@ import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { getStakeAccount, stakeAccountState } from "@soceanfi/solana-stake-sdk";
 import { ProgramAccount } from "@project-serum/anchor";
+import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
 
 chaiUse(chaiAsPromised);
 
@@ -54,7 +55,7 @@ describe("integration", () => {
   const stakeAccountKeypair = Keypair.generate();
   const stakeAccountWSolKeypair = Keypair.generate();
 
-  const liquidityAmount = new BN(0.1 * LAMPORTS_PER_SOL);
+  const liquidityAmount = new BN(10 * LAMPORTS_PER_SOL);
 
   let [poolSolReserves] = [null as PublicKey, 0];
   let [feeAccount] = [null as PublicKey, 0];
@@ -62,6 +63,11 @@ describe("integration", () => {
   let unstakerWSol = null as PublicKey;
   let protocolFeeAddr = null as PublicKey;
   let protocolFee = null as ProgramAccount<ProtocolFeeAccount>;
+
+  const [flashAccount] = findProgramAddressSync(
+    [poolKeypair.publicKey.toBuffer(), Buffer.from("flashaccount")],
+    program.programId
+  );
 
   before(async () => {
     console.log("airdropping to payer, lper, and unstaker");
@@ -129,6 +135,7 @@ describe("integration", () => {
         poolSolReserves,
         lpMint: lpMintKeypair.publicKey,
         mintLpTokensTo: lperAta,
+        flashAccount,
       })
       .signers([lperKeypair])
       .rpc({ skipPreflight: true });
@@ -183,7 +190,6 @@ describe("integration", () => {
     await program.methods
       .unstake()
       .accounts({
-        payer: payerKeypair.publicKey,
         unstaker: unstakerKeypair.publicKey,
         stakeAccount: stakeAccountKeypair.publicKey,
         destination: unstakerKeypair.publicKey,
@@ -196,7 +202,7 @@ describe("integration", () => {
         clock: SYSVAR_CLOCK_PUBKEY,
         stakeProgram: StakeProgram.programId,
       })
-      .signers([payerKeypair, unstakerKeypair])
+      .signers([unstakerKeypair])
       .rpc({ skipPreflight: true });
 
     const [stakerPost, withdrawerPost] = await getStakeAccount(
@@ -282,7 +288,6 @@ describe("integration", () => {
     await program.methods
       .unstakeWsol()
       .accounts({
-        payer: payerKeypair.publicKey,
         unstaker: unstakerKeypair.publicKey,
         stakeAccount: stakeAccountWSolKeypair.publicKey,
         destination: unstakerWSol,
@@ -296,7 +301,7 @@ describe("integration", () => {
         stakeProgram: StakeProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
-      .signers([payerKeypair, unstakerKeypair])
+      .signers([unstakerKeypair])
       .rpc({ skipPreflight: true });
 
     const [stakerPost, withdrawerPost] = await getStakeAccount(
@@ -519,6 +524,7 @@ describe("integration", () => {
         poolSolReserves,
         lpMint: lpMintKeypair.publicKey,
         burnLpTokensFrom: lperAta,
+        flashAccount,
       })
       .signers([lperKeypair])
       .rpc({ skipPreflight: true });
