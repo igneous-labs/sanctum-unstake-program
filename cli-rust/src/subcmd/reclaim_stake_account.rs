@@ -14,11 +14,13 @@ use crate::tx_utils::send_or_sim_tx;
 use super::SubcmdExec;
 
 #[derive(Args, Debug)]
-#[command(long_about = "Reclaims stake account from the liquidity pool")]
+#[command(
+    long_about = "Reclaims SOL from a deactivated stake account back into the liquidity pool"
+)]
 pub struct ReclaimStakeAccountArgs {
-    #[arg(help = "Pubkey of the liquidity pool to reclaim stake account from")]
+    #[arg(help = "Pubkey of the liquidity pool to reclaim stake account to")]
     pool_account: String,
-    #[arg(help = "Pubkey of the stake account to reclaim from liquidity pool")]
+    #[arg(help = "Pubkey of the stake account to reclaim")]
     stake_account: String,
 }
 
@@ -56,7 +58,7 @@ impl SubcmdExec for ReclaimStakeAccountArgs {
         let tx = Transaction::new(&vec![payer], msg, blockhash);
         println!(
             "Reclaiming Stake account: {}\n\
-            From Liquidity pool: {}",
+            To Liquidity pool: {}",
             pool_account, stake_account
         );
         send_or_sim_tx(args, &client, &tx);
