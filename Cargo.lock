@@ -4868,8 +4868,3 @@ dependencies = [
  "libc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "mpl-token-metadata"
-version = "1.12.0"
-source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
