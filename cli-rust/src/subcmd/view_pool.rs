@@ -27,12 +27,11 @@ impl SubcmdExec for ViewPoolArgs {
 
         let fee_account_pk =
             Pubkey::find_program_address(&[&pool_pk.to_bytes(), FEE_SEED_SUFFIX], &ID);
-
         let fee_account = client.get_account(&fee_account_pk.0).unwrap();
-
         let fee = Fee::try_deserialize(&mut fee_account.data.as_slice()).unwrap();
 
-        let liq_lamports = client.get_balance(&fee_account_pk.0).unwrap();
+        let pool_sol_reserves = Pubkey::find_program_address(&[&pool_pk.to_bytes()], &ID);
+        let liq_lamports = client.get_balance(&pool_sol_reserves.0).unwrap();
 
         println!("Pool:\n{:#?}", pool);
         println!("Fee:\n{:#?}", fee);
