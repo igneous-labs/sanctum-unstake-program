@@ -2,6 +2,7 @@ use clap::Subcommand;
 
 mod add_liquidity;
 mod create_pool;
+mod deactivate_stake_account;
 mod fetch_protocol_fee;
 mod init_protocol_fee;
 mod reclaim_stake_account;
@@ -14,6 +15,7 @@ mod view_pool;
 
 pub use add_liquidity::*;
 pub use create_pool::*;
+pub use deactivate_stake_account::*;
 pub use fetch_protocol_fee::*;
 pub use init_protocol_fee::*;
 pub use reclaim_stake_account::*;
@@ -28,6 +30,7 @@ pub use view_pool::*;
 pub enum Subcmd {
     AddLiquidity(AddLiquidityArgs),
     CreatePool(CreatePoolArgs),
+    DeactivateStakeAccount(DeactivateStakeAccountArgs),
     FetchProtocolFee(FetchProtocolFeeArgs),
     InitProtocolFee(InitProtocolFeeArgs),
     ReclaimStakeAccount(ReclaimStakeAccountArgs),
@@ -48,6 +51,7 @@ impl SubcmdExec for Subcmd {
         match self {
             Self::AddLiquidity(a) => a.process_cmd(args),
             Self::CreatePool(a) => a.process_cmd(args),
+            Self::DeactivateStakeAccount(a) => a.process_cmd(args),
             Self::FetchProtocolFee(a) => a.process_cmd(args),
             Self::InitProtocolFee(a) => a.process_cmd(args),
             Self::ReclaimStakeAccount(a) => a.process_cmd(args),
