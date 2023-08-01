@@ -2031,7 +2031,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "24dcb2b0ec0e9246f6f035e0336ba3359c21f6928dfd90281999e2c8e8ab53eb"
 dependencies = [
  "borsh 0.9.3",
- "mpl-token-metadata-context-derive 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mpl-token-metadata-context-derive 0.2.1",
  "num-derive",
  "num-traits",
  "rmp-serde",
@@ -2044,13 +2044,14 @@ dependencies = [
 
 [[package]]
 name = "mpl-token-metadata"
-version = "1.12.0"
-source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84e73b5df66f4e6f98606e3fb327cbc6a0dba8df11085246f2e766949acb96bb"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
  "mpl-token-auth-rules",
- "mpl-token-metadata-context-derive 0.2.1 (git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut)",
+ "mpl-token-metadata-context-derive 0.3.0",
  "mpl-utils",
  "num-derive",
  "num-traits",
@@ -2073,8 +2074,9 @@ dependencies = [
 
 [[package]]
 name = "mpl-token-metadata-context-derive"
-version = "0.2.1"
-source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5a739019e11d93661a64ef5fe108ab17c79b35961e944442ff6efdd460ad01a"
 dependencies = [
  "quote 1.0.31",
  "syn 1.0.109",
@@ -2083,7 +2085,8 @@ dependencies = [
 [[package]]
 name = "mpl-utils"
 version = "0.2.0"
-source = "git+https://github.com/igneous-labs/metaplex-program-library?branch=fix/set-token-standard-update-auth-mut#ef0fb05fdb1f01d572f199c07704cb0ee834fe36"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "822133b6cba8f9a43e5e0e189813be63dd795858f54155c729833be472ffdb51"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -3714,6 +3717,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "solana-stake-program"
+version = "1.14.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a86596efa4db3b0bf996e470bd590f46ca6f3e7fd8e13ed28dde1f7c6acdb41e"
+dependencies = [
+ "bincode",
+ "log",
+ "num-derive",
+ "num-traits",
+ "rustc_version",
+ "serde",
+ "serde_derive",
+ "solana-config-program",
+ "solana-frozen-abi",
+ "solana-frozen-abi-macro",
+ "solana-metrics",
+ "solana-program-runtime",
+ "solana-sdk",
+ "solana-vote-program",
+ "thiserror",
+]
+
+[[package]]
 name = "solana-streamer"
 version = "1.14.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4387,6 +4413,7 @@ dependencies = [
  "solana-client",
  "solana-program",
  "solana-sdk",
+ "solana-stake-program",
  "spl-associated-token-account",
  "spl-token",
  "unstake",
