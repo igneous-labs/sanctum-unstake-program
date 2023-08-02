@@ -24,13 +24,8 @@ where
     input_array.chunks(n).map(|chunk| chunk.to_vec()).collect()
 }
 
-pub fn batch_ixs(
-    client: &RpcClient,
-    payer: Box<dyn Signer>,
-    ixs: &Vec<Instruction>,
-) -> Transaction {
+pub fn batch_ixs(client: &RpcClient, payer: &dyn Signer, ixs: &[Instruction]) -> Transaction {
     let msg = Message::new(ixs, Some(&payer.pubkey()));
     let blockhash = client.get_latest_blockhash().unwrap();
-    let tx = Transaction::new(&vec![payer], msg, blockhash);
-    tx
+    Transaction::new(&vec![payer], msg, blockhash)
 }

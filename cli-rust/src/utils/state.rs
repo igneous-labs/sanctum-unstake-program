@@ -1,8 +1,9 @@
 use solana_account_decoder::parse_stake::{parse_stake, StakeAccountType};
+use solana_account_decoder::UiAccountEncoding;
 use solana_client::rpc_client::RpcClient;
 use solana_client::{
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
-    rpc_filter::{Memcmp, MemcmpEncodedBytes, MemcmpEncoding, RpcFilterType},
+    rpc_filter::{Memcmp, RpcFilterType},
 };
 use solana_program::pubkey::Pubkey;
 use solana_sdk::{
@@ -74,13 +75,17 @@ pub fn fetch_liquidity_pool_stake_accounts(
         .get_program_accounts_with_config(
             &solana_stake_program::id(),
             RpcProgramAccountsConfig {
-                account_config: RpcAccountInfoConfig::default(),
+                account_config: RpcAccountInfoConfig {
+                    encoding: Some(UiAccountEncoding::Base64),
+                    data_slice: None,
+                    min_context_slot: None,
+                    commitment: None,
+                },
+                filters: Some(vec![RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                    META_AUTHORIZED_WITHDRAWER_OFFSET,
+                    pool_sol_reserves.as_ref().to_vec(),
+                ))]),
                 with_context: None,
-                filters: Some(vec![RpcFilterType::Memcmp(Memcmp {
-                    offset: META_AUTHORIZED_WITHDRAWER_OFFSET,
-                    bytes: MemcmpEncodedBytes::Base64(pool_sol_reserves.to_string()),
-                    encoding: Some(MemcmpEncoding::Binary),
-                })]),
             },
         )
         .unwrap();

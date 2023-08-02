@@ -41,7 +41,12 @@ impl SubcmdExec for ReclaimAllArgs {
             "{}",
             serde_json::to_string_pretty(&liquidity_pool_stake_accounts).unwrap()
         );
+        let deactivating_stake_accounts = liquidity_pool_stake_accounts.deactivating;
         let stake_accounts_to_reclaim = liquidity_pool_stake_accounts.inactive;
+        println!(
+            "Found {} deactivating stake accounts",
+            deactivating_stake_accounts.len()
+        );
         println!(
             "Found {} inactive stake accounts to reclaim",
             stake_accounts_to_reclaim.len()
@@ -69,9 +74,10 @@ impl SubcmdExec for ReclaimAllArgs {
             .unwrap();
             reclaim_ixs.push(ix);
         }
+
         let reclaim_txs_batched = chunk_array(RECLAIM_BATCH_SIZE, &reclaim_ixs)
             .into_iter()
-            .map(|ixs| batch_ixs(&client, payer, &ixs));
+            .map(|ixs| batch_ixs(&client, &*payer, &ixs));
 
         println!("Sending txs...");
         println!("Reclaims:");
