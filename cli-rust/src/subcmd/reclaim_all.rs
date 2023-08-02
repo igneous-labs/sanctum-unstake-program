@@ -52,6 +52,11 @@ impl SubcmdExec for ReclaimAllArgs {
             stake_accounts_to_reclaim.len()
         );
 
+        if stake_accounts_to_reclaim.is_empty() {
+            println!("Nothing to reclaim!");
+            return;
+        }
+
         println!("Generating txs...");
         let mut reclaim_ixs = Vec::new();
         for stake_account in stake_accounts_to_reclaim.iter() {
