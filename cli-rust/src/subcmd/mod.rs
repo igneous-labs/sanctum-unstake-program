@@ -5,6 +5,7 @@ mod create_pool;
 mod deactivate_stake_account;
 mod fetch_protocol_fee;
 mod init_protocol_fee;
+mod reclaim_all;
 mod reclaim_stake_account;
 mod remove_liquidity;
 mod set_fee;
@@ -18,6 +19,7 @@ pub use create_pool::*;
 pub use deactivate_stake_account::*;
 pub use fetch_protocol_fee::*;
 pub use init_protocol_fee::*;
+pub use reclaim_all::*;
 pub use reclaim_stake_account::*;
 pub use remove_liquidity::*;
 pub use set_fee::*;
@@ -33,6 +35,7 @@ pub enum Subcmd {
     DeactivateStakeAccount(DeactivateStakeAccountArgs),
     FetchProtocolFee(FetchProtocolFeeArgs),
     InitProtocolFee(InitProtocolFeeArgs),
+    ReclaimAll(ReclaimAllArgs),
     ReclaimStakeAccount(ReclaimStakeAccountArgs),
     RemoveLiquidity(RemoveLiquidityArgs),
     SetFlashLoanFee(SetFlashLoanFeeArgs),
@@ -54,6 +57,7 @@ impl SubcmdExec for Subcmd {
             Self::DeactivateStakeAccount(a) => a.process_cmd(args),
             Self::FetchProtocolFee(a) => a.process_cmd(args),
             Self::InitProtocolFee(a) => a.process_cmd(args),
+            Self::ReclaimAll(a) => a.process_cmd(args),
             Self::ReclaimStakeAccount(a) => a.process_cmd(args),
             Self::RemoveLiquidity(a) => a.process_cmd(args),
             Self::SetFlashLoanFee(a) => a.process_cmd(args),
