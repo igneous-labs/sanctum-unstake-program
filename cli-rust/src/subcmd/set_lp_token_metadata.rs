@@ -3,8 +3,13 @@ use std::str::FromStr;
 use anchor_lang::AccountDeserialize;
 use clap::Args;
 
+use mpl_token_metadata::state::PREFIX;
 use solana_program::{message::Message, pubkey::Pubkey, system_program, sysvar};
-use solana_sdk::{signature::read_keypair_file, signer::Signer, transaction::Transaction};
+use solana_sdk::{
+    signature::{read_keypair_file, Keypair},
+    signer::Signer,
+    transaction::Transaction,
+};
 use unstake::{state::Pool, ID};
 use unstake_interface::{
     set_lp_token_metadata_ix, DataV2LpToken, SetLpTokenMetadataIxArgs, SetLpTokenMetadataKeys,
@@ -50,8 +55,16 @@ impl SubcmdExec for SetLpTokenMetadataArgs {
             signers.push(Box::new(fee_authority_keypair));
         }
 
-        let metadata =
-            Pubkey::find_program_address(&[&pool_pk.to_bytes()], &mpl_token_metadata::id());
+        let program_key = mpl_token_metadata::id();
+        let mint_key = Keypair::new();
+        let metadata = Pubkey::find_program_address(
+            &[
+                PREFIX.as_bytes(),
+                program_key.as_ref(),
+                mint_key.pubkey().as_ref(),
+            ],
+            &program_key,
+        );
 
         let ix = set_lp_token_metadata_ix(
             SetLpTokenMetadataKeys {
