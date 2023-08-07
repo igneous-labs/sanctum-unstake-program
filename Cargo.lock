@@ -4409,6 +4409,7 @@ dependencies = [
  "mpl-token-metadata",
  "serde",
  "serde_json",
+ "solana-account-decoder",
  "solana-clap-utils",
  "solana-cli-config",
  "solana-client",
