@@ -20,11 +20,11 @@ use super::SubcmdExec;
 pub struct SetLpTokenMetadataArgs {
     #[arg(help = "Pubkey of the liquidity pool to set token metadata for")]
     pool_account: String,
-    #[arg(help = "Name of the token to set metadata for")]
+    #[arg(help = "Symbol of the token to set metadata for")]
     symbol: String,
-    #[arg(help = "Symbol for the token to set metadata for")]
+    #[arg(help = "Name for the token to set metadata for")]
     name: String,
-    #[arg(help = "URI pointing to JSON representing the token to set metadata for")]
+    #[arg(help = "URI pointing to the token's JSON metadata")]
     uri: String,
     #[arg(
         help = "Path to keypair actings as the pool's fee authority. Defaults to wallet in config."
