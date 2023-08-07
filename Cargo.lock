@@ -4406,6 +4406,7 @@ dependencies = [
  "clap 2.34.0",
  "clap 4.0.26",
  "derive_more",
+ "mpl-token-metadata",
  "serde",
  "serde_json",
  "solana-account-decoder",
