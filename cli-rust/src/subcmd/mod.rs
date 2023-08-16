@@ -13,6 +13,7 @@ mod set_fee;
 mod set_fee_authority;
 mod set_flash_loan_fee;
 mod set_lp_token_metadata;
+mod set_protocol_fee;
 // mod unstakes;
 mod view_pool;
 
@@ -32,6 +33,8 @@ pub use set_lp_token_metadata::*;
 // pub use unstakes::*;
 pub use view_pool::*;
 
+use self::set_protocol_fee::SetProtocolFeeArgs;
+
 #[derive(Debug, Subcommand)]
 pub enum Subcmd {
     AddLiquidity(AddLiquidityArgs),
@@ -47,6 +50,7 @@ pub enum Subcmd {
     SetFee(SetFeeArgs),
     SetFeeAuthority(SetFeeAuthorityArgs),
     SetLpTokenMetadata(SetLpTokenMetadataArgs),
+    SetProtocolFee(SetProtocolFeeArgs),
     // Unstakes(UnstakesArgs),
     ViewPool(ViewPoolArgs),
 }
@@ -71,6 +75,7 @@ impl SubcmdExec for Subcmd {
             Self::SetFee(a) => a.process_cmd(args),
             Self::SetFeeAuthority(a) => a.process_cmd(args),
             Self::SetLpTokenMetadata(a) => a.process_cmd(args),
+            Self::SetProtocolFee(a) => a.process_cmd(args),
             // Self::Unstakes(a) => a.process_cmd(args),
             Self::ViewPool(a) => a.process_cmd(args),
         }
