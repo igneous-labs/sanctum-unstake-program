@@ -32,6 +32,10 @@ export function checkAnchorError(
     if (err.code != undefined) {
       // first error type
       return err.code === errorCode && err.msg === errorMessage;
+    } else if (err.InstructionError !== undefined) {
+      // confirmTransaction result
+      const [_ixIndex, errObj] = err.InstructionError;
+      return errObj.Custom === errorCode;
     } else {
       // second error type
       return (
