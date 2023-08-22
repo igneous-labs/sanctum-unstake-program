@@ -33,8 +33,16 @@ impl SubcmdExec for ViewPoolArgs {
         let pool_sol_reserves = Pubkey::find_program_address(&[&pool_pk.to_bytes()], &ID);
         let liq_lamports = client.get_balance(&pool_sol_reserves.0).unwrap();
 
+        let max_liq_lamports = pool.incoming_stake + liq_lamports;
+
         println!("Pool:\n{:#?}", pool);
         println!("Fee:\n{:#?}", fee);
         println!("Liquidity: {} SOL", lamports_to_sol(liq_lamports));
+        println!(
+            "Utilization: {} / {} ({:.4}%)",
+            lamports_to_sol(pool.incoming_stake),
+            lamports_to_sol(max_liq_lamports),
+            100. * pool.incoming_stake as f64 / max_liq_lamports as f64
+        );
     }
 }
