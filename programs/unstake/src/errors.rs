@@ -47,4 +47,7 @@ pub enum UnstakeError {
 
     #[msg("No succeeding repay flash loan instruction found")]
     NoSucceedingRepayFlashLoan, // 0x177e
+
+    #[msg("Flash loan active, no further flash loans and liquidity addition allowed")]
+    FlashLoanActive, // 0x177f
 }

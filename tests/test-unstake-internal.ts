@@ -1742,15 +1742,8 @@ describe("internals", () => {
       expect(flashAccountInfo).to.be.null;
     });
 
-    it("it take flash loan twice in same tx", async () => {
+    it("it fails to take flash loan twice in same tx", async () => {
       const loanAmt = new BN(1_000_000_000);
-      const [protocolFeeDestBalancePre, poolSolReservesBalancePre] =
-        await Promise.all(
-          [protocolFeeDestination, poolSolReserves].map((pk) =>
-            program.provider.connection.getBalance(pk)
-          )
-        );
-
       const takeIx = await program.methods
         .takeFlashLoan(loanAmt)
         .accounts({
@@ -1785,24 +1778,79 @@ describe("internals", () => {
       const signature = await program.provider.connection.sendTransaction(tx, {
         skipPreflight: true,
       });
-      await program.provider.connection.confirmTransaction({
+      const {
+        value: { err },
+      } = await program.provider.connection.confirmTransaction({
         signature,
         ...bh,
       });
-
-      const [protocolFeeDestBalancePost, poolSolReservesBalancePost] =
-        await Promise.all(
-          [protocolFeeDestination, poolSolReserves].map((pk) =>
-            program.provider.connection.getBalance(pk)
-          )
-        );
-      const flashAccountInfo = await program.provider.connection.getAccountInfo(
-        flashAccount
+      expect(err).to.satisfy(
+        checkAnchorError(
+          6015,
+          "Flash loan active, no further flash loans and liquidity addition allowed"
+        )
       );
+    });
 
-      expect(protocolFeeDestBalancePost).to.be.gt(protocolFeeDestBalancePre);
-      expect(poolSolReservesBalancePost).to.be.gt(poolSolReservesBalancePre);
-      expect(flashAccountInfo).to.be.null;
+    it("it fails to take flash loan then add liquidity", async () => {
+      const loanAmt = new BN(1_000_000_000);
+      const takeIx = await program.methods
+        .takeFlashLoan(loanAmt)
+        .accounts({
+          receiver: flashLoaner.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          flashAccount,
+          instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+        })
+        .instruction();
+      const addLiquidityIx = await program.methods
+        .addLiquidity(loanAmt)
+        .accounts({
+          from: flashLoaner.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          lpMint: lpMintKeypair.publicKey,
+          mintLpTokensTo: lperAta,
+          flashAccount,
+        })
+        .instruction();
+      const repayIx = await program.methods
+        .repayFlashLoan()
+        .accounts({
+          repayer: flashLoaner.publicKey,
+          poolAccount: poolKeypair.publicKey,
+          poolSolReserves,
+          flashAccount,
+          flashLoanFeeAccount,
+          protocolFeeAccount: protocolFeeAddr,
+          protocolFeeDestination,
+        })
+        .instruction();
+      const bh = await program.provider.connection.getLatestBlockhash();
+      const tx = new VersionedTransaction(
+        new TransactionMessage({
+          payerKey: flashLoaner.publicKey,
+          recentBlockhash: bh.blockhash,
+          instructions: [takeIx, addLiquidityIx, repayIx],
+        }).compileToV0Message()
+      );
+      tx.sign([flashLoaner]);
+      const signature = await program.provider.connection.sendTransaction(tx, {
+        skipPreflight: true,
+      });
+      const {
+        value: { err },
+      } = await program.provider.connection.confirmTransaction({
+        signature,
+        ...bh,
+      });
+      expect(err).to.satisfy(
+        checkAnchorError(
+          6015,
+          "Flash loan active, no further flash loans and liquidity addition allowed"
+        )
+      );
     });
   });
 });

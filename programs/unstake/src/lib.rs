@@ -8,6 +8,17 @@ declare_id!("6KBz9djJAH3gRHscq9ujMpyZ5bCK9a27o3ybDtJLXowz");
 #[cfg(not(feature = "local-testing"))]
 declare_id!("unpXTU2Ndrc7WWNyEhQWe4udTzSibLPi25SXv2xbCHQ");
 
+#[cfg(not(feature = "no-entrypoint"))]
+solana_security_txt::security_txt! {
+    name: "Sanctum Unstake Program",
+    project_url: "https://sanctum.so",
+    contacts: "telegram:gnaynaud,telegram:f812_socean,telegram:fpsocean",
+    policy: "https://github.com/igneous-labs/sanctum-unstake-program/blob/master/SECURITY.md",
+    preferred_languages: "en",
+    source_code: "https://github.com/igneous-labs/sanctum-unstake-program",
+    auditors: "Sec3"
+}
+
 pub mod anchor_len;
 pub mod consts;
 pub mod errors;

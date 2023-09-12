@@ -65,6 +65,10 @@ impl<'info> AddLiquidity<'info> {
         let token_program = &ctx.accounts.token_program;
         let system_program = &ctx.accounts.system_program;
 
+        if !flash_account.data_is_empty() {
+            return Err(UnstakeError::FlashLoanActive.into());
+        }
+
         // order matters, must calculate first before mutation
         let pool_owned_lamports =
             calc_pool_owned_lamports(pool_sol_reserves, pool_account, flash_account)?;

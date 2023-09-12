@@ -66,6 +66,10 @@ impl<'info> TakeFlashLoan<'info> {
         let instructions = &ctx.accounts.instructions;
         let system_program = &ctx.accounts.system_program;
 
+        if !flash_account.data_is_empty() {
+            return Err(UnstakeError::FlashLoanActive.into());
+        }
+
         // Check corresponding repay instruction exists
         let current_idx: usize = load_current_index_checked(instructions.as_ref())?.into();
         let mut next_ix_idx = current_idx + 1;
@@ -86,39 +90,37 @@ impl<'info> TakeFlashLoan<'info> {
                 .ok_or(UnstakeError::PdaBumpNotCached)?],
         ];
 
-        // init flash_account if required
-        if flash_account.data_is_empty() {
-            // you can only invoke_signed with one seed, so
-            // we need to split create_account up into
-            // allocate, assign, transfer
-            let flash_account_seeds: &[&[u8]] = &[
-                &pool_account.key().to_bytes(),
-                FLASH_ACCOUNT_SEED_SUFFIX,
-                &[*ctx
-                    .bumps
-                    .get("flash_account")
-                    .ok_or(UnstakeError::PdaBumpNotCached)?],
-            ];
-            allocate_assign_pda(AllocateAssignPdaArgs {
-                system_program,
-                pda_account: flash_account,
-                pda_account_owner_program: &crate::ID,
-                pda_account_len: FlashAccount::account_len(),
-                pda_account_signer_seeds: &[flash_account_seeds],
-            })?;
-            if flash_account.lamports() == 0 {
-                transfer(
-                    CpiContext::new_with_signer(
-                        system_program.to_account_info(),
-                        Transfer {
-                            from: pool_sol_reserves.to_account_info(),
-                            to: flash_account.to_account_info(),
-                        },
-                        &[seeds],
-                    ),
-                    1, // 1 lamport hot potato
-                )?;
-            }
+        // init flash_account
+        // you can only invoke_signed with one seed, so
+        // we need to split create_account up into
+        // allocate, assign, transfer
+        let flash_account_seeds: &[&[u8]] = &[
+            &pool_account.key().to_bytes(),
+            FLASH_ACCOUNT_SEED_SUFFIX,
+            &[*ctx
+                .bumps
+                .get("flash_account")
+                .ok_or(UnstakeError::PdaBumpNotCached)?],
+        ];
+        allocate_assign_pda(AllocateAssignPdaArgs {
+            system_program,
+            pda_account: flash_account,
+            pda_account_owner_program: &crate::ID,
+            pda_account_len: FlashAccount::account_len(),
+            pda_account_signer_seeds: &[flash_account_seeds],
+        })?;
+        if flash_account.lamports() == 0 {
+            transfer(
+                CpiContext::new_with_signer(
+                    system_program.to_account_info(),
+                    Transfer {
+                        from: pool_sol_reserves.to_account_info(),
+                        to: flash_account.to_account_info(),
+                    },
+                    &[seeds],
+                ),
+                1, // 1 lamport hot potato
+            )?;
         }
 
         // increment and save flash_account
