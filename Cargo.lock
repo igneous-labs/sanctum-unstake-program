@@ -4423,6 +4423,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "unstake-lib"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "spl-math",
+ "unstake_interface",
+]
+
+[[package]]
 name = "unstake_interface"
 version = "2.0.0"
 dependencies = [

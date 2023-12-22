@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/*", "cli-rust", "unstake_interface"]
+members = ["programs/*", "cli-rust", "unstake-lib", "unstake_interface"]
 
 [workspace.dependencies]
 anchor-lang = "0.28.0"
@@ -32,4 +32,5 @@ solana-stake-program = "^1"
 
 # workspace members
 unstake = { path = "./programs/unstake" }
+unstake-lib = { path = "./unstake-lib" }
 unstake_interface = { path = "./unstake_interface" }
