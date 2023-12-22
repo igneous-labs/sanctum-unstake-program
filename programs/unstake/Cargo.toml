@@ -17,16 +17,13 @@ local-testing = []
 
 default = []
 
-[dev-dependencies]
-proptest = "1.0"
-
-[dependencies.spl-math]
-version = "0.1.0"
-features = ["no-entrypoint"]
-
 [dependencies]
-anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }
-anchor-spl = { version = "0.28.0", features = ["metadata", "stake", "token"] }
-mpl-token-metadata = { version = "^1.13", features = ["no-entrypoint"] }
-serde = { version = "1.0.171", features = ["derive"] }
-spl-associated-token-account = "^1.1"                                          # required for anchor-spl token
+anchor-lang = { workspace = true, features = ["init-if-needed"] }
+anchor-spl = { workspace = true, features = ["metadata", "stake", "token"] }
+mpl-token-metadata = { workspace = true, features = ["no-entrypoint"] }
+serde = { workspace = true, features = ["derive"] }
+spl-associated-token-account = { workspace = true, features = ["no-entrypoint"] } # required for anchor-spl token
+spl-math = { workspace = true, features = ["no-entrypoint"] }
+
+[dev-dependencies]
+proptest = { workspace = true }

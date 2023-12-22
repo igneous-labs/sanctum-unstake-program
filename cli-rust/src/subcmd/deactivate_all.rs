@@ -4,9 +4,7 @@ use clap::Args;
 
 use solana_program::{pubkey::Pubkey, sysvar};
 use unstake::ID;
-use unstake_interface::{
-    deactivate_stake_account_ix, DeactivateStakeAccountIxArgs, DeactivateStakeAccountKeys,
-};
+use unstake_interface::{deactivate_stake_account_ix, DeactivateStakeAccountKeys};
 
 use crate::{
     tx_utils::{batch_ixs, chunk_array, send_or_sim_tx},
@@ -58,16 +56,13 @@ impl SubcmdExec for DeactivateAllArgs {
         println!("Generating txs...");
         let mut deactivate_ixs = Vec::new();
         for stake_account in stake_accounts_to_deactivate.iter() {
-            let ix = deactivate_stake_account_ix(
-                DeactivateStakeAccountKeys {
-                    pool_account,
-                    pool_sol_reserves: pool_sol_reserves.0,
-                    clock: sysvar::clock::id(),
-                    stake_account: *stake_account,
-                    stake_program: solana_stake_program::id(),
-                },
-                DeactivateStakeAccountIxArgs {},
-            )
+            let ix = deactivate_stake_account_ix(DeactivateStakeAccountKeys {
+                pool_account,
+                pool_sol_reserves: pool_sol_reserves.0,
+                clock: sysvar::clock::id(),
+                stake_account: *stake_account,
+                stake_program: solana_stake_program::id(),
+            })
             .unwrap();
             deactivate_ixs.push(ix);
         }

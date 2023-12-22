@@ -8,23 +8,23 @@ name = "unstakeit"
 path = "src/main.rs"
 
 [dependencies]
-anchor-lang = "0.28.0"
-base64 = "0.21.2"
-borsh = "^0.9.1"
-clap = { version = "^4.0", features = ["derive"] }
-clap2 = { package = "clap", version = "^2.0" }                              # required for solana-clap-utils
-derive_more = "^0.99"
-mpl-token-metadata = "^1.13"
-serde = { version = "1.0.171", features = ["derive"] }
-serde_json = "1.0.103"
-solana-account-decoder = "~1.14"
-solana-clap-utils = "~1.14"
-solana-cli-config = "~1.14"
-solana-client = "~1.14"
-solana-sdk = "~1.14"
-solana-program = "~1.14"
-solana-stake-program = "~1.14"
-spl-associated-token-account = "1.1.1"
-spl-token = "^3.0"
-unstake = { path = "../programs/unstake" }
-unstake_interface = { path = "../unstake_interface", features = ["serde"] }
+anchor-lang = { workspace = true }
+base64 = { workspace = true }
+borsh = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+clap2 = { workspace = true }                              # required for solana-clap-utils
+derive_more = { workspace = true }
+mpl-token-metadata = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+solana-account-decoder = { workspace = true }
+solana-clap-utils = { workspace = true }
+solana-cli-config = { workspace = true }
+solana-client = { workspace = true }
+solana-sdk = { workspace = true }
+solana-program = { workspace = true }
+solana-stake-program = { workspace = true }
+spl-associated-token-account = { workspace = true }
+spl-token = { workspace = true }
+unstake = { workspace = true }
+unstake_interface = { workspace = true, features = ["serde"] }
