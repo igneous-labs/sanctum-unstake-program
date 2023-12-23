@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = ["programs/*", "cli-rust", "unstake-lib", "unstake_interface"]
 
 [workspace.dependencies]
@@ -7,9 +8,9 @@ anchor-spl = "0.28.0"
 base64 = "0.21.2"
 clap = { version = "^4.0" }
 clap2 = { package = "clap", version = "^2.0" }   
-borsh = "^0.9" # lock to 0.9.3 for prod
+borsh = ">=0.9"
 derive_more = "^0.99"
-mpl-token-metadata = "^1.13"
+mpl-token-metadata = "^1"
 num-derive = ">=0.1"
 num-traits = ">=0.1"
 proptest = "^1"
@@ -21,7 +22,7 @@ spl-math = ">=0.1"
 thiserror = "^1"
 
 # solana deps
-# Lock to 1.14 for prod, but ^1 for flexibility for library users
+# Lock to 1.14.20 for prod, but ^1 for flexibility for library users
 solana-account-decoder = "^1"
 solana-clap-utils = "^1"
 solana-cli-config = "^1"

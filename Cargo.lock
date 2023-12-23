@@ -4394,6 +4394,8 @@ dependencies = [
  "serde",
  "spl-associated-token-account",
  "spl-math",
+ "unstake-lib",
+ "unstake_interface",
 ]
 
 [[package]]
