@@ -56,7 +56,7 @@ pub fn stake_account_state(
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct LiquidityPoolStakeAccounts {
     pub active: Vec<Pubkey>,
     pub inactive: Vec<Pubkey>,
