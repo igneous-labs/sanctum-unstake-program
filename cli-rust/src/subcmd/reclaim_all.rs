@@ -37,10 +37,7 @@ impl SubcmdExec for ReclaimAllArgs {
         println!("Fetching stake accounts belongs to {} ...", &pool_account);
         let liquidity_pool_stake_accounts =
             fetch_liquidity_pool_stake_accounts(&client, &pool_account, &pool_sol_reserves.0);
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&liquidity_pool_stake_accounts).unwrap()
-        );
+        println!("{:#?}", liquidity_pool_stake_accounts);
         let deactivating_stake_accounts = liquidity_pool_stake_accounts.deactivating;
         let stake_accounts_to_reclaim = liquidity_pool_stake_accounts.inactive;
         println!(
