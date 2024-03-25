@@ -4,9 +4,7 @@ use clap::Args;
 
 use solana_program::{pubkey::Pubkey, sysvar};
 use unstake::ID;
-use unstake_interface::{
-    reclaim_stake_account_ix, ReclaimStakeAccountIxArgs, ReclaimStakeAccountKeys,
-};
+use unstake_interface::{reclaim_stake_account_ix, ReclaimStakeAccountKeys};
 
 use crate::{
     tx_utils::{batch_ixs, chunk_array, send_or_sim_tx},
@@ -61,18 +59,15 @@ impl SubcmdExec for ReclaimAllArgs {
                 &[&pool_account.to_bytes(), &stake_account.to_bytes()],
                 &ID,
             );
-            let ix = reclaim_stake_account_ix(
-                ReclaimStakeAccountKeys {
-                    pool_account,
-                    pool_sol_reserves: pool_sol_reserves.0,
-                    clock: sysvar::clock::id(),
-                    stake_account: *stake_account,
-                    stake_account_record_account: stake_account_record_account.0,
-                    stake_history: sysvar::stake_history::id(),
-                    stake_program: solana_stake_program::id(),
-                },
-                ReclaimStakeAccountIxArgs {},
-            )
+            let ix = reclaim_stake_account_ix(ReclaimStakeAccountKeys {
+                pool_account,
+                pool_sol_reserves: pool_sol_reserves.0,
+                clock: sysvar::clock::id(),
+                stake_account: *stake_account,
+                stake_account_record_account: stake_account_record_account.0,
+                stake_history: sysvar::stake_history::id(),
+                stake_program: solana_stake_program::id(),
+            })
             .unwrap();
             reclaim_ixs.push(ix);
         }
