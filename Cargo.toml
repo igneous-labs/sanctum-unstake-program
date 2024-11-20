@@ -22,14 +22,14 @@ spl-math = ">=0.1"
 thiserror = "^1"
 
 # solana deps
-# Lock to 1.14.20 for prod, but ^1 for flexibility for library users
-solana-account-decoder = "^1"
-solana-clap-utils = "^1"
-solana-cli-config = "^1"
-solana-client = "^1"
-solana-sdk = "^1"
-solana-program = "^1"
-solana-stake-program = "^1"
+# Lock to 1.14.20 for prod, but >=1 for flexibility for library users
+solana-account-decoder = ">=1"
+solana-clap-utils = ">=1"
+solana-cli-config = ">=1"
+solana-client = ">=1"
+solana-sdk = ">=1"
+solana-program = ">=1"
+solana-stake-program = ">=1"
 
 # workspace members
 unstake = { path = "./programs/unstake" }
