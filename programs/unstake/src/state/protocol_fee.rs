@@ -1,6 +1,7 @@
 use anchor_lang::prelude::Pubkey;
 
 use anchor_lang::prelude::*;
+use unstake_lib::RationalQty;
 
 use crate::{errors::UnstakeError, rational::Rational};
 
@@ -31,7 +32,7 @@ mod default_destination {
     #[cfg(feature = "local-testing")]
     declare_id!("6h64tjnsZDcvEta2uZvf2CqoPLf2Q8h79ES74ghjNk8D");
 
-    // Left Curve's wSOL token account
+    // initial protocol fee wSOL token account
     #[cfg(not(feature = "local-testing"))]
     declare_id!("GnRGTBrFuEwb85Zs4zeZWUzQYfTwmPxCPYmQQodDzYUK");
 }
@@ -43,7 +44,7 @@ mod default_authority {
     #[cfg(feature = "local-testing")]
     declare_id!("Cp4BZrED56eBpv5c6zdJmoCiKMrYDURjAWU8KeQhYjM8");
 
-    // LEFT CURVE DAO's unstake program upgrade authority
+    // initial unstake program upgrade authority
     #[cfg(not(feature = "local-testing"))]
     declare_id!("4e3CRid3ugjAFRjSnmbbLie1CaeU41CBYhk4saKQgwBB");
 }
@@ -63,11 +64,8 @@ impl Default for ProtocolFee {
 
 impl ProtocolFee {
     pub fn validate(&self) -> Result<()> {
-        if !self.fee_ratio.validate()
-            || !self.fee_ratio.is_lte_one()
-            || !self.referrer_fee_ratio.validate()
-            || !self.referrer_fee_ratio.is_lte_one()
-        {
+        let f: unstake_interface::Rational = self.fee_ratio.into();
+        if !f.is_valid() || !f.is_lte_one() || !f.is_valid() || !f.is_lte_one() {
             return Err(UnstakeError::InvalidFee.into());
         }
 
@@ -82,7 +80,8 @@ impl ProtocolFee {
     /// Invariants:
     /// - return <= `fee_lamports`
     pub fn apply(&self, fee_lamports: u64) -> Option<u64> {
-        self.fee_ratio.floor_mul(fee_lamports)
+        let f: unstake_interface::Rational = self.fee_ratio.into();
+        f.floor_mul(fee_lamports)
     }
 
     /// Applies the referrer fee on a given protocol fee amount
@@ -93,6 +92,7 @@ impl ProtocolFee {
     /// Invariants:
     /// - return <= `protocol_fee_lamports`
     pub fn apply_referrer_fee(&self, protocol_fee_lamports: u64) -> Option<u64> {
-        self.referrer_fee_ratio.floor_mul(protocol_fee_lamports)
+        let f: unstake_interface::Rational = self.referrer_fee_ratio.into();
+        f.floor_mul(protocol_fee_lamports)
     }
 }

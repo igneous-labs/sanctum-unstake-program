@@ -5,9 +5,7 @@ use clap::Args;
 use solana_program::{message::Message, pubkey::Pubkey, sysvar};
 use solana_sdk::transaction::Transaction;
 use unstake::ID;
-use unstake_interface::{
-    deactivate_stake_account_ix, DeactivateStakeAccountIxArgs, DeactivateStakeAccountKeys,
-};
+use unstake_interface::{deactivate_stake_account_ix, DeactivateStakeAccountKeys};
 
 use crate::tx_utils::send_or_sim_tx;
 
@@ -32,16 +30,13 @@ impl SubcmdExec for DeactivateStakeAccountArgs {
 
         let stake_account = Pubkey::from_str(&self.stake_account).unwrap();
 
-        let ix = deactivate_stake_account_ix(
-            DeactivateStakeAccountKeys {
-                pool_account,
-                pool_sol_reserves: pool_sol_reserves.0,
-                clock: sysvar::clock::id(),
-                stake_account,
-                stake_program: solana_stake_program::id(),
-            },
-            DeactivateStakeAccountIxArgs {},
-        )
+        let ix = deactivate_stake_account_ix(DeactivateStakeAccountKeys {
+            pool_account,
+            pool_sol_reserves: pool_sol_reserves.0,
+            clock: sysvar::clock::id(),
+            stake_account,
+            stake_program: solana_stake_program::id(),
+        })
         .unwrap();
 
         let payer_pk = payer.pubkey();

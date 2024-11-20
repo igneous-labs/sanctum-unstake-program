@@ -5,9 +5,7 @@ use clap::Args;
 use solana_program::{message::Message, pubkey::Pubkey, sysvar};
 use solana_sdk::transaction::Transaction;
 use unstake::ID;
-use unstake_interface::{
-    reclaim_stake_account_ix, ReclaimStakeAccountIxArgs, ReclaimStakeAccountKeys,
-};
+use unstake_interface::{reclaim_stake_account_ix, ReclaimStakeAccountKeys};
 
 use crate::tx_utils::send_or_sim_tx;
 
@@ -38,18 +36,15 @@ impl SubcmdExec for ReclaimStakeAccountArgs {
             &ID,
         );
 
-        let ix = reclaim_stake_account_ix(
-            ReclaimStakeAccountKeys {
-                pool_account,
-                pool_sol_reserves: pool_sol_reserves.0,
-                clock: sysvar::clock::id(),
-                stake_account,
-                stake_account_record_account: stake_account_record_account.0,
-                stake_history: sysvar::stake_history::id(),
-                stake_program: solana_stake_program::id(),
-            },
-            ReclaimStakeAccountIxArgs {},
-        )
+        let ix = reclaim_stake_account_ix(ReclaimStakeAccountKeys {
+            pool_account,
+            pool_sol_reserves: pool_sol_reserves.0,
+            clock: sysvar::clock::id(),
+            stake_account,
+            stake_account_record_account: stake_account_record_account.0,
+            stake_history: sysvar::stake_history::id(),
+            stake_program: solana_stake_program::id(),
+        })
         .unwrap();
 
         let payer_pk = payer.pubkey();

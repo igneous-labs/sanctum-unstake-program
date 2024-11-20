@@ -3,7 +3,7 @@ use std::str::FromStr;
 use clap::Args;
 use solana_program::{message::Message, pubkey::Pubkey};
 use solana_sdk::{signature::read_keypair_file, signer::Signer, transaction::Transaction};
-use unstake_interface::{set_fee_authority_ix, SetFeeAuthorityIxArgs, SetFeeAuthorityKeys};
+use unstake_interface::{set_fee_authority_ix, SetFeeAuthorityKeys};
 
 use crate::tx_utils::send_or_sim_tx;
 
@@ -39,14 +39,11 @@ impl SubcmdExec for SetFeeAuthorityArgs {
             signers.push(Box::new(fee_authority_keypair));
         }
 
-        let ix = set_fee_authority_ix(
-            SetFeeAuthorityKeys {
-                pool_account,
-                fee_authority,
-                new_fee_authority,
-            },
-            SetFeeAuthorityIxArgs {},
-        )
+        let ix = set_fee_authority_ix(SetFeeAuthorityKeys {
+            pool_account,
+            fee_authority,
+            new_fee_authority,
+        })
         .unwrap();
 
         let msg = Message::new(&[ix], Some(&payer_pk));

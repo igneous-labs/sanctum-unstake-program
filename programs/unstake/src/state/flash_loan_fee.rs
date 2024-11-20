@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use unstake_lib::RationalQty;
 
 use crate::{errors::UnstakeError, rational::Rational};
 
@@ -13,13 +14,15 @@ pub struct FlashLoanFee {
 
 impl FlashLoanFee {
     pub fn validate(&self) -> Result<()> {
-        match self.fee_ratio.validate() {
+        let f: unstake_interface::Rational = self.fee_ratio.into();
+        match f.is_valid() {
             true => Ok(()),
             false => Err(UnstakeError::InvalidFee.into()),
         }
     }
 
     pub fn apply(&self, flash_loan_amount: u64) -> Option<u64> {
-        self.fee_ratio.ceil_mul(flash_loan_amount)
+        let f: unstake_interface::Rational = self.fee_ratio.into();
+        f.ceil_mul(flash_loan_amount)
     }
 }
